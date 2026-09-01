@@ -12,21 +12,30 @@ export async function POST(req: NextRequest) {
       academicLevel,
       apiKey,
       preferredModel,
+      fileBase64,
+      fileMimeType,
+      fileName,
     } = body;
 
-    if (!questionsText || questionsText.trim().length < 10) {
+    const hasText = questionsText && questionsText.trim().length >= 5;
+    const hasFile = fileBase64 && fileMimeType;
+
+    if (!hasText && !hasFile) {
       return NextResponse.json(
-        { error: 'Please enter one or more university exam questions to solve.' },
+        { error: 'Please enter university exam questions or upload a question paper PDF/Image.' },
         { status: 400 }
       );
     }
 
     const solvedExam = await solveUniversityQuestionsWithGemini({
-      questionsText: questionsText.trim(),
+      questionsText: questionsText?.trim(),
       subject: subject?.trim() || 'University Examination',
       academicLevel: academicLevel || 'Undergraduate / B.Tech / BSC',
       customApiKey: apiKey,
       preferredModel,
+      fileBase64,
+      fileMimeType,
+      fileName,
     });
 
     return NextResponse.json({

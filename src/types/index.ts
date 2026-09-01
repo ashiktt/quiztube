@@ -152,9 +152,13 @@ export interface UniversitySolvedExam {
 }
 
 export interface UniversityExamRequest {
-  questionsText: string;
+  questionsText?: string;
   subject?: string;
   academicLevel?: string;
   apiKey?: string;
   preferredModel?: string;
+  fileBase64?: string;
+  fileMimeType?: string;
+  fileName?: string;
 }
+

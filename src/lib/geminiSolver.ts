@@ -39,7 +39,7 @@ const solvedExamSchema: Schema = {
           },
           questionText: {
             type: Type.STRING,
-            description: 'The complete question text as parsed from the input.',
+            description: 'The complete question text as parsed or transcribed from the input image/PDF/text.',
           },
           marksAllocated: {
             type: Type.INTEGER,
@@ -90,18 +90,24 @@ const solvedExamSchema: Schema = {
 };
 
 export async function solveUniversityQuestionsWithGemini(params: {
-  questionsText: string;
+  questionsText?: string;
   subject?: string;
   academicLevel?: string;
   customApiKey?: string;
   preferredModel?: string;
+  fileBase64?: string;
+  fileMimeType?: string;
+  fileName?: string;
 }): Promise<UniversitySolvedExam> {
   const {
-    questionsText,
+    questionsText = '',
     subject = 'University Examination',
     academicLevel = 'Undergraduate / B.Tech / BSC',
     customApiKey,
     preferredModel,
+    fileBase64,
+    fileMimeType,
+    fileName,
   } = params;
 
   const apiKey = customApiKey || process.env.GEMINI_API_KEY;
@@ -114,7 +120,11 @@ export async function solveUniversityQuestionsWithGemini(params: {
   const systemInstruction = `You are a Senior University Professor and Chief Examiner specializing in creating 100% accurate, high-scoring model answers for university examinations.
 
 YOUR MISSION:
-Analyze the provided university exam questions (which may contain multiple questions and mark allocations like 2, 5, 10, 15 marks), and generate structured, mark-proportional model solutions that would score 100% full marks from strict university examiners.
+Analyze the provided university exam question paper (which may be provided as text, pasted questions, an uploaded photo/scan/image, or a PDF document), transcribe/read every question and its marks (e.g., 2, 5, 10, 15 marks), and generate structured, mark-proportional model solutions that would score 100% full marks from strict university examiners.
+
+MULTIMODAL QUESTION PAPER EXTRACTION:
+- If an image or PDF of a question paper is attached, carefully OCR and transcribe each question, its sub-parts (e.g. Q1(a), Q1(b)), and its assigned marks.
+- If the subject is visible on the question paper header, identify and extract it.
 
 MARK-PROPORTIONAL DEPTH & LENGTH RULES:
 1. 🔹 2 MARKS (Short Answer / Definition):
@@ -151,15 +161,33 @@ MERMAID DIAGRAM RULES:
 
 Return your response strictly adhering to the JSON schema.`;
 
-  const userPrompt = `SUBJECT / COURSE: ${subject}
-ACADEMIC TARGET LEVEL: ${academicLevel}
+  // Build multimodal content parts
+  const contentParts: any[] = [];
 
-EXAM QUESTIONS TO SOLVE:
-"""
-${questionsText}
-"""
+  if (fileBase64 && fileMimeType) {
+    const rawData = fileBase64.replace(/^data:[^;]+;base64,/, '');
+    contentParts.push({
+      inlineData: {
+        data: rawData,
+        mimeType: fileMimeType,
+      },
+    });
+  }
 
-Please parse every question, detect or assign reasonable marks if unspecified, and generate comprehensive, mark-scaled model answers.`;
+  let textPrompt = `SUBJECT / COURSE: ${subject}\nACADEMIC TARGET LEVEL: ${academicLevel}\n\n`;
+  if (fileName) {
+    textPrompt += `ATTACHED FILE NAME: ${fileName}\n`;
+  }
+
+  if (questionsText && questionsText.trim().length > 0) {
+    textPrompt += `EXAM QUESTIONS / INSTRUCTIONS:\n"""\n${questionsText}\n"""\n\n`;
+  } else {
+    textPrompt += `Please transcribe and solve ALL questions present in the attached exam paper document/image.\n\n`;
+  }
+
+  textPrompt += `Please parse every question, detect or assign reasonable marks if unspecified, and generate comprehensive, mark-scaled model answers.`;
+
+  contentParts.push(textPrompt);
 
   const modelsToTry = preferredModel
     ? [preferredModel, ...FALLBACK_MODELS.filter(m => m !== preferredModel)]
@@ -171,7 +199,7 @@ Please parse every question, detect or assign reasonable marks if unspecified, a
     try {
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: userPrompt,
+        contents: contentParts,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
@@ -193,7 +221,7 @@ Please parse every question, detect or assign reasonable marks if unspecified, a
         subject: parsed.subject || subject,
         academicLevel: parsed.academicLevel || academicLevel,
         totalMarks: Number(parsed.totalMarks) || (parsed.solutions || []).reduce((acc: number, curr: any) => acc + (Number(curr.marksAllocated) || 5), 0),
-        rawQuestionsText: questionsText,
+        rawQuestionsText: questionsText || (fileName ? `[File: ${fileName}]` : 'Uploaded Question Paper'),
         overallExamSummary: parsed.overallExamSummary || 'University Exam Model Solutions',
         solutions: parsed.solutions || [],
       };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   GraduationCap,
   Sparkles,
@@ -22,6 +22,11 @@ import {
   Cpu,
   Code,
   Share2,
+  Upload,
+  File,
+  Image as ImageIcon,
+  X,
+  FileUp,
 } from 'lucide-react';
 import { SolvedQuestionItem, UniversitySolvedExam } from '@/types';
 import { exportUniversityExamPdf } from '@/lib/examPdfExport';
@@ -86,17 +91,102 @@ export function UniversityQuestionSolver({
   const [copiedAll, setCopiedAll] = useState(false);
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
 
+  // File Upload State (PDF or Image)
+  const [uploadedFile, setUploadedFile] = useState<{
+    file: File;
+    base64: string;
+    mimeType: string;
+    previewUrl?: string;
+  } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileProcess = (file: File) => {
+    // Validate file type
+    const validMimes = [
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/webp',
+    ];
+
+    if (!validMimes.includes(file.type)) {
+      setErrorMessage('Please upload a valid PDF document or Image file (.png, .jpg, .jpeg, .webp).');
+      return;
+    }
+
+    // 15MB limit
+    if (file.size > 15 * 1024 * 1024) {
+      setErrorMessage('File size exceeds 15MB limit. Please upload a smaller PDF or image.');
+      return;
+    }
+
+    setErrorMessage(null);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const base64 = e.target?.result as string;
+      const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+      setUploadedFile({
+        file,
+        base64,
+        mimeType: file.type,
+        previewUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileProcess(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileProcess(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleRemoveFile = () => {
+    if (uploadedFile?.previewUrl) {
+      URL.revokeObjectURL(uploadedFile.previewUrl);
+    }
+    setUploadedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSelectPreset = (preset: (typeof SAMPLE_EXAMS)[0]) => {
     setSubject(preset.subject);
     setAcademicLevel(preset.level);
     setQuestionsText(preset.text);
+    handleRemoveFile();
     setErrorMessage(null);
   };
 
   const handleSolve = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!questionsText.trim() || questionsText.trim().length < 10) {
-      setErrorMessage('Please enter at least one exam question to solve.');
+    const hasText = questionsText.trim().length >= 5;
+    const hasFile = Boolean(uploadedFile);
+
+    if (!hasText && !hasFile) {
+      setErrorMessage('Please enter exam questions or upload a question paper PDF/Image.');
       return;
     }
 
@@ -108,11 +198,14 @@ export function UniversityQuestionSolver({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          questionsText: questionsText.trim(),
+          questionsText: questionsText.trim() || undefined,
           subject: subject.trim() || 'University Examination',
           academicLevel,
           apiKey,
           preferredModel: preferredModel || undefined,
+          fileBase64: uploadedFile?.base64,
+          fileMimeType: uploadedFile?.mimeType,
+          fileName: uploadedFile?.file.name,
         }),
       });
 
@@ -226,7 +319,7 @@ export function UniversityQuestionSolver({
           <div className="text-center space-y-3 pt-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 rounded-full shadow-sm">
               <GraduationCap className="w-4 h-4 text-indigo-500" />
-              <span>Mark-Scaled AI Academic Examiner</span>
+              <span>Multimodal AI Academic Examiner (Text, PDF & Images)</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -237,7 +330,7 @@ export function UniversityQuestionSolver({
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Paste complete university exam questions with marks (2, 5, 10, 15 M) to generate accurate, structured model answers with depth proportional to marks and download as exam-style PDFs.
+              Upload your question paper as a <strong>PDF or Image</strong>, or paste question text with marks (2, 5, 10, 15 M) to generate accurate, mark-scaled model answers and download as PDF booklets.
             </p>
           </div>
 
@@ -246,7 +339,7 @@ export function UniversityQuestionSolver({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>1-Click Sample Exam Question Papers</span>
+                <span>1-Click Sample Exam Papers</span>
               </span>
               <span className="text-[11px] text-slate-400">Click to auto-fill</span>
             </div>
@@ -307,30 +400,116 @@ export function UniversityQuestionSolver({
               </div>
             </div>
 
-            {/* Questions Input Area */}
+            {/* Multimodal PDF / Image Upload Section */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FileUp className="w-4 h-4 text-indigo-500" />
+                  <span>Upload Question Paper (PDF or Photo/Image)</span>
+                </span>
+                <span className="text-[11px] text-slate-400 font-normal">PDF, PNG, JPG, WEBP (Max 15MB)</span>
+              </label>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
+                className="hidden"
+              />
+
+              {!uploadedFile ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                    isDragging
+                      ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 scale-[1.01]'
+                      : 'border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-600 bg-slate-50/50 dark:bg-slate-800/30'
+                  }`}
+                >
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Click to upload or drag & drop Question Paper
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Upload exam paper photo, scanned pages, or official university PDF
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {uploadedFile.previewUrl ? (
+                      <img
+                        src={uploadedFile.previewUrl}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded-xl border border-indigo-200 dark:border-indigo-800 shrink-0"
+                      />
+                    ) : (
+                      <div className="p-3 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-xl shrink-0">
+                        <File className="w-6 h-6" />
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200 truncate">
+                        {uploadedFile.file.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB • {uploadedFile.mimeType.includes('pdf') ? 'PDF Document' : 'Image Photo'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition shrink-0"
+                    title="Remove attached file"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Questions Textarea (Optional if file uploaded, or for additional prompts) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-indigo-500" />
-                  <span>Exam Questions & Marks</span>
+                  <span>
+                    {uploadedFile ? 'Additional Notes / Specific Questions (Optional)' : 'Or Paste Exam Questions & Marks'}
+                  </span>
                 </label>
-                <span className="text-[11px] text-slate-400">
-                  Include marks like <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[2 Marks]</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">(5M)</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[10]</code>
-                </span>
+                {!uploadedFile && (
+                  <span className="text-[11px] text-slate-400">
+                    e.g. <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[2 Marks]</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">(5M)</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[10]</code>
+                  </span>
+                )}
               </div>
 
               <textarea
-                required
-                rows={10}
+                rows={uploadedFile ? 4 : 8}
                 value={questionsText}
                 onChange={e => setQuestionsText(e.target.value)}
-                placeholder={`Paste your questions here. Example:
+                placeholder={
+                  uploadedFile
+                    ? 'Optional: Mention specific questions to prioritize or add extra instructions...'
+                    : `Paste your questions here. Example:
 
 Q1. Define Paging and Segmentation. [2 Marks]
 
-Q2. Explain the working of the Semaphore synchronization primitive with wait() and signal() operations. [5 Marks]
+Q2. Explain the working of Semaphore synchronization with wait() and signal(). [5 Marks]
 
-Q3. Compare and contrast Monolithic Kernel vs Microkernel architectures with diagrams, advantages, and real-world OS examples. [10 Marks]`}
+Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, and real OS examples. [10 Marks]`
+                }
                 className="w-full p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
               />
             </div>
@@ -340,7 +519,7 @@ Q3. Compare and contrast Monolithic Kernel vs Microkernel architectures with dia
               <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-3 text-xs sm:text-sm text-red-700 dark:text-red-300 animate-in fade-in">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="font-bold">Unable to solve exam questions</p>
+                  <p className="font-bold">Unable to process question paper</p>
                   <p>{errorMessage}</p>
                 </div>
               </div>
@@ -355,12 +534,20 @@ Q3. Compare and contrast Monolithic Kernel vs Microkernel architectures with dia
               {isLoading ? (
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Senior AI Examiner is Generating Model Answers...</span>
+                  <span>
+                    {uploadedFile
+                      ? 'AI Examiner is Reading File & Solving Question Paper...'
+                      : 'Senior AI Examiner is Generating Model Answers...'}
+                  </span>
                 </div>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
-                  <span>Generate Mark-Scaled Model Solutions & PDF</span>
+                  <span>
+                    {uploadedFile
+                      ? 'Solve Uploaded Question Paper & Generate PDF'
+                      : 'Generate Mark-Scaled Model Solutions & PDF'}
+                  </span>
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
