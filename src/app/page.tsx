@@ -10,6 +10,7 @@ import {
   Play,
   FileDown,
   ArrowLeft,
+  ArrowRight,
   GraduationCap,
   Award,
   Flame,
@@ -35,6 +36,7 @@ import { ExportModal } from '@/components/ExportModal';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { AuthModal } from '@/components/AuthModal';
+import { UniversityQuestionSolver } from '@/components/UniversityQuestionSolver';
 import {
   getSavedStudySets,
   saveStudySet,
@@ -52,6 +54,7 @@ export default function Home() {
   const [studySet, setStudySet] = useState<LectureStudySet | null>(null);
   const [savedSets, setSavedSets] = useState<LectureStudySet[]>([]);
   const [activeTab, setActiveTab] = useState<'cheatsheet' | 'quiz' | 'summary'>('cheatsheet');
+  const [appMode, setAppMode] = useState<'youtube' | 'examSolver'>('youtube');
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -194,18 +197,62 @@ export default function Home() {
       <Navbar
         onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
         onOpenHistory={() => setHistoryDrawerOpen(true)}
-        onNewQuiz={() => setStudySet(null)}
+        onNewQuiz={() => {
+          setStudySet(null);
+          setAppMode('youtube');
+        }}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         onSignOut={handleSignOut}
         currentUser={currentUser}
         savedCount={savedSets.length}
         hasApiKey={hasApiKey}
+        appMode={appMode}
+        onSwitchMode={setAppMode}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
-        {!studySet ? (
+        {appMode === 'examSolver' ? (
+          /* University Question Solver Mode */
+          <UniversityQuestionSolver
+            onBackToYouTube={() => setAppMode('youtube')}
+            apiKey={getStoredApiKey()}
+            hasServerKey={hasServerKey}
+            onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
+          />
+        ) : !studySet ? (
           /* Landing / Input Screen */
           <div className="space-y-12">
+            {/* Solver Banner Switcher Card */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-500/30">
+              <div className="flex items-center gap-3.5 text-left">
+                <div className="p-3 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl text-white shadow-md">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-sm sm:text-base">
+                      Need University Exam Answers with Marks (2, 5, 10, 15 M)?
+                    </h4>
+                    <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
+                      New
+                    </span>
+                  </div>
+                  <p className="text-xs text-indigo-200">
+                    Switch to University Question Solver to generate structured model answers with Mermaid diagrams and export as PDF booklets.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAppMode('examSolver')}
+                className="px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-1.5 active:scale-95"
+              >
+                <span>Launch Question Solver</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <LectureInput
               onGenerate={handleGenerateQuiz}
               isLoading={isGenerating}

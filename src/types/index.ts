@@ -125,3 +125,36 @@ export interface TranscriptSegment {
   offset: number; // in seconds
   duration: number;
 }
+
+export interface SolvedQuestionItem {
+  questionNumber: string; // e.g. "Q1(a)" or "Question 1"
+  questionText: string;
+  marksAllocated: number; // e.g. 2, 5, 10, 15
+  answerSummary: string; // 1-2 sentence core answer
+  detailedAnswer: string; // Mark-scaled structured answer (Markdown with subheadings)
+  keyPoints: string[]; // High-yield bullet points for examiners
+  formulasOrCode?: string; // Mathematical formula or code snippet if applicable
+  diagramMermaid?: string; // Mermaid architecture/flowchart if applicable
+  examTips?: string; // "How to get full marks" tip from examiner perspective
+  estimatedWordCount?: number;
+}
+
+export interface UniversitySolvedExam {
+  id: string;
+  userId?: string;
+  createdAt: string;
+  subject: string;
+  academicLevel: string; // e.g. "Undergraduate / B.Tech", "Masters / MS", "High School"
+  totalMarks: number;
+  rawQuestionsText: string;
+  overallExamSummary: string;
+  solutions: SolvedQuestionItem[];
+}
+
+export interface UniversityExamRequest {
+  questionsText: string;
+  subject?: string;
+  academicLevel?: string;
+  apiKey?: string;
+  preferredModel?: string;
+}
