@@ -55,13 +55,25 @@ export default function Home() {
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasServerKey, setHasServerKey] = useState(false);
 
   // Initial load
   useEffect(() => {
     const sets = getSavedStudySets();
     setSavedSets(sets);
-    const key = getStoredApiKey();
-    setHasApiKey(Boolean(key));
+    const localKey = getStoredApiKey();
+
+    // Check server environment variable status (e.g. Vercel)
+    fetch('/api/status')
+      .then(res => res.json())
+      .then(data => {
+        const serverActive = Boolean(data?.hasServerKey);
+        setHasServerKey(serverActive);
+        setHasApiKey(Boolean(localKey || serverActive));
+      })
+      .catch(() => {
+        setHasApiKey(Boolean(localKey));
+      });
   }, []);
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
@@ -379,7 +391,8 @@ export default function Home() {
       <ApiKeyModal
         isOpen={apiKeyModalOpen}
         onClose={() => setApiKeyModalOpen(false)}
-        onKeySaved={() => setHasApiKey(Boolean(getStoredApiKey()))}
+        onKeySaved={() => setHasApiKey(Boolean(getStoredApiKey() || hasServerKey))}
+        hasServerKey={hasServerKey}
       />
 
       <HistoryDrawer
