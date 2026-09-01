@@ -27,6 +27,12 @@ export async function signUpStudent(email: string, password: string, fullName?: 
     });
 
     if (error) {
+      if (error.message.toLowerCase().includes('rate limit')) {
+        return {
+          user: null,
+          error: 'Supabase email confirmation rate limit reached. Please disable "Confirm email" in your Supabase Auth settings to enable instant student logins without email limits.',
+        };
+      }
       return { user: null, error: error.message };
     }
 
