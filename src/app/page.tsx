@@ -45,14 +45,20 @@ import {
   getStoredApiKey,
   fetchAndMergeCloudStudySets,
   clearLocalStorageStudySets,
+  getSavedSolvedExams,
+  saveSolvedExam,
+  deleteSolvedExam,
+  fetchAndMergeCloudSolvedExams,
 } from '@/lib/storage';
 import { getCurrentStudent, signOutStudent, onAuthStateChange } from '@/lib/auth';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
-import { StudentUser } from '@/types';
+import { StudentUser, UniversitySolvedExam } from '@/types';
 
 export default function Home() {
   const [studySet, setStudySet] = useState<LectureStudySet | null>(null);
   const [savedSets, setSavedSets] = useState<LectureStudySet[]>([]);
+  const [savedExams, setSavedExams] = useState<UniversitySolvedExam[]>([]);
+  const [activeSolvedExam, setActiveSolvedExam] = useState<UniversitySolvedExam | null>(null);
   const [activeTab, setActiveTab] = useState<'cheatsheet' | 'quiz' | 'summary'>('cheatsheet');
   const [appMode, setAppMode] = useState<'youtube' | 'examSolver'>('youtube');
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
@@ -72,6 +78,8 @@ export default function Home() {
   useEffect(() => {
     const initialSets = getSavedStudySets();
     setSavedSets(initialSets);
+    const initialExams = getSavedSolvedExams();
+    setSavedExams(initialExams);
     const localKey = getStoredApiKey();
 
     // Check server environment variable status (e.g. Vercel)
@@ -94,6 +102,9 @@ export default function Home() {
           setSavedSets(sets);
           setIsCloudConnected(isCloudConnected);
         });
+        fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
+          setSavedExams(exams);
+        });
       }
     });
 
@@ -105,9 +116,14 @@ export default function Home() {
           setSavedSets(sets);
           setIsCloudConnected(isCloudConnected);
         });
+        fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
+          setSavedExams(exams);
+        });
       } else {
         clearLocalStorageStudySets();
         setSavedSets([SAMPLE_STUDY_SET]);
+        setSavedExams([]);
+        setActiveSolvedExam(null);
       }
     });
 
@@ -121,6 +137,8 @@ export default function Home() {
     setCurrentUser(null);
     clearLocalStorageStudySets();
     setSavedSets([SAMPLE_STUDY_SET]);
+    setSavedExams([]);
+    setActiveSolvedExam(null);
   };
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
@@ -199,25 +217,37 @@ export default function Home() {
         onOpenHistory={() => setHistoryDrawerOpen(true)}
         onNewQuiz={() => {
           setStudySet(null);
+          setActiveSolvedExam(null);
           setAppMode('youtube');
         }}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         onSignOut={handleSignOut}
         currentUser={currentUser}
-        savedCount={savedSets.length}
+        savedCount={savedSets.length + savedExams.length}
         hasApiKey={hasApiKey}
         appMode={appMode}
-        onSwitchMode={setAppMode}
+        onSwitchMode={mode => {
+          if (mode === 'youtube') {
+            setActiveSolvedExam(null);
+          }
+          setAppMode(mode);
+        }}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
         {appMode === 'examSolver' ? (
           /* University Question Solver Mode */
           <UniversityQuestionSolver
-            onBackToYouTube={() => setAppMode('youtube')}
+            onBackToYouTube={() => {
+              setActiveSolvedExam(null);
+              setAppMode('youtube');
+            }}
             apiKey={getStoredApiKey()}
             hasServerKey={hasServerKey}
             onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
+            userId={currentUser?.id}
+            activeSolvedExam={activeSolvedExam}
+            onExamSolved={() => setSavedExams(getSavedSolvedExams())}
           />
         ) : !studySet ? (
           /* Landing / Input Screen */
@@ -508,18 +538,33 @@ export default function Home() {
         isOpen={historyDrawerOpen}
         onClose={() => setHistoryDrawerOpen(false)}
         savedSets={savedSets}
+        savedExams={savedExams}
         currentSetId={studySet?.id}
         isCloudConnected={isCloudConnected}
         currentUser={currentUser}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         onRefreshSets={() => {
           setSavedSets(getSavedStudySets());
+          setSavedExams(getSavedSolvedExams());
         }}
         onSelectSet={set => {
           setStudySet(set);
+          setActiveSolvedExam(null);
+          setAppMode('youtube');
           setActiveTab('cheatsheet');
         }}
         onDeleteSet={handleDeleteSavedSet}
+        onSelectExam={exam => {
+          setActiveSolvedExam(exam);
+          setAppMode('examSolver');
+        }}
+        onDeleteExam={id => {
+          deleteSolvedExam(id);
+          setSavedExams(getSavedSolvedExams());
+          if (activeSolvedExam?.id === id) {
+            setActiveSolvedExam(null);
+          }
+        }}
       />
 
       {studySet && (

@@ -1,10 +1,11 @@
-import { LectureStudySet, UserQuizAttempt } from '@/types';
+import { LectureStudySet, UserQuizAttempt, UniversitySolvedExam } from '@/types';
 import { SAMPLE_STUDY_SET } from './sampleData';
 
 const STORAGE_KEYS = {
   API_KEY: 'lecture_quiz_gemini_api_key',
   STUDY_SETS: 'lecture_quiz_saved_study_sets',
   CURRENT_SET_ID: 'lecture_quiz_current_study_set_id',
+  SOLVED_EXAMS: 'quiztube_saved_solved_exams',
 };
 
 export function getStoredApiKey(): string {
@@ -25,6 +26,7 @@ export function clearLocalStorageStudySets(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEYS.STUDY_SETS);
   localStorage.removeItem(STORAGE_KEYS.CURRENT_SET_ID);
+  localStorage.removeItem(STORAGE_KEYS.SOLVED_EXAMS);
 }
 
 export function getSavedStudySets(): LectureStudySet[] {
@@ -227,3 +229,120 @@ export function importStudyLibraryBackup(jsonContent: string): { success: boolea
     return { success: false, count: 0 };
   }
 }
+
+// ==========================================
+// UNIVERSITY SOLVED EXAM PAPERS STORAGE & SYNC
+// ==========================================
+
+export function getSavedSolvedExams(): UniversitySolvedExam[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SOLVED_EXAMS);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as UniversitySolvedExam[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('Error reading solved exams from localStorage:', err);
+    return [];
+  }
+}
+
+export function saveSolvedExam(exam: UniversitySolvedExam): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getSavedSolvedExams();
+    const existingIndex = current.findIndex(e => e.id === exam.id);
+    let updated: UniversitySolvedExam[];
+
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = exam;
+    } else {
+      updated = [exam, ...current];
+    }
+
+    localStorage.setItem(STORAGE_KEYS.SOLVED_EXAMS, JSON.stringify(updated));
+
+    // Asynchronously sync to Supabase Cloud
+    syncSolvedExamToCloud(exam);
+  } catch (err) {
+    console.error('Error saving solved exam to localStorage:', err);
+  }
+}
+
+export function deleteSolvedExam(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getSavedSolvedExams();
+    const updated = current.filter(e => e.id !== id);
+    localStorage.setItem(STORAGE_KEYS.SOLVED_EXAMS, JSON.stringify(updated));
+
+    // Asynchronously delete from Supabase Cloud
+    deleteSolvedExamFromCloud(id);
+  } catch (err) {
+    console.error('Error deleting solved exam:', err);
+  }
+}
+
+export async function syncSolvedExamToCloud(exam: UniversitySolvedExam): Promise<boolean> {
+  try {
+    const res = await fetch('/api/solved-exams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(exam),
+    });
+    const data = await res.json();
+    return Boolean(data.saved);
+  } catch (err) {
+    console.warn('Could not sync solved exam to cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteSolvedExamFromCloud(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/solved-exams?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    return Boolean(data.deleted);
+  } catch (err) {
+    console.warn('Cloud delete solved exam error:', err);
+    return false;
+  }
+}
+
+export async function fetchAndMergeCloudSolvedExams(userId?: string): Promise<{ exams: UniversitySolvedExam[]; isCloudConnected: boolean }> {
+  try {
+    const endpoint = userId ? `/api/solved-exams?userId=${encodeURIComponent(userId)}` : '/api/solved-exams';
+    const res = await fetch(endpoint);
+    const data = await res.json();
+
+    if (data.connected && Array.isArray(data.solvedExams) && data.solvedExams.length > 0) {
+      const localExams = getSavedSolvedExams();
+      const map = new Map<string, UniversitySolvedExam>();
+
+      for (const exam of data.solvedExams) {
+        map.set(exam.id, exam);
+      }
+      for (const exam of localExams) {
+        if (!map.has(exam.id)) {
+          map.set(exam.id, exam);
+          syncSolvedExamToCloud(exam);
+        }
+      }
+
+      const merged = Array.from(map.values());
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.SOLVED_EXAMS, JSON.stringify(merged));
+      }
+      return { exams: merged, isCloudConnected: true };
+    }
+
+    return { exams: getSavedSolvedExams(), isCloudConnected: Boolean(data.connected) };
+  } catch (err) {
+    console.warn('Could not fetch cloud solved exams:', err);
+    return { exams: getSavedSolvedExams(), isCloudConnected: false };
+  }
+}
+

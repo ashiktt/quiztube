@@ -31,6 +31,7 @@ import {
 import { SolvedQuestionItem, UniversitySolvedExam } from '@/types';
 import { exportUniversityExamPdf } from '@/lib/examPdfExport';
 import { MermaidRenderer } from '@/components/MermaidRenderer';
+import { saveSolvedExam } from '@/lib/storage';
 
 const SAMPLE_EXAMS = [
   {
@@ -72,6 +73,9 @@ interface UniversityQuestionSolverProps {
   apiKey?: string;
   hasServerKey?: boolean;
   onOpenApiKeyModal?: () => void;
+  userId?: string;
+  activeSolvedExam?: UniversitySolvedExam | null;
+  onExamSolved?: (exam: UniversitySolvedExam) => void;
 }
 
 export function UniversityQuestionSolver({
@@ -79,6 +83,9 @@ export function UniversityQuestionSolver({
   apiKey,
   hasServerKey,
   onOpenApiKeyModal,
+  userId,
+  activeSolvedExam,
+  onExamSolved,
 }: UniversityQuestionSolverProps) {
   const [subject, setSubject] = useState('Computer Science & Engineering');
   const [academicLevel, setAcademicLevel] = useState('Undergraduate / B.Tech / BSC');
@@ -86,10 +93,22 @@ export function UniversityQuestionSolver({
   const [preferredModel, setPreferredModel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [solvedExam, setSolvedExam] = useState<UniversitySolvedExam | null>(null);
+  const [solvedExam, setSolvedExam] = useState<UniversitySolvedExam | null>(activeSolvedExam || null);
   const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
+
+  // Sync external activeSolvedExam selection from library
+  React.useEffect(() => {
+    if (activeSolvedExam) {
+      setSolvedExam(activeSolvedExam);
+      const initialExpanded: Record<string, boolean> = {};
+      (activeSolvedExam.solutions || []).forEach((_, idx) => {
+        initialExpanded[idx] = true;
+      });
+      setExpandedSolutions(initialExpanded);
+    }
+  }, [activeSolvedExam]);
 
   // File Upload State (PDF or Image)
   const [uploadedFile, setUploadedFile] = useState<{
@@ -218,11 +237,18 @@ export function UniversityQuestionSolver({
         throw new Error(data?.error || 'Failed to solve university exam questions.');
       }
 
-      setSolvedExam(data.solvedExam);
+      const newSolvedExam: UniversitySolvedExam = {
+        ...data.solvedExam,
+        userId: userId || undefined,
+      };
+
+      setSolvedExam(newSolvedExam);
+      saveSolvedExam(newSolvedExam);
+      if (onExamSolved) onExamSolved(newSolvedExam);
 
       // Expand all solutions by default
       const initialExpanded: Record<string, boolean> = {};
-      (data.solvedExam.solutions || []).forEach((_: any, idx: number) => {
+      (newSolvedExam.solutions || []).forEach((_: any, idx: number) => {
         initialExpanded[idx] = true;
       });
       setExpandedSolutions(initialExpanded);

@@ -53,7 +53,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 3. Create Study Sets Table (Stores student quizzes, cheatsheets & scores)
+-- 3. Create Study Sets Table (Stores student YouTube quizzes, cheatsheets & scores)
 CREATE TABLE IF NOT EXISTS public.study_sets (
   id TEXT PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -74,27 +74,38 @@ CREATE TABLE IF NOT EXISTS public.study_sets (
   attempts JSONB DEFAULT '[]'::jsonb
 );
 
--- Column safety check if table already existed
 ALTER TABLE public.study_sets ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
-
--- Enable RLS for Study Sets
 ALTER TABLE public.study_sets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public Read Access" ON public.study_sets;
 DROP POLICY IF EXISTS "Public Insert/Update Access" ON public.study_sets;
-DROP POLICY IF EXISTS "Public Delete Access" ON public.study_sets;
+CREATE POLICY "Public Read Access" ON public.study_sets FOR SELECT USING (true);
+CREATE POLICY "Public Insert/Update Access" ON public.study_sets FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Public Read Access" 
-ON public.study_sets FOR SELECT 
-USING (true);
+-- 4. Create Solved Exams Table (Stores student University Question Solver exam papers)
+CREATE TABLE IF NOT EXISTS public.solved_exams (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  subject TEXT NOT NULL,
+  academic_level TEXT DEFAULT 'Undergraduate',
+  total_marks INTEGER DEFAULT 0,
+  raw_questions_text TEXT,
+  overall_exam_summary TEXT,
+  solutions JSONB DEFAULT '[]'::jsonb
+);
 
-CREATE POLICY "Public Insert/Update Access" 
-ON public.study_sets FOR ALL 
-USING (true) 
-WITH CHECK (true);
+ALTER TABLE public.solved_exams ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.solved_exams ENABLE ROW LEVEL SECURITY;
 
--- 4. High-Performance Indexes
+DROP POLICY IF EXISTS "Public Solved Exams Read" ON public.solved_exams;
+DROP POLICY IF EXISTS "Public Solved Exams Write" ON public.solved_exams;
+CREATE POLICY "Public Solved Exams Read" ON public.solved_exams FOR SELECT USING (true);
+CREATE POLICY "Public Solved Exams Write" ON public.solved_exams FOR ALL USING (true) WITH CHECK (true);
+
+-- 5. High-Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_study_sets_created_at ON public.study_sets (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_study_sets_user_id ON public.study_sets (user_id);
-CREATE INDEX IF NOT EXISTS idx_study_sets_video_id ON public.study_sets (video_id);
+CREATE INDEX IF NOT EXISTS idx_solved_exams_created_at ON public.solved_exams (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_solved_exams_user_id ON public.solved_exams (user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email);
