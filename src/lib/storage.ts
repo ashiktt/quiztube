@@ -134,11 +134,12 @@ export async function deleteStudySetFromCloud(id: string): Promise<boolean> {
 }
 
 /**
- * Fetches all study sets from Supabase cloud and merges with local storage
+ * Fetches study sets from Supabase cloud (for student) and merges with local storage
  */
-export async function fetchAndMergeCloudStudySets(): Promise<{ sets: LectureStudySet[]; isCloudConnected: boolean }> {
+export async function fetchAndMergeCloudStudySets(userId?: string): Promise<{ sets: LectureStudySet[]; isCloudConnected: boolean }> {
   try {
-    const res = await fetch('/api/study-sets');
+    const endpoint = userId ? `/api/study-sets?userId=${encodeURIComponent(userId)}` : '/api/study-sets';
+    const res = await fetch(endpoint);
     const data = await res.json();
 
     if (data.connected && Array.isArray(data.studySets) && data.studySets.length > 0) {

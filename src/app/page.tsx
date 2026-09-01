@@ -34,6 +34,7 @@ import { CheatsheetView } from '@/components/CheatsheetView';
 import { ExportModal } from '@/components/ExportModal';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { ApiKeyModal } from '@/components/ApiKeyModal';
+import { AuthModal } from '@/components/AuthModal';
 import {
   getSavedStudySets,
   saveStudySet,
@@ -42,7 +43,9 @@ import {
   getStoredApiKey,
   fetchAndMergeCloudStudySets,
 } from '@/lib/storage';
+import { getCurrentStudent, signOutStudent, onAuthStateChange } from '@/lib/auth';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
+import { StudentUser } from '@/types';
 
 export default function Home() {
   const [studySet, setStudySet] = useState<LectureStudySet | null>(null);
@@ -51,11 +54,13 @@ export default function Home() {
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
+  const [currentUser, setCurrentUser] = useState<StudentUser | null>(null);
 
   // Modals & Drawers
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [hasServerKey, setHasServerKey] = useState(false);
 
@@ -77,14 +82,35 @@ export default function Home() {
         setHasApiKey(Boolean(localKey));
       });
 
-    // Cloud Database Sync (Supabase)
-    fetchAndMergeCloudStudySets()
-      .then(({ sets, isCloudConnected }) => {
+    // Check current student auth
+    getCurrentStudent().then(student => {
+      setCurrentUser(student);
+      fetchAndMergeCloudStudySets(student?.id).then(({ sets, isCloudConnected }) => {
         setSavedSets(sets);
         setIsCloudConnected(isCloudConnected);
-      })
-      .catch(err => console.warn('Supabase sync error:', err));
+      });
+    });
+
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChange(student => {
+      setCurrentUser(student);
+      fetchAndMergeCloudStudySets(student?.id).then(({ sets, isCloudConnected }) => {
+        setSavedSets(sets);
+        setIsCloudConnected(isCloudConnected);
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
+
+  const handleSignOut = async () => {
+    await signOutStudent();
+    setCurrentUser(null);
+    const sets = getSavedStudySets();
+    setSavedSets(sets);
+  };
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
     setIsGenerating(true);
@@ -110,7 +136,10 @@ export default function Home() {
         throw new Error(data?.error || 'Failed to generate quiz.');
       }
 
-      const newStudySet: LectureStudySet = data.studySet;
+      const newStudySet: LectureStudySet = {
+        ...data.studySet,
+        userId: currentUser?.id,
+      };
       setStudySet(newStudySet);
       saveStudySet(newStudySet);
       setSavedSets(getSavedStudySets());
@@ -158,6 +187,9 @@ export default function Home() {
         onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
         onOpenHistory={() => setHistoryDrawerOpen(true)}
         onNewQuiz={() => setStudySet(null)}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
+        onSignOut={handleSignOut}
+        currentUser={currentUser}
         savedCount={savedSets.length}
         hasApiKey={hasApiKey}
       />
@@ -405,12 +437,26 @@ export default function Home() {
         hasServerKey={hasServerKey}
       />
 
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={user => {
+          setCurrentUser(user);
+          fetchAndMergeCloudStudySets(user.id).then(({ sets, isCloudConnected }) => {
+            setSavedSets(sets);
+            setIsCloudConnected(isCloudConnected);
+          });
+        }}
+      />
+
       <HistoryDrawer
         isOpen={historyDrawerOpen}
         onClose={() => setHistoryDrawerOpen(false)}
         savedSets={savedSets}
         currentSetId={studySet?.id}
         isCloudConnected={isCloudConnected}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
         onRefreshSets={() => {
           setSavedSets(getSavedStudySets());
         }}

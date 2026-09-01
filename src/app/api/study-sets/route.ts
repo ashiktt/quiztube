@@ -6,6 +6,7 @@ import { LectureStudySet } from '@/types';
 function mapRowToStudySet(row: any): LectureStudySet {
   return {
     id: row.id,
+    userId: row.user_id || undefined,
     createdAt: row.created_at || new Date().toISOString(),
     videoUrl: row.video_url || '',
     videoId: row.video_id || '',
@@ -28,6 +29,7 @@ function mapRowToStudySet(row: any): LectureStudySet {
 function mapStudySetToRow(set: LectureStudySet): any {
   return {
     id: set.id,
+    user_id: set.userId || null,
     created_at: set.createdAt || new Date().toISOString(),
     video_url: set.videoUrl,
     video_id: set.videoId,
@@ -47,10 +49,10 @@ function mapStudySetToRow(set: LectureStudySet): any {
 }
 
 /**
- * GET /api/study-sets
- * Fetches all study sets from Supabase (or reports if Supabase is connected)
+ * GET /api/study-sets?userId=...
+ * Fetches study sets from Supabase, optionally filtered by student userId
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
       connected: false,
@@ -65,11 +67,20 @@ export async function GET() {
       return NextResponse.json({ connected: false, studySets: [] });
     }
 
-    const { data, error } = await supabase
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    let query = supabase
       .from('study_sets')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
+
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Supabase query error:', error);
@@ -86,7 +97,7 @@ export async function GET() {
 
 /**
  * POST /api/study-sets
- * Upserts a study set in Supabase
+ * Upserts a student study set in Supabase
  */
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) {

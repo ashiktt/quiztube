@@ -13,8 +13,12 @@ import {
   HardDrive,
   Download,
   Upload,
+  Lock,
+  User,
+  LogIn,
+  CheckCircle2,
 } from 'lucide-react';
-import { LectureStudySet } from '@/types';
+import { LectureStudySet, StudentUser } from '@/types';
 import { exportStudyLibraryBackup, importStudyLibraryBackup } from '@/lib/storage';
 
 interface HistoryDrawerProps {
@@ -23,6 +27,8 @@ interface HistoryDrawerProps {
   savedSets: LectureStudySet[];
   currentSetId?: string;
   isCloudConnected?: boolean;
+  currentUser?: StudentUser | null;
+  onOpenAuthModal?: () => void;
   onSelectSet: (set: LectureStudySet) => void;
   onDeleteSet: (id: string) => void;
   onRefreshSets?: () => void;
@@ -34,6 +40,8 @@ export function HistoryDrawer({
   savedSets,
   currentSetId,
   isCloudConnected = false,
+  currentUser = null,
+  onOpenAuthModal,
   onSelectSet,
   onDeleteSet,
   onRefreshSets,
@@ -77,18 +85,20 @@ export function HistoryDrawer({
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                     My Study Library
                   </h2>
-                  {isCloudConnected ? (
+                  {currentUser && isCloudConnected ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800">
                       <Cloud className="w-3 h-3" /> Supabase
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full">
-                      <HardDrive className="w-3 h-3" /> Local
+                      <HardDrive className="w-3 h-3" /> Local Cache
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-500">
-                  {savedSets.length} saved lecture study sets
+                  {currentUser
+                    ? `Logged in as ${currentUser.email || currentUser.fullName}`
+                    : `${savedSets.length} saved lecture sets`}
                 </p>
               </div>
             </div>
@@ -100,6 +110,34 @@ export function HistoryDrawer({
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Student Auth Notice if not signed in */}
+          {!currentUser && (
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/60 dark:to-purple-950/60 border-b border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <p className="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Student Login Recommended</span>
+                </p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">
+                  Sign in to save your quizzes & scores permanently to Supabase cloud.
+                </p>
+              </div>
+
+              {onOpenAuthModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuthModal();
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition shrink-0 shadow-sm"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          )}
 
           {/* List */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">

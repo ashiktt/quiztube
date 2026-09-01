@@ -81,8 +81,16 @@ export interface UserQuizAttempt {
   topicMastery?: Record<string, { correct: number; total: number }>;
 }
 
+export interface StudentUser {
+  id: string;
+  email?: string;
+  fullName?: string;
+  avatarUrl?: string;
+}
+
 export interface LectureStudySet {
   id: string;
+  userId?: string;
   createdAt: string;
   videoUrl: string;
   videoId: string;
