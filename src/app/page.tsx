@@ -40,6 +40,7 @@ import {
   deleteStudySet,
   saveQuizAttempt,
   getStoredApiKey,
+  fetchAndMergeCloudStudySets,
 } from '@/lib/storage';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
 
@@ -49,6 +50,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'cheatsheet' | 'quiz' | 'summary'>('cheatsheet');
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
   // Modals & Drawers
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
@@ -57,10 +59,10 @@ export default function Home() {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [hasServerKey, setHasServerKey] = useState(false);
 
-  // Initial load
+  // Initial load & Supabase sync
   useEffect(() => {
-    const sets = getSavedStudySets();
-    setSavedSets(sets);
+    const initialSets = getSavedStudySets();
+    setSavedSets(initialSets);
     const localKey = getStoredApiKey();
 
     // Check server environment variable status (e.g. Vercel)
@@ -74,6 +76,14 @@ export default function Home() {
       .catch(() => {
         setHasApiKey(Boolean(localKey));
       });
+
+    // Cloud Database Sync (Supabase)
+    fetchAndMergeCloudStudySets()
+      .then(({ sets, isCloudConnected }) => {
+        setSavedSets(sets);
+        setIsCloudConnected(isCloudConnected);
+      })
+      .catch(err => console.warn('Supabase sync error:', err));
   }, []);
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
@@ -400,9 +410,13 @@ export default function Home() {
         onClose={() => setHistoryDrawerOpen(false)}
         savedSets={savedSets}
         currentSetId={studySet?.id}
+        isCloudConnected={isCloudConnected}
+        onRefreshSets={() => {
+          setSavedSets(getSavedStudySets());
+        }}
         onSelectSet={set => {
           setStudySet(set);
-          setActiveTab('quiz');
+          setActiveTab('cheatsheet');
         }}
         onDeleteSet={handleDeleteSavedSet}
       />
