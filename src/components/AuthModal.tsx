@@ -14,15 +14,17 @@ import {
   GraduationCap,
   ArrowRight,
   BookOpen,
+  ArrowLeft,
+  KeyRound,
 } from 'lucide-react';
-import { signInStudent, signUpStudent } from '@/lib/auth';
+import { signInStudent, signUpStudent, resetStudentPassword } from '@/lib/auth';
 import { StudentUser } from '@/types';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: (user: StudentUser) => void;
-  initialMode?: 'signin' | 'signup';
+  initialMode?: 'signin' | 'signup' | 'forgot';
 }
 
 export function AuthModal({
@@ -31,7 +33,7 @@ export function AuthModal({
   onAuthSuccess,
   initialMode = 'signin',
 }: AuthModalProps) {
-  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -47,8 +49,30 @@ export function AuthModal({
     setError(null);
     setSuccessMsg(null);
 
-    if (!email.trim() || !password.trim()) {
-      setError('Please fill in all required fields.');
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (mode === 'forgot') {
+      setIsLoading(true);
+      try {
+        const { success, error: err } = await resetStudentPassword(email.trim());
+        if (err) {
+          setError(err);
+        } else if (success) {
+          setSuccessMsg('Password reset link has been sent to your email! Please check your inbox or spam folder.');
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Failed to send password reset email.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter your password.');
       return;
     }
 
@@ -71,7 +95,7 @@ export function AuthModal({
             onClose();
           }, 800);
         } else {
-          setSuccessMsg('Please check your email to confirm your account, or try signing in.');
+          setSuccessMsg('Account created! You can now sign in.');
         }
       } else {
         const { user, error: err } = await signInStudent(email.trim(), password);
@@ -106,20 +130,60 @@ export function AuthModal({
         {/* Brand Header */}
         <div className="flex items-center gap-3">
           <div className="p-3 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl text-white shadow-md shadow-indigo-500/20">
-            <GraduationCap className="w-7 h-7" />
+            {mode === 'forgot' ? <KeyRound className="w-7 h-7" /> : <GraduationCap className="w-7 h-7" />}
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight">
-              {mode === 'signin' ? 'Student Sign In' : 'Create Student Account'}
+              {mode === 'signin'
+                ? 'Student Sign In'
+                : mode === 'signup'
+                ? 'Create Student Account'
+                : 'Reset Password'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Access your personalized Study Library & quiz progress
+              {mode === 'forgot'
+                ? "Enter your email to receive a password reset link"
+                : 'Access your personalized Study Library & quiz progress'}
             </p>
           </div>
         </div>
 
-        {/* Mode Switcher */}
-        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
+        {/* Mode Switcher (Visible on signin / signup) */}
+        {mode !== 'forgot' ? (
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin');
+                setError(null);
+                setSuccessMsg(null);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                mode === 'signin'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Sign In
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setError(null);
+                setSuccessMsg(null);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                mode === 'signup'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              New Student (Sign Up)
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={() => {
@@ -127,44 +191,25 @@ export function AuthModal({
               setError(null);
               setSuccessMsg(null);
             }}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-              mode === 'signin'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
           >
-            Sign In
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Sign In</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode('signup');
-              setError(null);
-              setSuccessMsg(null);
-            }}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-              mode === 'signup'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            New Student (Sign Up)
-          </button>
-        </div>
+        )}
 
         {/* Feedback Alerts */}
         {error && (
           <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
             <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" />
-            <p>{error}</p>
+            <p className="leading-relaxed">{error}</p>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            <p>{successMsg}</p>
+          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500 mt-0.5" />
+            <p className="leading-relaxed">{successMsg}</p>
           </div>
         )}
 
@@ -205,29 +250,45 @@ export function AuthModal({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          {mode !== 'forgot' && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot');
+                    setError(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             type="submit"
@@ -238,12 +299,68 @@ export function AuthModal({
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                <span>{mode === 'signin' ? 'Sign In to Library' : 'Create Account & Start Learning'}</span>
+                <span>
+                  {mode === 'signin'
+                    ? 'Sign In to Library'
+                    : mode === 'signup'
+                    ? 'Create Account & Start Learning'
+                    : 'Send Password Reset Link'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
+
+        {/* Footer Navigation Switchers */}
+        <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+          {mode === 'signup' ? (
+            <p>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Sign In
+              </button>
+            </p>
+          ) : mode === 'signin' ? (
+            <p>
+              Don&apos;t have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signup');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Create Account
+              </button>
+            </p>
+          ) : (
+            <p>
+              Remember your password?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Sign In
+              </button>
+            </p>
+          )}
+        </div>
 
         {/* Benefits Note */}
         <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-2xl text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2">

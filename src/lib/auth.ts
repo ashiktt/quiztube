@@ -91,6 +91,58 @@ export async function signInStudent(email: string, password: string): Promise<{ 
 }
 
 /**
+ * Request password reset email for student
+ */
+export async function resetStudentPassword(email: string): Promise<{ error: string | null; success: boolean }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      error: 'Supabase is not configured. Please set up environment variables.',
+      success: false,
+    };
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return { error: 'Database connection failed', success: false };
+
+  try {
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
+
+    if (error) {
+      return { error: error.message, success: false };
+    }
+
+    return { error: null, success: true };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to send password reset email', success: false };
+  }
+}
+
+/**
+ * Update student password (when logged in or after password reset link)
+ */
+export async function updateStudentPassword(newPassword: string): Promise<{ error: string | null; success: boolean }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { error: 'Database connection failed', success: false };
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      return { error: error.message, success: false };
+    }
+
+    return { error: null, success: true };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to update password', success: false };
+  }
+}
+
+/**
  * Sign out current student
  */
 export async function signOutStudent(): Promise<{ error: string | null }> {
