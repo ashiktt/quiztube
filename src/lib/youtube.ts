@@ -9,6 +9,7 @@ import { TranscriptSegment } from '@/types';
  * - https://www.youtube.com/v/VIDEO_ID
  * - https://youtube.com/shorts/VIDEO_ID
  * - https://www.youtube.com/live/VIDEO_ID
+ * - URLs with playlists, timestamps, and indexes
  */
 export function extractVideoId(urlOrId: string): string | null {
   if (!urlOrId) return null;
@@ -37,7 +38,7 @@ export function extractVideoId(urlOrId: string): string | null {
     }
   } catch {
     // Regex fallback
-    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|live\/))([\w-]{11})/);
+    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?.*?v=|shorts\/|live\/))([\w-]{11})/);
     if (match && match[1]) {
       return match[1];
     }
@@ -123,35 +124,109 @@ export async function fetchVideoMetadata(videoId: string): Promise<VideoMetadata
 }
 
 /**
- * Fetches transcript segments for a given video ID
+ * Directly scrapes YouTube watch page to extract captions from captionTracks (JSON3/XML)
  */
-export async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
+async function scrapeDirectCaptionTracks(videoId: string): Promise<TranscriptSegment[]> {
   try {
-    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId, {
-      lang: 'en',
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const res = await fetch(watchUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+      },
+      next: { revalidate: 3600 },
     });
 
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Extract captionTracks from ytInitialPlayerResponse
+    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+    if (playerResponseMatch && playerResponseMatch[1]) {
+      const playerResponse = JSON.parse(playerResponseMatch[1]);
+      const captionTracks =
+        playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+      if (Array.isArray(captionTracks) && captionTracks.length > 0) {
+        // Pick first available caption track (or English if present)
+        const selectedTrack =
+          captionTracks.find((t: any) => t.languageCode?.startsWith('en')) || captionTracks[0];
+
+        if (selectedTrack?.baseUrl) {
+          const trackRes = await fetch(`${selectedTrack.baseUrl}&fmt=json3`);
+          if (trackRes.ok) {
+            const trackJson = await trackRes.json();
+            if (Array.isArray(trackJson?.events)) {
+              const segments: TranscriptSegment[] = [];
+              for (const ev of trackJson.events) {
+                if (Array.isArray(ev.segs)) {
+                  const text = ev.segs.map((s: any) => s.utf8 || '').join('').trim();
+                  if (text) {
+                    segments.push({
+                      text: text.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'),
+                      offset: Math.floor((ev.tStartMs || 0) / 1000),
+                      duration: Math.floor((ev.dDurationMs || 0) / 1000),
+                    });
+                  }
+                }
+              }
+              if (segments.length > 0) {
+                return segments;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Direct caption track scraping warning:', err);
+  }
+  return [];
+}
+
+/**
+ * Fetches transcript segments for a given video ID with multi-tier fallback (Any language, Hindi, Hinglish, Auto-captions)
+ */
+export async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
+  // Strategy 1: Fetch without any language lock (fetches native language / auto-generated captions)
+  try {
+    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId);
     if (transcriptItems && transcriptItems.length > 0) {
       return transcriptItems.map(item => ({
         text: item.text.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'),
-        offset: Math.floor(item.offset / 1000), // convert ms to seconds
+        offset: Math.floor(item.offset / 1000),
         duration: Math.floor(item.duration / 1000),
       }));
     }
   } catch (err: any) {
     console.warn(`Primary transcript fetch failed for ${videoId}:`, err?.message || err);
-    // Fallback: try fetching with auto-fallback or any language
+  }
+
+  // Strategy 2: Direct caption tracks scraping from YouTube watch page
+  try {
+    const scrapedSegments = await scrapeDirectCaptionTracks(videoId);
+    if (scrapedSegments && scrapedSegments.length > 0) {
+      return scrapedSegments;
+    }
+  } catch (scrapeErr: any) {
+    console.warn(`Direct caption scraping failed for ${videoId}:`, scrapeErr?.message || scrapeErr);
+  }
+
+  // Strategy 3: Try common language codes explicitly (en, hi, es, fr, de)
+  const langCodes = ['en', 'hi', 'hi-Latn', 'es', 'fr'];
+  for (const lang of langCodes) {
     try {
-      const fallbackItems = await YoutubeTranscript.fetchTranscript(videoId);
-      if (fallbackItems && fallbackItems.length > 0) {
-        return fallbackItems.map(item => ({
+      const items = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+      if (items && items.length > 0) {
+        return items.map(item => ({
           text: item.text.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'),
           offset: Math.floor(item.offset / 1000),
           duration: Math.floor(item.duration / 1000),
         }));
       }
-    } catch (fallbackErr: any) {
-      console.warn(`Fallback transcript fetch failed for ${videoId}:`, fallbackErr?.message || fallbackErr);
+    } catch {
+      // Continue to next code
     }
   }
 
