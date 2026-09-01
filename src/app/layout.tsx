@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'QuizTube AI - Convert YouTube Lectures to Quizzes & Study Sets',
   description: 'AI-powered active recall tool that converts educational YouTube lectures into interactive quizzes, spaced repetition flashcards, and timestamped study notes for students.',
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
   },
