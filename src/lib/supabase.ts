@@ -14,7 +14,14 @@ export function getSupabaseClient(): SupabaseClient | null {
     return null;
   }
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'quiztube_supabase_auth_token',
+      },
+    });
   }
   return supabaseInstance;
 }

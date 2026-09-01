@@ -21,6 +21,12 @@ export function setStoredApiKey(key: string): void {
   }
 }
 
+export function clearLocalStorageStudySets(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEYS.STUDY_SETS);
+  localStorage.removeItem(STORAGE_KEYS.CURRENT_SET_ID);
+}
+
 export function getSavedStudySets(): LectureStudySet[] {
   if (typeof window === 'undefined') return [SAMPLE_STUDY_SET];
   try {

@@ -1,7 +1,59 @@
--- Supabase Schema & Auth for QuizTube AI
--- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/hagqafhhjlvqfugsoqdo/sql)
+-- =========================================================
+-- QuizTube AI - Comprehensive Supabase Database & Auth Schema
+-- Run this in your Supabase SQL Editor:
+-- https://supabase.com/dashboard/project/hagqafhhjlvqfugsoqdo/sql
+-- =========================================================
 
--- 1. Create the study_sets table (with user_id support)
+-- 1. Create Student Profiles Table (Stores safe student metadata)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for Profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert/update their own profile" ON public.profiles;
+
+CREATE POLICY "Public profiles are viewable by everyone" 
+ON public.profiles FOR SELECT 
+USING (true);
+
+CREATE POLICY "Users can insert/update their own profile" 
+ON public.profiles FOR ALL 
+USING (auth.uid() = id OR auth.uid() IS NULL) 
+WITH CHECK (auth.uid() = id OR auth.uid() IS NULL);
+
+-- 2. Trigger to automatically create a student profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, created_at)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    now()
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET email = EXCLUDED.email,
+      full_name = EXCLUDED.full_name,
+      updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 3. Create Study Sets Table (Stores student quizzes, cheatsheets & scores)
 CREATE TABLE IF NOT EXISTS public.study_sets (
   id TEXT PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -22,28 +74,27 @@ CREATE TABLE IF NOT EXISTS public.study_sets (
   attempts JSONB DEFAULT '[]'::jsonb
 );
 
--- If you previously created the table, run this column migration:
+-- Column safety check if table already existed
 ALTER TABLE public.study_sets ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
--- 2. Enable Row Level Security (RLS)
+-- Enable RLS for Study Sets
 ALTER TABLE public.study_sets ENABLE ROW LEVEL SECURITY;
 
--- 3. Create permissive policy for student study sets access
 DROP POLICY IF EXISTS "Public Read Access" ON public.study_sets;
 DROP POLICY IF EXISTS "Public Insert/Update Access" ON public.study_sets;
+DROP POLICY IF EXISTS "Public Delete Access" ON public.study_sets;
 
 CREATE POLICY "Public Read Access" 
-ON public.study_sets 
-FOR SELECT 
+ON public.study_sets FOR SELECT 
 USING (true);
 
 CREATE POLICY "Public Insert/Update Access" 
-ON public.study_sets 
-FOR ALL 
+ON public.study_sets FOR ALL 
 USING (true) 
 WITH CHECK (true);
 
--- 4. Create indexes for high-speed queries
+-- 4. High-Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_study_sets_created_at ON public.study_sets (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_study_sets_video_id ON public.study_sets (video_id);
 CREATE INDEX IF NOT EXISTS idx_study_sets_user_id ON public.study_sets (user_id);
+CREATE INDEX IF NOT EXISTS idx_study_sets_video_id ON public.study_sets (video_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email);

@@ -42,6 +42,7 @@ import {
   saveQuizAttempt,
   getStoredApiKey,
   fetchAndMergeCloudStudySets,
+  clearLocalStorageStudySets,
 } from '@/lib/storage';
 import { getCurrentStudent, signOutStudent, onAuthStateChange } from '@/lib/auth';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
@@ -85,19 +86,26 @@ export default function Home() {
     // Check current student auth
     getCurrentStudent().then(student => {
       setCurrentUser(student);
-      fetchAndMergeCloudStudySets(student?.id).then(({ sets, isCloudConnected }) => {
-        setSavedSets(sets);
-        setIsCloudConnected(isCloudConnected);
-      });
+      if (student) {
+        fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
+          setSavedSets(sets);
+          setIsCloudConnected(isCloudConnected);
+        });
+      }
     });
 
     // Listen for auth changes
     const unsubscribe = onAuthStateChange(student => {
       setCurrentUser(student);
-      fetchAndMergeCloudStudySets(student?.id).then(({ sets, isCloudConnected }) => {
-        setSavedSets(sets);
-        setIsCloudConnected(isCloudConnected);
-      });
+      if (student) {
+        fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
+          setSavedSets(sets);
+          setIsCloudConnected(isCloudConnected);
+        });
+      } else {
+        clearLocalStorageStudySets();
+        setSavedSets([SAMPLE_STUDY_SET]);
+      }
     });
 
     return () => {
@@ -108,8 +116,8 @@ export default function Home() {
   const handleSignOut = async () => {
     await signOutStudent();
     setCurrentUser(null);
-    const sets = getSavedStudySets();
-    setSavedSets(sets);
+    clearLocalStorageStudySets();
+    setSavedSets([SAMPLE_STUDY_SET]);
   };
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
