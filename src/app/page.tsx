@@ -24,7 +24,7 @@ import {
   ExternalLink,
   Heart,
 } from 'lucide-react';
-import { LectureStudySet, QuizGenerationRequest, UserQuizAttempt } from '@/types';
+import { LectureStudySet, QuizGenerationRequest, UserQuizAttempt, StudentUser, UniversitySolvedExam, TutorConversation, TutorContext, QuizQuestion } from '@/types';
 import { Navbar } from '@/components/Navbar';
 import { LectureInput } from '@/components/LectureInput';
 import { VideoPlayer } from '@/components/VideoPlayer';
@@ -37,6 +37,7 @@ import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { AuthModal } from '@/components/AuthModal';
 import { UniversityQuestionSolver } from '@/components/UniversityQuestionSolver';
+import { AITutorView } from '@/components/AITutorView';
 import {
   getSavedStudySets,
   saveStudySet,
@@ -49,18 +50,24 @@ import {
   saveSolvedExam,
   deleteSolvedExam,
   fetchAndMergeCloudSolvedExams,
+  getSavedTutorConversations,
+  saveTutorConversation,
+  deleteTutorConversation,
+  fetchAndMergeCloudTutorConversations,
 } from '@/lib/storage';
 import { getCurrentStudent, signOutStudent, onAuthStateChange } from '@/lib/auth';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
-import { StudentUser, UniversitySolvedExam } from '@/types';
 
 export default function Home() {
   const [studySet, setStudySet] = useState<LectureStudySet | null>(null);
   const [savedSets, setSavedSets] = useState<LectureStudySet[]>([]);
   const [savedExams, setSavedExams] = useState<UniversitySolvedExam[]>([]);
   const [activeSolvedExam, setActiveSolvedExam] = useState<UniversitySolvedExam | null>(null);
+  const [savedTutorConversations, setSavedTutorConversations] = useState<TutorConversation[]>([]);
+  const [activeTutorConversation, setActiveTutorConversation] = useState<TutorConversation | null>(null);
+  const [tutorContext, setTutorContext] = useState<TutorContext | null>(null);
   const [activeTab, setActiveTab] = useState<'cheatsheet' | 'quiz' | 'summary'>('cheatsheet');
-  const [appMode, setAppMode] = useState<'youtube' | 'examSolver'>('youtube');
+  const [appMode, setAppMode] = useState<'youtube' | 'examSolver' | 'tutor'>('youtube');
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -80,6 +87,8 @@ export default function Home() {
     setSavedSets(initialSets);
     const initialExams = getSavedSolvedExams();
     setSavedExams(initialExams);
+    const initialTutorConvs = getSavedTutorConversations();
+    setSavedTutorConversations(initialTutorConvs);
     const localKey = getStoredApiKey();
 
     // Check server environment variable status (e.g. Vercel)
@@ -105,6 +114,9 @@ export default function Home() {
         fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
           setSavedExams(exams);
         });
+        fetchAndMergeCloudTutorConversations(student.id).then(({ conversations }) => {
+          setSavedTutorConversations(conversations);
+        });
       }
     });
 
@@ -119,11 +131,16 @@ export default function Home() {
         fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
           setSavedExams(exams);
         });
+        fetchAndMergeCloudTutorConversations(student.id).then(({ conversations }) => {
+          setSavedTutorConversations(conversations);
+        });
       } else {
         clearLocalStorageStudySets();
         setSavedSets([SAMPLE_STUDY_SET]);
         setSavedExams([]);
+        setSavedTutorConversations([]);
         setActiveSolvedExam(null);
+        setActiveTutorConversation(null);
       }
     });
 
@@ -138,7 +155,37 @@ export default function Home() {
     clearLocalStorageStudySets();
     setSavedSets([SAMPLE_STUDY_SET]);
     setSavedExams([]);
+    setSavedTutorConversations([]);
     setActiveSolvedExam(null);
+    setActiveTutorConversation(null);
+  };
+
+  const handleAskTutorFromQuiz = (question: QuizQuestion, selectedOptionIndex?: number) => {
+    const context: TutorContext = {
+      type: 'mistake',
+      lectureTitle: studySet?.videoTitle || 'Lecture Quiz',
+      videoId: studySet?.videoId,
+      videoUrl: studySet?.videoUrl,
+      timestampSeconds: question.timestampSeconds,
+      timestampFormatted: question.timestampFormatted,
+      questionText: question.question,
+      options: question.options,
+      correctAnswer: question.options[question.correctIndex],
+      studentSelectedAnswer: selectedOptionIndex !== undefined ? question.options[selectedOptionIndex] : undefined,
+      explanation: question.explanation,
+      topicTag: question.topicTag || 'Quiz Question',
+    };
+    setTutorContext(context);
+    setActiveTutorConversation(null);
+    setAppMode('tutor');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAskTutorFromCheatsheet = (context: TutorContext) => {
+    setTutorContext(context);
+    setActiveTutorConversation(null);
+    setAppMode('tutor');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleGenerateQuiz = async (request: QuizGenerationRequest) => {
@@ -218,12 +265,14 @@ export default function Home() {
         onNewQuiz={() => {
           setStudySet(null);
           setActiveSolvedExam(null);
+          setActiveTutorConversation(null);
+          setTutorContext(null);
           setAppMode('youtube');
         }}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         onSignOut={handleSignOut}
         currentUser={currentUser}
-        savedCount={savedSets.length + savedExams.length}
+        savedCount={savedSets.length + savedExams.length + savedTutorConversations.length}
         hasApiKey={hasApiKey}
         appMode={appMode}
         onSwitchMode={mode => {
@@ -235,7 +284,32 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8">
-        {appMode === 'examSolver' ? (
+        {appMode === 'tutor' ? (
+          /* AI Tutor Interactive Chat Mode */
+          <AITutorView
+            initialContext={tutorContext}
+            onClearContext={() => setTutorContext(null)}
+            onBackToStudy={() => {
+              if (studySet) {
+                setAppMode('youtube');
+              } else if (activeSolvedExam) {
+                setAppMode('examSolver');
+              } else {
+                setAppMode('youtube');
+              }
+            }}
+            userId={currentUser?.id}
+            hasServerKey={hasServerKey}
+            onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
+            activeConversation={activeTutorConversation}
+            onConversationUpdated={() => setSavedTutorConversations(getSavedTutorConversations())}
+            onPracticeTopic={topic => {
+              setAppMode('youtube');
+              setStudySet(null);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        ) : appMode === 'examSolver' ? (
           /* University Question Solver Mode */
           <UniversityQuestionSolver
             onBackToYouTube={() => {
@@ -251,36 +325,74 @@ export default function Home() {
           />
         ) : !studySet ? (
           /* Landing / Input Screen */
-          <div className="space-y-12">
-            {/* Solver Banner Switcher Card */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-500/30">
-              <div className="flex items-center gap-3.5 text-left">
-                <div className="p-3 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl text-white shadow-md">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-extrabold text-sm sm:text-base">
-                      Need University Exam Answers with Marks (2, 5, 10, 15 M)?
-                    </h4>
-                    <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
-                      New
-                    </span>
+          <div className="space-y-8">
+            {/* Top Feature Switcher Banners Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. University Solver Banner Card */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-indigo-500/30">
+                <div className="flex items-start gap-3 text-left">
+                  <div className="p-2.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl text-white shadow-md shrink-0">
+                    <GraduationCap className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-indigo-200">
-                    Switch to University Question Solver to generate structured model answers with Mermaid diagrams and export as PDF booklets.
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-xs sm:text-sm">
+                        University Exam Solver (2, 5, 10, 15 M)
+                      </h4>
+                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
+                        New
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-indigo-200 mt-1 leading-relaxed">
+                      Generate structured model answers with Mermaid diagrams and export as PDF booklets.
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAppMode('examSolver')}
+                  className="w-full py-2 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <span>Launch Question Solver</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setAppMode('examSolver')}
-                className="px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-1.5 active:scale-95"
-              >
-                <span>Launch Question Solver</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              {/* 2. AI Tutor Banner Card */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-purple-900 via-pink-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-purple-500/30">
+                <div className="flex items-start gap-3 text-left">
+                  <div className="p-2.5 bg-gradient-to-tr from-pink-500 to-purple-500 rounded-2xl text-white shadow-md shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-xs sm:text-sm">
+                        QuizTube AI Academic Tutor
+                      </h4>
+                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
+                        24/7 AI
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-pink-200 mt-1 leading-relaxed">
+                      Socratic learning mode, mistake diagnosis, step-by-step logic derivations, and voice input.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTutorContext(null);
+                    setActiveTutorConversation(null);
+                    setAppMode('tutor');
+                  }}
+                  className="w-full py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <span>Chat with AI Tutor</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             <LectureInput
@@ -468,6 +580,7 @@ export default function Home() {
                     studySet={studySet}
                     onSeekVideo={handleSeekVideo}
                     onOpenExport={() => setExportModalOpen(true)}
+                    onAskTutor={handleAskTutorFromCheatsheet}
                   />
                 )}
 
@@ -478,6 +591,7 @@ export default function Home() {
                     onQuizComplete={handleQuizComplete}
                     onSwitchToCheatsheet={() => setActiveTab('cheatsheet')}
                     onOpenExport={() => setExportModalOpen(true)}
+                    onAskTutor={handleAskTutorFromQuiz}
                   />
                 )}
 
@@ -531,6 +645,12 @@ export default function Home() {
             setSavedSets(sets);
             setIsCloudConnected(isCloudConnected);
           });
+          fetchAndMergeCloudSolvedExams(user.id).then(({ exams }) => {
+            setSavedExams(exams);
+          });
+          fetchAndMergeCloudTutorConversations(user.id).then(({ conversations }) => {
+            setSavedTutorConversations(conversations);
+          });
         }}
       />
 
@@ -539,6 +659,7 @@ export default function Home() {
         onClose={() => setHistoryDrawerOpen(false)}
         savedSets={savedSets}
         savedExams={savedExams}
+        savedTutorConversations={savedTutorConversations}
         currentSetId={studySet?.id}
         isCloudConnected={isCloudConnected}
         currentUser={currentUser}
@@ -546,16 +667,19 @@ export default function Home() {
         onRefreshSets={() => {
           setSavedSets(getSavedStudySets());
           setSavedExams(getSavedSolvedExams());
+          setSavedTutorConversations(getSavedTutorConversations());
         }}
         onSelectSet={set => {
           setStudySet(set);
           setActiveSolvedExam(null);
+          setActiveTutorConversation(null);
           setAppMode('youtube');
           setActiveTab('cheatsheet');
         }}
         onDeleteSet={handleDeleteSavedSet}
         onSelectExam={exam => {
           setActiveSolvedExam(exam);
+          setActiveTutorConversation(null);
           setAppMode('examSolver');
         }}
         onDeleteExam={id => {
@@ -563,6 +687,18 @@ export default function Home() {
           setSavedExams(getSavedSolvedExams());
           if (activeSolvedExam?.id === id) {
             setActiveSolvedExam(null);
+          }
+        }}
+        onSelectTutorConversation={conv => {
+          setActiveTutorConversation(conv);
+          setTutorContext(conv.context || null);
+          setAppMode('tutor');
+        }}
+        onDeleteTutorConversation={id => {
+          deleteTutorConversation(id);
+          setSavedTutorConversations(getSavedTutorConversations());
+          if (activeTutorConversation?.id === id) {
+            setActiveTutorConversation(null);
           }
         }}
       />

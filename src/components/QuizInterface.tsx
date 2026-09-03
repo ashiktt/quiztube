@@ -29,6 +29,7 @@ interface QuizInterfaceProps {
   onQuizComplete?: (attempt: UserQuizAttempt) => void;
   onSwitchToCheatsheet?: () => void;
   onOpenExport?: () => void;
+  onAskTutor?: (question: QuizQuestion, selectedOptionIndex?: number) => void;
 }
 
 export function QuizInterface({
@@ -37,6 +38,7 @@ export function QuizInterface({
   onQuizComplete,
   onSwitchToCheatsheet,
   onOpenExport,
+  onAskTutor,
 }: QuizInterfaceProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isExamMode, setIsExamMode] = useState(false);
@@ -286,6 +288,23 @@ export function QuizInterface({
               </button>
             )}
 
+            {correctCount < questions.length && onAskTutor && (
+              <button
+                onClick={() => {
+                  const firstMissed = questions.find(
+                    q => selectedAnswers[q.id] !== undefined && selectedAnswers[q.id] !== q.correctIndex
+                  );
+                  if (firstMissed) {
+                    onAskTutor(firstMissed, selectedAnswers[firstMissed.id]);
+                  }
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 font-semibold text-sm rounded-xl shadow-md shadow-purple-500/20 transition active:scale-95"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Explain Mistakes with AI Tutor</span>
+              </button>
+            )}
+
             {onSwitchToCheatsheet && (
               <button
                 onClick={onSwitchToCheatsheet}
@@ -509,6 +528,23 @@ export function QuizInterface({
                 <strong className="font-semibold">Explanation: </strong>
                 {currentQuestion.explanation}
               </p>
+
+              {onAskTutor && (
+                <div className="pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onAskTutor(currentQuestion, currentAnswer)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950 shadow-xs transition active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span>
+                      {isCurrentCorrect
+                        ? 'Ask AI Tutor to Go Deeper'
+                        : 'Explain My Mistake with AI Tutor'}
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

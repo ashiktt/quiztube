@@ -25,8 +25,8 @@ interface NavbarProps {
   currentUser: StudentUser | null;
   savedCount: number;
   hasApiKey: boolean;
-  appMode?: 'youtube' | 'examSolver';
-  onSwitchMode?: (mode: 'youtube' | 'examSolver') => void;
+  appMode?: 'youtube' | 'examSolver' | 'tutor';
+  onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor') => void;
 }
 
 export function Navbar({
@@ -102,6 +102,22 @@ export function Navbar({
                   New
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => onSwitchMode('tutor')}
+                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold transition relative ${
+                  appMode === 'tutor'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm shadow-purple-500/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>AI Tutor</span>
+                <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-indigo-500 text-white rounded-full">
+                  AI
+                </span>
+              </button>
             </div>
           )}
 
@@ -170,7 +186,7 @@ export function Navbar({
 
       {/* Native Android Mobile Bottom Navigation Bar */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-t border-slate-200/80 dark:border-slate-800/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <div className="grid grid-cols-4 h-16 max-w-md mx-auto items-center px-1">
+        <div className="grid grid-cols-5 h-16 max-w-md mx-auto items-center px-1">
           {/* 1. YouTube Quiz Tab */}
           <button
             type="button"
@@ -187,7 +203,7 @@ export function Navbar({
             <div className={`p-1 rounded-lg ${appMode === 'youtube' ? 'bg-indigo-50 dark:bg-indigo-950/80' : ''}`}>
               <YoutubeIcon className="w-5 h-5" />
             </div>
-            <span className="text-[10px] leading-none">YouTube</span>
+            <span className="text-[9px] leading-none">YouTube</span>
           </button>
 
           {/* 2. University Solver Tab */}
@@ -205,10 +221,28 @@ export function Navbar({
             <div className={`p-1 rounded-lg ${appMode === 'examSolver' ? 'bg-purple-50 dark:bg-purple-950/80' : ''}`}>
               <FileQuestion className="w-5 h-5" />
             </div>
-            <span className="text-[10px] leading-none">Solver</span>
+            <span className="text-[9px] leading-none">Solver</span>
           </button>
 
-          {/* 3. Study Library Tab */}
+          {/* 3. AI Tutor Tab */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onSwitchMode) onSwitchMode('tutor');
+            }}
+            className={`flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl relative ${
+              appMode === 'tutor'
+                ? 'text-pink-600 dark:text-pink-400 font-bold scale-105'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${appMode === 'tutor' ? 'bg-pink-50 dark:bg-pink-950/80' : ''}`}>
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <span className="text-[9px] leading-none">AI Tutor</span>
+          </button>
+
+          {/* 4. Study Library Tab */}
           <button
             type="button"
             onClick={onOpenHistory}
@@ -222,10 +256,10 @@ export function Navbar({
                 </span>
               )}
             </div>
-            <span className="text-[10px] leading-none">Library</span>
+            <span className="text-[9px] leading-none">Library</span>
           </button>
 
-          {/* 4. Student Auth / Settings Tab */}
+          {/* 5. Student Auth / Settings Tab */}
           <button
             type="button"
             onClick={() => {
@@ -246,7 +280,7 @@ export function Navbar({
                 <User className="w-5 h-5" />
               )}
             </div>
-            <span className="text-[10px] leading-none">
+            <span className="text-[9px] leading-none">
               {currentUser ? 'Account' : 'Sign In'}
             </span>
           </button>

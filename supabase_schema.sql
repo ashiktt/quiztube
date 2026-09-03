@@ -103,9 +103,33 @@ DROP POLICY IF EXISTS "Public Solved Exams Write" ON public.solved_exams;
 CREATE POLICY "Public Solved Exams Read" ON public.solved_exams FOR SELECT USING (true);
 CREATE POLICY "Public Solved Exams Write" ON public.solved_exams FOR ALL USING (true) WITH CHECK (true);
 
--- 5. High-Performance Indexes
+-- 5. Create Tutor Conversations Table (Stores AI Tutor chats and context)
+CREATE TABLE IF NOT EXISTS public.tutor_conversations (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  title TEXT NOT NULL,
+  explanation_mode TEXT DEFAULT 'stepByStep',
+  learning_mode TEXT DEFAULT 'guided',
+  context JSONB,
+  messages JSONB DEFAULT '[]'::jsonb
+);
+
+ALTER TABLE public.tutor_conversations ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.tutor_conversations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Tutor Conversations Read" ON public.tutor_conversations;
+DROP POLICY IF EXISTS "Public Tutor Conversations Write" ON public.tutor_conversations;
+CREATE POLICY "Public Tutor Conversations Read" ON public.tutor_conversations FOR SELECT USING (true);
+CREATE POLICY "Public Tutor Conversations Write" ON public.tutor_conversations FOR ALL USING (true) WITH CHECK (true);
+
+-- 6. High-Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_study_sets_created_at ON public.study_sets (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_study_sets_user_id ON public.study_sets (user_id);
 CREATE INDEX IF NOT EXISTS idx_solved_exams_created_at ON public.solved_exams (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_solved_exams_user_id ON public.solved_exams (user_id);
+CREATE INDEX IF NOT EXISTS idx_tutor_conversations_created_at ON public.tutor_conversations (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tutor_conversations_user_id ON public.tutor_conversations (user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email);
+

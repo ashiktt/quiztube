@@ -19,7 +19,7 @@ import {
   BookOpen,
   Image as ImageIcon,
 } from 'lucide-react';
-import { LectureStudySet } from '@/types';
+import { LectureStudySet, TutorContext } from '@/types';
 import { MermaidRenderer } from './MermaidRenderer';
 import { formatSecondsToTimestamp } from '@/lib/youtube';
 
@@ -27,12 +27,14 @@ interface CheatsheetViewProps {
   studySet: LectureStudySet;
   onSeekVideo: (seconds: number) => void;
   onOpenExport?: () => void;
+  onAskTutor?: (context: TutorContext) => void;
 }
 
 export function CheatsheetView({
   studySet,
   onSeekVideo,
   onOpenExport,
+  onAskTutor,
 }: CheatsheetViewProps) {
   const [copiedFormulaIdx, setCopiedFormulaIdx] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
@@ -59,6 +61,19 @@ export function CheatsheetView({
     window.print();
   };
 
+  const handleAskTutorAboutCheatsheet = () => {
+    if (!onAskTutor) return;
+    const context: TutorContext = {
+      type: 'lecture',
+      lectureTitle: studySet.videoTitle,
+      videoId: studySet.videoId,
+      videoUrl: studySet.videoUrl,
+      notesOrCheatsheetSnippet: studySet.overallSummary || 'Lecture cheatsheet and visual notes',
+      topicTag: studySet.difficulty,
+    };
+    onAskTutor(context);
+  };
+
   // High-res video banner image with fallback
   const heroImage =
     cheatsheet?.heroImageUrl ||
@@ -83,6 +98,17 @@ export function CheatsheetView({
         </div>
 
         <div className="flex items-center gap-2">
+          {onAskTutor && (
+            <button
+              type="button"
+              onClick={handleAskTutorAboutCheatsheet}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 rounded-xl transition shadow-xs"
+            >
+              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>Ask AI Tutor</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handlePrint}

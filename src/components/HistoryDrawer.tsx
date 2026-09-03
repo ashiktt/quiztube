@@ -20,7 +20,7 @@ import {
   FileText,
   FileQuestion,
 } from 'lucide-react';
-import { LectureStudySet, StudentUser, UniversitySolvedExam } from '@/types';
+import { LectureStudySet, StudentUser, UniversitySolvedExam, TutorConversation } from '@/types';
 import { exportStudyLibraryBackup, importStudyLibraryBackup } from '@/lib/storage';
 import { YoutubeIcon } from '@/components/Icons';
 
@@ -29,6 +29,7 @@ interface HistoryDrawerProps {
   onClose: () => void;
   savedSets: LectureStudySet[];
   savedExams?: UniversitySolvedExam[];
+  savedTutorConversations?: TutorConversation[];
   currentSetId?: string;
   isCloudConnected?: boolean;
   currentUser?: StudentUser | null;
@@ -37,6 +38,8 @@ interface HistoryDrawerProps {
   onDeleteSet: (id: string) => void;
   onSelectExam?: (exam: UniversitySolvedExam) => void;
   onDeleteExam?: (id: string) => void;
+  onSelectTutorConversation?: (conv: TutorConversation) => void;
+  onDeleteTutorConversation?: (id: string) => void;
   onRefreshSets?: () => void;
 }
 
@@ -45,6 +48,7 @@ export function HistoryDrawer({
   onClose,
   savedSets,
   savedExams = [],
+  savedTutorConversations = [],
   currentSetId,
   isCloudConnected = false,
   currentUser = null,
@@ -53,9 +57,11 @@ export function HistoryDrawer({
   onDeleteSet,
   onSelectExam,
   onDeleteExam,
+  onSelectTutorConversation,
+  onDeleteTutorConversation,
   onRefreshSets,
 }: HistoryDrawerProps) {
-  const [tab, setTab] = useState<'lectures' | 'exams'>('lectures');
+  const [tab, setTab] = useState<'lectures' | 'exams' | 'tutor'>('lectures');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -123,12 +129,12 @@ export function HistoryDrawer({
             </button>
           </div>
 
-          {/* Tab Selector: Lectures vs Exams */}
-          <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-950/40">
+          {/* Tab Selector: Lectures vs Exams vs Tutor */}
+          <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 bg-slate-50/50 dark:bg-slate-950/40">
             <button
               type="button"
               onClick={() => setTab('lectures')}
-              className={`flex-1 py-2 px-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 ${
                 tab === 'lectures'
                   ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -141,7 +147,7 @@ export function HistoryDrawer({
             <button
               type="button"
               onClick={() => setTab('exams')}
-              className={`flex-1 py-2 px-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 ${
                 tab === 'exams'
                   ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -149,6 +155,19 @@ export function HistoryDrawer({
             >
               <FileQuestion className="w-3.5 h-3.5 shrink-0" />
               <span>Exams ({savedExams.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('tutor')}
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 ${
+                tab === 'tutor'
+                  ? 'bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Tutor ({savedTutorConversations.length})</span>
             </button>
           </div>
 
@@ -284,7 +303,7 @@ export function HistoryDrawer({
                   );
                 })
               )
-            ) : (
+            ) : tab === 'exams' ? (
               /* Solved Exam Papers List */
               savedExams.length === 0 ? (
                 <div className="text-center py-16 space-y-3 text-slate-400">
@@ -341,6 +360,74 @@ export function HistoryDrawer({
                         className="flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                       >
                         <span>Open Model Answers & PDF</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )
+            ) : (
+              /* AI Tutor Chats List */
+              savedTutorConversations.length === 0 ? (
+                <div className="text-center py-16 space-y-3 text-slate-400">
+                  <Sparkles className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700" />
+                  <p className="text-sm font-medium">No saved AI Tutor sessions yet.</p>
+                  <p className="text-xs text-slate-500">
+                    Ask your first question in AI Tutor and it will be saved here automatically!
+                  </p>
+                </div>
+              ) : (
+                savedTutorConversations.map(conv => (
+                  <div
+                    key={conv.id}
+                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition group space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                          <span className="px-2 py-0.5 font-bold uppercase tracking-wider bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300 rounded-md">
+                            {conv.explanationMode || 'Step-by-Step'}
+                          </span>
+                          <span className="px-2 py-0.5 font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded-md">
+                            {conv.messages.length} msgs
+                          </span>
+                          {conv.learningMode === 'socratic' && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-md">
+                              Socratic
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2">
+                          {conv.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          {new Date(conv.updatedAt || conv.createdAt).toLocaleDateString()} • {new Date(conv.updatedAt || conv.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTutorConversation && onDeleteTutorConversation(conv.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition shrink-0"
+                        title="Delete tutoring session"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onSelectTutorConversation) {
+                            onSelectTutorConversation(conv);
+                            onClose();
+                          }
+                        }}
+                        className="flex items-center gap-1 text-xs font-semibold text-pink-600 dark:text-pink-400 hover:underline"
+                      >
+                        <span>Resume Tutoring Session</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     </div>

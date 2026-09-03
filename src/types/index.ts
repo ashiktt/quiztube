@@ -162,3 +162,83 @@ export interface UniversityExamRequest {
   fileName?: string;
 }
 
+// ==========================================
+// QUIZTUBE AI TUTOR TYPES
+// ==========================================
+
+export type TutorExplanationMode =
+  | 'simple'       // Beginner friendly, simple analogies
+  | 'detailed'     // In-depth technical & conceptual breakdown
+  | 'step_by_step' // Methodical step 1, 2, 3 solution
+  | 'example'      // Real-world practical examples & use cases
+  | 'exam';        // High-yield exam criteria, memory hooks, pitfalls
+
+export type TutorLearningMode =
+  | 'direct'       // Gives comprehensive explanations & answers directly
+  | 'socratic';    // Guides the student with scaffolding questions first
+
+export interface TutorContext {
+  type?: 'lecture' | 'notes' | 'quiz_question' | 'mistake' | 'exam_question' | 'general';
+  lectureTitle?: string;
+  videoUrl?: string;
+  videoId?: string;
+  timestampFormatted?: string;
+  timestampSeconds?: number;
+  relevantTranscriptSnippet?: string;
+  notesOrCheatsheetSnippet?: string;
+  questionText?: string;
+  options?: string[];
+  studentSelectedAnswer?: string;
+  correctAnswer?: string;
+  explanation?: string;
+  subject?: string;
+  academicLevel?: string;
+  topicTag?: string;
+}
+
+export interface TutorSuggestedAction {
+  label: string;
+  action: 'practice' | 'flashcards' | 'save' | 'simplify' | 'example';
+  topic?: string;
+  payload?: any;
+}
+
+export interface TutorMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: string;
+  suggestedActions?: TutorSuggestedAction[];
+  followUpQuestions?: string[];
+  isSocratic?: boolean;
+  explanationMode?: TutorExplanationMode;
+  sourceContextUsed?: boolean;
+  imagePreviewUrl?: string;
+}
+
+export interface TutorConversation {
+  id: string;
+  userId?: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: TutorMessage[];
+  context?: TutorContext;
+  explanationMode: TutorExplanationMode;
+  learningMode: TutorLearningMode;
+}
+
+export interface TutorChatRequest {
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  context?: TutorContext;
+  explanationMode?: TutorExplanationMode;
+  learningMode?: TutorLearningMode;
+  imageFileBase64?: string;
+  imageMimeType?: string;
+  imageFileName?: string;
+  apiKey?: string;
+  preferredModel?: string;
+  userId?: string;
+}
+
+

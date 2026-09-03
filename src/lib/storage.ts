@@ -1,4 +1,4 @@
-import { LectureStudySet, UserQuizAttempt, UniversitySolvedExam } from '@/types';
+import { LectureStudySet, UserQuizAttempt, UniversitySolvedExam, TutorConversation } from '@/types';
 import { SAMPLE_STUDY_SET } from './sampleData';
 
 const STORAGE_KEYS = {
@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   STUDY_SETS: 'lecture_quiz_saved_study_sets',
   CURRENT_SET_ID: 'lecture_quiz_current_study_set_id',
   SOLVED_EXAMS: 'quiztube_saved_solved_exams',
+  TUTOR_CONVERSATIONS: 'quiztube_saved_tutor_conversations',
 };
 
 export function getStoredApiKey(): string {
@@ -27,6 +28,7 @@ export function clearLocalStorageStudySets(): void {
   localStorage.removeItem(STORAGE_KEYS.STUDY_SETS);
   localStorage.removeItem(STORAGE_KEYS.CURRENT_SET_ID);
   localStorage.removeItem(STORAGE_KEYS.SOLVED_EXAMS);
+  localStorage.removeItem(STORAGE_KEYS.TUTOR_CONVERSATIONS);
 }
 
 export function getSavedStudySets(): LectureStudySet[] {
@@ -345,4 +347,121 @@ export async function fetchAndMergeCloudSolvedExams(userId?: string): Promise<{ 
     return { exams: getSavedSolvedExams(), isCloudConnected: false };
   }
 }
+
+// ==========================================
+// QUIZTUBE AI TUTOR CONVERSATIONS STORAGE & SYNC
+// ==========================================
+
+export function getSavedTutorConversations(): TutorConversation[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.TUTOR_CONVERSATIONS);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as TutorConversation[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('Error reading tutor conversations from localStorage:', err);
+    return [];
+  }
+}
+
+export function saveTutorConversation(conv: TutorConversation): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getSavedTutorConversations();
+    const existingIndex = current.findIndex(c => c.id === conv.id);
+    let updated: TutorConversation[];
+
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = conv;
+    } else {
+      updated = [conv, ...current];
+    }
+
+    localStorage.setItem(STORAGE_KEYS.TUTOR_CONVERSATIONS, JSON.stringify(updated));
+
+    // Asynchronously sync to Supabase Cloud
+    syncTutorConversationToCloud(conv);
+  } catch (err) {
+    console.error('Error saving tutor conversation to localStorage:', err);
+  }
+}
+
+export function deleteTutorConversation(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getSavedTutorConversations();
+    const updated = current.filter(c => c.id !== id);
+    localStorage.setItem(STORAGE_KEYS.TUTOR_CONVERSATIONS, JSON.stringify(updated));
+
+    // Asynchronously delete from Supabase Cloud
+    deleteTutorConversationFromCloud(id);
+  } catch (err) {
+    console.error('Error deleting tutor conversation:', err);
+  }
+}
+
+export async function syncTutorConversationToCloud(conv: TutorConversation): Promise<boolean> {
+  try {
+    const res = await fetch('/api/tutor/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(conv),
+    });
+    const data = await res.json();
+    return Boolean(data.saved);
+  } catch (err) {
+    console.warn('Could not sync tutor conversation to cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteTutorConversationFromCloud(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/tutor/conversations?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    return Boolean(data.deleted);
+  } catch (err) {
+    console.warn('Cloud delete tutor conversation error:', err);
+    return false;
+  }
+}
+
+export async function fetchAndMergeCloudTutorConversations(userId?: string): Promise<{ conversations: TutorConversation[]; isCloudConnected: boolean }> {
+  try {
+    const endpoint = userId ? `/api/tutor/conversations?userId=${encodeURIComponent(userId)}` : '/api/tutor/conversations';
+    const res = await fetch(endpoint);
+    const data = await res.json();
+
+    if (data.connected && Array.isArray(data.conversations) && data.conversations.length > 0) {
+      const local = getSavedTutorConversations();
+      const map = new Map<string, TutorConversation>();
+
+      for (const c of data.conversations) {
+        map.set(c.id, c);
+      }
+      for (const c of local) {
+        if (!map.has(c.id)) {
+          map.set(c.id, c);
+          syncTutorConversationToCloud(c);
+        }
+      }
+
+      const merged = Array.from(map.values());
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.TUTOR_CONVERSATIONS, JSON.stringify(merged));
+      }
+      return { conversations: merged, isCloudConnected: true };
+    }
+
+    return { conversations: getSavedTutorConversations(), isCloudConnected: Boolean(data.connected) };
+  } catch (err) {
+    console.warn('Could not fetch cloud tutor conversations:', err);
+    return { conversations: getSavedTutorConversations(), isCloudConnected: false };
+  }
+}
+
 
