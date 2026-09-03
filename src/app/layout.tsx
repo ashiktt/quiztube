@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -12,12 +12,33 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
+  ],
+};
+
 export const metadata: Metadata = {
   title: 'QuizTube AI - Convert YouTube Lectures to Quizzes & Study Sets',
   description: 'AI-powered active recall tool that converts educational YouTube lectures into interactive quizzes, spaced repetition flashcards, and timestamped study notes for students.',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'QuizTube AI',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',
   },
 };
 

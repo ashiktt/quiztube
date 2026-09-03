@@ -308,23 +308,26 @@ export function QuizInterface({
           </div>
         </div>
       ) : (
-        /* Active Question Card */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-          {/* Question Nav Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+        /* Main Question Card */
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl space-y-5 sm:space-y-6">
+          {/* Question Navigator Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
             {displayQuestions.map((q, idx) => {
-              const ans = selectedAnswers[q.id];
-              const isAns = ans !== undefined;
-              const isCorr = isAns && ans === q.correctIndex;
+              const isAnswered = selectedAnswers[q.id] !== undefined;
               const isCurrent = idx === currentIndex;
+              const isCorrect = isAnswered && selectedAnswers[q.id] === q.correctIndex;
 
-              let pillStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400';
-              if (!isExamMode && isAns) {
-                pillStyle = isCorr
-                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300'
-                  : 'bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-300';
-              } else if (isAns) {
-                pillStyle = 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300';
+              let pillStyle =
+                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200';
+
+              if (isAnswered) {
+                if (!isExamMode) {
+                  pillStyle = isCorrect
+                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold'
+                    : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 font-bold';
+                } else {
+                  pillStyle = 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold';
+                }
               }
 
               if (isCurrent) {
@@ -335,7 +338,7 @@ export function QuizInterface({
                 <button
                   key={q.id}
                   onClick={() => setCurrentIndex(idx)}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-semibold transition shrink-0 ${pillStyle}`}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs font-semibold transition shrink-0 ${pillStyle}`}
                 >
                   {idx + 1}
                 </button>

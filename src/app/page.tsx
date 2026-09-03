@@ -234,7 +234,7 @@ export default function Home() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8">
         {appMode === 'examSolver' ? (
           /* University Question Solver Mode */
           <UniversityQuestionSolver
@@ -494,7 +494,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm py-8 mt-16 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3">
+      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm py-8 mt-12 mb-16 sm:mb-0 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3">
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
           <span>QuizTube AI • Built with</span>
           <Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" />

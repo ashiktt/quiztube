@@ -117,8 +117,11 @@ export function AuthModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl space-y-6 text-slate-800 dark:text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md p-5 sm:p-8 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl space-y-5 sm:space-y-6 text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto pb-safe">
+        {/* Mobile Drag Indicator */}
+        <div className="sm:hidden w-12 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
+
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
@@ -129,11 +132,11 @@ export function AuthModal({
 
         {/* Brand Header */}
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl text-white shadow-md shadow-indigo-500/20">
-            {mode === 'forgot' ? <KeyRound className="w-7 h-7" /> : <GraduationCap className="w-7 h-7" />}
+          <div className="p-2.5 sm:p-3 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl text-white shadow-md shadow-indigo-500/20 shrink-0">
+            {mode === 'forgot' ? <KeyRound className="w-6 h-6 sm:w-7 sm:h-7" /> : <GraduationCap className="w-6 h-6 sm:w-7 sm:h-7" />}
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight">
               {mode === 'signin'
                 ? 'Student Sign In'
                 : mode === 'signup'

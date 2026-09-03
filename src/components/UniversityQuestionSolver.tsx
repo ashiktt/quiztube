@@ -361,22 +361,22 @@ export function UniversityQuestionSolver({
           </div>
 
           {/* Quick Presets */}
-          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-2.5 shadow-sm">
+          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>1-Click Sample Exam Papers</span>
+                <span>Sample Exam Papers</span>
               </span>
               <span className="text-[11px] text-slate-400">Click to auto-fill</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="flex sm:grid sm:grid-cols-3 gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
               {SAMPLE_EXAMS.map((preset, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSelectPreset(preset)}
-                  className="p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl text-left transition group"
+                  className="p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-xl text-left transition group min-w-[220px] sm:min-w-0 shrink-0 sm:shrink"
                 >
                   <p className="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
                     {preset.title}
@@ -390,9 +390,9 @@ export function UniversityQuestionSolver({
           {/* Main Solver Form */}
           <form
             onSubmit={handleSolve}
-            className="p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl space-y-6"
+            className="p-4 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-xl space-y-5 sm:space-y-6"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Subject */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">

@@ -121,11 +121,16 @@ export function MermaidRenderer({ code, title, className = '' }: MermaidRenderer
           </pre>
         </div>
       ) : (
-        <div
-          ref={containerRef}
-          dangerouslySetInnerHTML={{ __html: svgContent }}
-          className="overflow-x-auto flex justify-center py-2 min-h-[140px] [&>svg]:max-w-full [&>svg]:h-auto"
-        />
+        <div className="relative">
+          <div
+            ref={containerRef}
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+            className="overflow-x-auto no-scrollbar flex justify-start sm:justify-center py-2 min-h-[140px] [&>svg]:min-w-[280px] sm:[&>svg]:min-w-0 [&>svg]:max-w-none sm:[&>svg]:max-w-full [&>svg]:h-auto px-1"
+          />
+          <div className="sm:hidden text-center pt-1">
+            <span className="text-[10px] text-slate-400">↔ Swipe horizontally to explore diagram</span>
+          </div>
+        </div>
       )}
     </div>
   );
