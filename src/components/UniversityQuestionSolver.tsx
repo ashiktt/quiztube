@@ -75,6 +75,7 @@ interface UniversityQuestionSolverProps {
   hasServerKey?: boolean;
   onOpenApiKeyModal?: () => void;
   userId?: string;
+  userEmail?: string;
   activeSolvedExam?: UniversitySolvedExam | null;
   onExamSolved?: (exam: UniversitySolvedExam) => void;
   usageSummary?: UserUsageSummary | null;
@@ -89,6 +90,7 @@ export function UniversityQuestionSolver({
   hasServerKey,
   onOpenApiKeyModal,
   userId,
+  userEmail,
   activeSolvedExam,
   onExamSolved,
   usageSummary,
@@ -248,6 +250,7 @@ export function UniversityQuestionSolver({
           fileMimeType: uploadedFile?.mimeType,
           fileName: uploadedFile?.file.name,
           userId,
+          userEmail,
         }),
       });
 

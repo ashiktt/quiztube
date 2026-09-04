@@ -47,6 +47,7 @@ interface AITutorViewProps {
   onCreateFlashcards?: (topic: string) => void;
   onBackToStudy?: () => void;
   userId?: string;
+  userEmail?: string;
   hasServerKey?: boolean;
   onOpenApiKeyModal?: () => void;
   activeConversation?: TutorConversation | null;
@@ -75,6 +76,7 @@ export function AITutorView({
   onCreateFlashcards,
   onBackToStudy,
   userId,
+  userEmail,
   hasServerKey,
   onOpenApiKeyModal,
   activeConversation,
@@ -270,6 +272,7 @@ export function AITutorView({
         imageMimeType: currentImage ? currentImage.mimeType : undefined,
         apiKey: storedKey || undefined,
         userId,
+        userEmail,
       };
 
       const res = await fetch('/api/tutor', {

@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       fileMimeType,
       fileName,
       userId,
+      userEmail,
     } = body;
 
     requestUserId = userId;
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
     // Server-side Quota & Subscription Verification (Asia/Kolkata timezone)
     const quotaCheck = await checkAndReserveDailyQuota({
       userId,
+      userEmail,
       featureType: 'question_solver',
       hasCustomApiKey: Boolean(apiKey),
     });

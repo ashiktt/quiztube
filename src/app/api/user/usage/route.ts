@@ -5,8 +5,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId') || undefined;
+    const userEmail = searchParams.get('email') || searchParams.get('userEmail') || undefined;
 
-    const summary = await getUserUsageSummary(userId);
+    const summary = await getUserUsageSummary(userId, userEmail);
     return NextResponse.json({
       success: true,
       quizAiUsed: summary.quizAiUsed,
@@ -16,7 +17,9 @@ export async function GET(req: NextRequest) {
       questionSolverLimit: summary.questionSolverLimit,
       questionSolverRemaining: summary.questionSolverRemaining,
       isPro: summary.isPro,
+      isAdmin: Boolean(summary.isAdmin),
       plan: summary.plan,
+      subscription: summary.subscription,
       timezone: summary.timezone,
       date: summary.date,
     });

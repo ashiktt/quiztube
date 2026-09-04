@@ -1,5 +1,6 @@
 import { getSupabaseClient, isSupabaseConfigured } from './supabase';
 import { StudentUser } from '@/types';
+import { isUserAdmin } from '@/config/admin';
 
 /**
  * Sign up a new student with email and password
@@ -41,6 +42,7 @@ export async function signUpStudent(email: string, password: string, fullName?: 
         id: data.user.id,
         email: data.user.email,
         fullName: data.user.user_metadata?.full_name || email.split('@')[0],
+        isAdmin: isUserAdmin(data.user.email),
       };
       return { user: student, error: null };
     }
@@ -80,6 +82,7 @@ export async function signInStudent(email: string, password: string): Promise<{ 
         id: data.user.id,
         email: data.user.email,
         fullName: data.user.user_metadata?.full_name || email.split('@')[0],
+        isAdmin: isUserAdmin(data.user.email),
       };
       return { user: student, error: null };
     }
@@ -173,6 +176,7 @@ export async function getCurrentStudent(): Promise<StudentUser | null> {
       id: session.user.id,
       email: session.user.email,
       fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+      isAdmin: isUserAdmin(session.user.email),
     };
   } catch {
     return null;
@@ -195,6 +199,7 @@ export function onAuthStateChange(callback: (user: StudentUser | null) => void) 
         id: session.user.id,
         email: session.user.email,
         fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+        isAdmin: isUserAdmin(session.user.email),
       });
     } else {
       callback(null);

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './supabase';
 import { AiFeatureType, UserPlan, UserSubscription, UserUsageSummary } from '@/types';
+import { isUserAdmin } from '@/config/admin';
 
 /**
  * Returns today's date in Asia/Kolkata (IST, UTC+5:30) timezone in 'YYYY-MM-DD' format
@@ -23,13 +24,37 @@ export function getKolkataDateString(): string {
 }
 
 /**
- * Check if student has an active QuizTube Pro subscription
+ * Check if student has an active QuizTube Pro subscription or Admin access
  */
-export async function checkUserSubscription(userId: string): Promise<{
+export async function checkUserSubscription(
+  userId?: string,
+  userEmail?: string
+): Promise<{
   isPro: boolean;
   plan: UserPlan;
+  isAdmin?: boolean;
   subscription: UserSubscription | null;
 }> {
+  // 1. Check if email matches Admin Whitelist (e.g., akm007ab@gmail.com)
+  if (userEmail && isUserAdmin(userEmail)) {
+    const adminSub: UserSubscription = {
+      id: `sub_admin_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      userId: userId || 'admin',
+      plan: 'pro',
+      status: 'active',
+      paymentProvider: 'manual',
+      amount: 0,
+      currency: 'INR',
+      startDate: new Date().toISOString(),
+      expiryDate: '2099-12-31T23:59:59.999Z',
+      autoRenew: true,
+      isAdmin: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    return { isPro: true, plan: 'pro', isAdmin: true, subscription: adminSub };
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase || !userId) {
     return { isPro: false, plan: 'free', subscription: null };
@@ -88,8 +113,33 @@ export async function checkUserSubscription(userId: string): Promise<{
 /**
  * Get comprehensive usage summary for a user
  */
-export async function getUserUsageSummary(userId?: string): Promise<UserUsageSummary> {
+export async function getUserUsageSummary(
+  userId?: string,
+  userEmail?: string
+): Promise<UserUsageSummary> {
   const dateStr = getKolkataDateString();
+
+  // Admin whitelist check (akm007ab@gmail.com)
+  if (userEmail && isUserAdmin(userEmail)) {
+    const { subscription } = await checkUserSubscription(userId, userEmail);
+    return {
+      userId,
+      userEmail,
+      plan: 'pro',
+      isPro: true,
+      isAdmin: true,
+      subscription,
+      quizAiUsed: 0,
+      quizAiLimit: 1000,
+      quizAiRemaining: 1000,
+      questionSolverUsed: 0,
+      questionSolverLimit: 1000,
+      questionSolverRemaining: 1000,
+      tutorAllowed: true,
+      timezone: 'Asia/Kolkata',
+      date: dateStr,
+    };
+  }
 
   if (!userId) {
     return {
@@ -108,20 +158,22 @@ export async function getUserUsageSummary(userId?: string): Promise<UserUsageSum
     };
   }
 
-  const { isPro, plan, subscription } = await checkUserSubscription(userId);
+  const { isPro, plan, subscription, isAdmin } = await checkUserSubscription(userId, userEmail);
 
   if (isPro) {
     return {
       userId,
+      userEmail,
       plan: 'pro',
       isPro: true,
+      isAdmin: Boolean(isAdmin),
       subscription,
       quizAiUsed: 0,
-      quizAiLimit: 100, // Reasonable fair-use limit
-      quizAiRemaining: 100,
+      quizAiLimit: isAdmin ? 1000 : 100, // Reasonable fair-use limit
+      quizAiRemaining: isAdmin ? 1000 : 100,
       questionSolverUsed: 0,
-      questionSolverLimit: 100, // Reasonable fair-use limit
-      questionSolverRemaining: 100,
+      questionSolverLimit: isAdmin ? 1000 : 100, // Reasonable fair-use limit
+      questionSolverRemaining: isAdmin ? 1000 : 100,
       tutorAllowed: true,
       timezone: 'Asia/Kolkata',
       date: dateStr,
@@ -153,8 +205,10 @@ export async function getUserUsageSummary(userId?: string): Promise<UserUsageSum
 
   return {
     userId,
+    userEmail,
     plan: 'free',
     isPro: false,
+    isAdmin: false,
     subscription: null,
     quizAiUsed: quizUsed,
     quizAiLimit: 2,
@@ -174,22 +228,29 @@ export async function getUserUsageSummary(userId?: string): Promise<UserUsageSum
  */
 export async function checkAndReserveDailyQuota(params: {
   userId?: string;
+  userEmail?: string;
   featureType: AiFeatureType;
   hasCustomApiKey?: boolean;
 }): Promise<{
   allowed: boolean;
   isPro?: boolean;
+  isAdmin?: boolean;
   currentUsed?: number;
   remaining?: number;
   limit?: number;
   reason?: 'limit_reached' | 'pro_required' | 'auth_required';
   message?: string;
 }> {
-  const { userId, featureType, hasCustomApiKey } = params;
+  const { userId, userEmail, featureType, hasCustomApiKey } = params;
 
   // Custom user API key bypasses server limits
   if (hasCustomApiKey) {
     return { allowed: true, isPro: true };
+  }
+
+  // Admin access whitelist check (e.g., akm007ab@gmail.com)
+  if (userEmail && isUserAdmin(userEmail)) {
+    return { allowed: true, isPro: true, isAdmin: true };
   }
 
   // Must be signed in to access server AI quotas
@@ -201,13 +262,13 @@ export async function checkAndReserveDailyQuota(params: {
     };
   }
 
-  // Check Pro subscription
-  const { isPro } = await checkUserSubscription(userId);
+  // Check Pro subscription / Admin status
+  const { isPro, isAdmin } = await checkUserSubscription(userId, userEmail);
 
   // AI Tutor is exclusive to QuizTube Pro
   if (featureType === 'tutor') {
     if (isPro) {
-      return { allowed: true, isPro: true };
+      return { allowed: true, isPro: true, isAdmin };
     }
     return {
       allowed: false,
@@ -218,7 +279,7 @@ export async function checkAndReserveDailyQuota(params: {
 
   // Pro users have high fair-use limits
   if (isPro) {
-    return { allowed: true, isPro: true };
+    return { allowed: true, isPro: true, isAdmin };
   }
 
   // Free Tier: Enforce 2 prompts / day limit in Asia/Kolkata timezone

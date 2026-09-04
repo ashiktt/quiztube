@@ -4,6 +4,7 @@ import React from 'react';
 import { StudentUser, UserUsageSummary } from '@/types';
 import { APK_CONFIG } from '@/config/apk';
 import { LegalModalType } from './LegalModals';
+import { isUserAdmin } from '@/config/admin';
 
 interface AccountSubscriptionViewProps {
   user: StudentUser | null;
@@ -26,13 +27,15 @@ export function AccountSubscriptionView({
   onLogout,
   onClose,
 }: AccountSubscriptionViewProps) {
+  const isAdmin = user?.isAdmin || usageSummary?.isAdmin || isUserAdmin(user?.email);
+
   const quizUsed = usageSummary?.quizAiUsed ?? 0;
-  const quizLimit = usageSummary?.quizAiLimit ?? (isPro ? 100 : 2);
-  const quizRemaining = usageSummary?.quizAiRemaining ?? (isPro ? 100 : Math.max(0, 2 - quizUsed));
+  const quizLimit = usageSummary?.quizAiLimit ?? (isAdmin ? 1000 : isPro ? 100 : 2);
+  const quizRemaining = usageSummary?.quizAiRemaining ?? (isAdmin ? 1000 : isPro ? 100 : Math.max(0, 2 - quizUsed));
 
   const solverUsed = usageSummary?.questionSolverUsed ?? 0;
-  const solverLimit = usageSummary?.questionSolverLimit ?? (isPro ? 100 : 2);
-  const solverRemaining = usageSummary?.questionSolverRemaining ?? (isPro ? 100 : Math.max(0, 2 - solverUsed));
+  const solverLimit = usageSummary?.questionSolverLimit ?? (isAdmin ? 1000 : isPro ? 100 : 2);
+  const solverRemaining = usageSummary?.questionSolverRemaining ?? (isAdmin ? 1000 : isPro ? 100 : Math.max(0, 2 - solverUsed));
 
   const expiryFormatted = usageSummary?.subscription?.expiryDate
     ? new Date(usageSummary.subscription.expiryDate).toLocaleDateString('en-IN', {
@@ -59,7 +62,14 @@ export function AccountSubscriptionView({
                 <h2 className="text-lg font-bold text-white">
                   {user?.fullName || user?.email?.split('@')[0] || 'My Account'}
                 </h2>
-                {isPro ? (
+                {isAdmin ? (
+                  <span className="px-2.5 py-0.5 text-xs font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 text-white rounded-full flex items-center space-x-1 shadow-md shadow-purple-500/20">
+                    <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span>ADMIN PRO</span>
+                  </span>
+                ) : isPro ? (
                   <span className="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full flex items-center space-x-1 shadow-sm shadow-amber-500/20">
                     <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -91,7 +101,9 @@ export function AccountSubscriptionView({
         <div className="p-6 overflow-y-auto space-y-6">
           {/* Plan Card */}
           <div className={`p-5 rounded-2xl border transition-all ${
-            isPro 
+            isAdmin
+              ? 'bg-gradient-to-br from-purple-950/60 via-indigo-950/40 to-slate-900 border-purple-500/40 shadow-xl shadow-purple-950/40'
+              : isPro 
               ? 'bg-gradient-to-br from-indigo-950/60 via-purple-950/30 to-slate-900 border-indigo-500/40 shadow-xl shadow-indigo-950/40' 
               : 'bg-slate-800/40 border-slate-700/60'
           }`}>
@@ -101,11 +113,13 @@ export function AccountSubscriptionView({
                   Active Subscription Plan
                 </div>
                 <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-                  <span>{isPro ? 'QuizTube Pro' : 'QuizTube Free'}</span>
-                  {isPro && <span className="text-sm font-normal text-slate-300">(&#8377;149 / month)</span>}
+                  <span>{isAdmin ? 'QuizTube Pro (Admin Access)' : isPro ? 'QuizTube Pro' : 'QuizTube Free'}</span>
+                  {!isAdmin && isPro && <span className="text-sm font-normal text-slate-300">(&#8377;149 / month)</span>}
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  {isPro
+                  {isAdmin
+                    ? 'Permanent Administrator Access Active — All Pro Features Unlocked'
+                    : isPro
                     ? expiryFormatted
                       ? `Pro access valid until ${expiryFormatted}`
                       : 'Active 30-Day Pro pass with High AI limits'
@@ -113,7 +127,11 @@ export function AccountSubscriptionView({
                 </p>
               </div>
 
-              {!isPro ? (
+              {isAdmin ? (
+                <span className="px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold text-xs rounded-xl shadow-sm">
+                  Admin Active
+                </span>
+              ) : !isPro ? (
                 <button
                   onClick={() => {
                     onClose();
@@ -139,19 +157,19 @@ export function AccountSubscriptionView({
             {/* Pro Features pills */}
             <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs">
               <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span className="font-medium">High AI limits</span>
+                <span className="font-medium">{isAdmin ? 'Max AI Capacity' : 'High AI limits'}</span>
               </div>
               <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span className="font-medium">Adv. Question Solver</span>
               </div>
               <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
                 <span className="font-medium">AI Tutor</span>
@@ -181,7 +199,9 @@ export function AccountSubscriptionView({
                   <span>Quiz AI (YouTube &rarr; Quiz)</span>
                 </span>
                 <span className="text-slate-400">
-                  {isPro ? (
+                  {isAdmin ? (
+                    <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
+                  ) : isPro ? (
                     <span className="text-emerald-400 font-semibold">{quizUsed} used today (High Limit)</span>
                   ) : (
                     <span>
@@ -193,14 +213,16 @@ export function AccountSubscriptionView({
               <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
                 <div
                   className={`h-full transition-all duration-500 ${
-                    quizRemaining === 0 && !isPro
+                    isAdmin
+                      ? 'bg-purple-500'
+                      : quizRemaining === 0 && !isPro
                       ? 'bg-rose-500'
                       : quizRemaining === 1 && !isPro
                       ? 'bg-amber-500'
                       : 'bg-indigo-500'
                   }`}
                   style={{
-                    width: isPro ? `${Math.min(100, (quizUsed / 100) * 100)}%` : `${Math.min(100, (quizUsed / 2) * 100)}%`,
+                    width: isAdmin ? '100%' : isPro ? `${Math.min(100, (quizUsed / 100) * 100)}%` : `${Math.min(100, (quizUsed / 2) * 100)}%`,
                   }}
                 />
               </div>
@@ -214,7 +236,9 @@ export function AccountSubscriptionView({
                   <span>Question Solver (University Exam Solver)</span>
                 </span>
                 <span className="text-slate-400">
-                  {isPro ? (
+                  {isAdmin ? (
+                    <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
+                  ) : isPro ? (
                     <span className="text-emerald-400 font-semibold">{solverUsed} used today (High Limit)</span>
                   ) : (
                     <span>
@@ -226,14 +250,16 @@ export function AccountSubscriptionView({
               <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
                 <div
                   className={`h-full transition-all duration-500 ${
-                    solverRemaining === 0 && !isPro
+                    isAdmin
+                      ? 'bg-purple-500'
+                      : solverRemaining === 0 && !isPro
                       ? 'bg-rose-500'
                       : solverRemaining === 1 && !isPro
                       ? 'bg-amber-500'
                       : 'bg-purple-500'
                   }`}
                   style={{
-                    width: isPro ? `${Math.min(100, (solverUsed / 100) * 100)}%` : `${Math.min(100, (solverUsed / 2) * 100)}%`,
+                    width: isAdmin ? '100%' : isPro ? `${Math.min(100, (solverUsed / 100) * 100)}%` : `${Math.min(100, (solverUsed / 2) * 100)}%`,
                   }}
                 />
               </div>
@@ -242,7 +268,7 @@ export function AccountSubscriptionView({
             {/* AI Tutor Card */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
               <div className="flex items-center space-x-2">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isPro ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isPro || isAdmin ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
@@ -250,7 +276,7 @@ export function AccountSubscriptionView({
                 <span className="text-slate-300 font-medium">QuizTube AI Tutor</span>
               </div>
               <div>
-                {isPro ? (
+                {isAdmin || isPro ? (
                   <span className="text-emerald-400 font-semibold flex items-center space-x-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />

@@ -86,6 +86,7 @@ export interface StudentUser {
   email?: string;
   fullName?: string;
   avatarUrl?: string;
+  isAdmin?: boolean;
 }
 
 export interface LectureStudySet {
@@ -119,6 +120,7 @@ export interface QuizGenerationRequest {
   apiKey?: string;
   preferredModel?: string;
   userId?: string;
+  userEmail?: string;
 }
 
 export interface TranscriptSegment {
@@ -162,6 +164,7 @@ export interface UniversityExamRequest {
   fileMimeType?: string;
   fileName?: string;
   userId?: string;
+  userEmail?: string;
 }
 
 // ==========================================
@@ -241,6 +244,7 @@ export interface TutorChatRequest {
   apiKey?: string;
   preferredModel?: string;
   userId?: string;
+  userEmail?: string;
 }
 
 // ==========================================
@@ -267,6 +271,7 @@ export interface UserSubscription {
   startDate: string;
   expiryDate: string; // 30 days from start or next billing date
   autoRenew?: boolean;
+  isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -282,8 +287,10 @@ export interface DailyAiUsage {
 
 export interface UserUsageSummary {
   userId?: string;
+  userEmail?: string;
   plan: UserPlan;
   isPro: boolean;
+  isAdmin?: boolean;
   subscription?: UserSubscription | null;
   quizAiUsed: number;
   quizAiLimit: number; // 2 for Free, 100 for Pro (fair-use)
@@ -311,6 +318,7 @@ export interface PaymentVerificationRequest {
   razorpay_payment_id: string;
   razorpay_signature: string;
 }
+
 
 
 

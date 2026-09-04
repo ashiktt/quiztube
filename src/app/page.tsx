@@ -108,10 +108,15 @@ export default function Home() {
   const [hasServerKey, setHasServerKey] = useState(false);
 
   // Fetch live usage & subscription status
-  const refreshUserUsage = useCallback(async (userId?: string) => {
+  const refreshUserUsage = useCallback(async (userId?: string, userEmail?: string) => {
     try {
       const targetUserId = userId ?? currentUser?.id;
-      const url = targetUserId ? `/api/user/usage?userId=${encodeURIComponent(targetUserId)}` : '/api/user/usage';
+      const targetEmail = userEmail ?? currentUser?.email;
+      const params = new URLSearchParams();
+      if (targetUserId) params.set('userId', targetUserId);
+      if (targetEmail) params.set('email', targetEmail);
+
+      const url = `/api/user/usage${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -121,7 +126,7 @@ export default function Home() {
     } catch (err) {
       console.warn('Failed to fetch user usage/quota summary:', err);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.email]);
 
   // Initial load & Supabase sync
   useEffect(() => {
@@ -149,7 +154,7 @@ export default function Home() {
     getCurrentStudent().then(student => {
       setCurrentUser(student);
       if (student) {
-        refreshUserUsage(student.id);
+        refreshUserUsage(student.id, student.email);
         fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
           setSavedSets(sets);
           setIsCloudConnected(isCloudConnected);
@@ -169,7 +174,7 @@ export default function Home() {
     const unsubscribe = onAuthStateChange(student => {
       setCurrentUser(student);
       if (student) {
-        refreshUserUsage(student.id);
+        refreshUserUsage(student.id, student.email);
         fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
           setSavedSets(sets);
           setIsCloudConnected(isCloudConnected);
@@ -246,6 +251,7 @@ export default function Home() {
         ...request,
         apiKey: storedKey || undefined,
         userId: currentUser?.id,
+        userEmail: currentUser?.email,
       };
 
       const res = await fetch('/api/generate-quiz', {
@@ -274,7 +280,7 @@ export default function Home() {
       saveStudySet(newStudySet);
       setSavedSets(getSavedStudySets());
       setActiveTab('cheatsheet');
-      refreshUserUsage();
+      refreshUserUsage(currentUser?.id, currentUser?.email);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsGenerating(false);
@@ -358,6 +364,7 @@ export default function Home() {
               }
             }}
             userId={currentUser?.id}
+            userEmail={currentUser?.email}
             hasServerKey={hasServerKey}
             onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
             activeConversation={activeTutorConversation}
@@ -381,12 +388,13 @@ export default function Home() {
             hasServerKey={hasServerKey}
             onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
             userId={currentUser?.id}
+            userEmail={currentUser?.email}
             activeSolvedExam={activeSolvedExam}
             onExamSolved={() => setSavedExams(getSavedSolvedExams())}
             usageSummary={userUsage}
             isPro={isPro}
             onOpenUpgradeModal={() => setProModalOpen(true)}
-            onQuotaUsed={() => refreshUserUsage()}
+            onQuotaUsed={() => refreshUserUsage(currentUser?.id, currentUser?.email)}
           />
         ) : !studySet ? (
           /* Landing / Input Screen */
@@ -772,7 +780,7 @@ export default function Home() {
         onClose={() => setAuthModalOpen(false)}
         onAuthSuccess={user => {
           setCurrentUser(user);
-          refreshUserUsage(user.id);
+          refreshUserUsage(user.id, user.email);
           fetchAndMergeCloudStudySets(user.id).then(({ sets, isCloudConnected }) => {
             setSavedSets(sets);
             setIsCloudConnected(isCloudConnected);

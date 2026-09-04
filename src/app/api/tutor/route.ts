@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     // Server-side Pro Verification for AI Tutor
     const quotaCheck = await checkAndReserveDailyQuota({
       userId: body.userId,
+      userEmail: body.userEmail,
       featureType: 'tutor',
       hasCustomApiKey: Boolean(body.apiKey),
     });

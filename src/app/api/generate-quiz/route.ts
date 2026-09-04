@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       apiKey,
       preferredModel,
       userId,
+      userEmail,
     } = body;
 
     requestUserId = userId;
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     // Server-side Quota & Subscription Verification (Asia/Kolkata timezone)
     const quotaCheck = await checkAndReserveDailyQuota({
       userId,
+      userEmail,
       featureType: 'quiz_ai',
       hasCustomApiKey: Boolean(apiKey),
     });
