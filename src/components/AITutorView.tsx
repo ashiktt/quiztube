@@ -27,6 +27,7 @@ import {
   Bookmark,
   CheckCircle2,
   Info,
+  Crown,
 } from 'lucide-react';
 import {
   TutorContext,
@@ -50,6 +51,8 @@ interface AITutorViewProps {
   onOpenApiKeyModal?: () => void;
   activeConversation?: TutorConversation | null;
   onConversationUpdated?: (conv: TutorConversation) => void;
+  isPro?: boolean;
+  onOpenUpgradeModal?: () => void;
 }
 
 const EXPLANATION_MODES: {
@@ -76,6 +79,8 @@ export function AITutorView({
   onOpenApiKeyModal,
   activeConversation,
   onConversationUpdated,
+  isPro = false,
+  onOpenUpgradeModal,
 }: AITutorViewProps) {
   const [context, setContext] = useState<TutorContext | null>(initialContext || null);
   const [explanationMode, setExplanationMode] = useState<TutorExplanationMode>('step_by_step');
@@ -230,6 +235,11 @@ export function AITutorView({
     const query = (textToSend || inputText).trim();
     if (!query && !attachedImage) return;
 
+    if (!isPro && onOpenUpgradeModal) {
+      onOpenUpgradeModal();
+      return;
+    }
+
     const storedKey = getStoredApiKey();
 
     const userMessage: TutorMessage = {
@@ -271,6 +281,9 @@ export function AITutorView({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data?.requiresPro && onOpenUpgradeModal) {
+          onOpenUpgradeModal();
+        }
         if (data?.error?.includes('Gemini API key is required') && onOpenApiKeyModal) {
           onOpenApiKeyModal();
         }
@@ -452,9 +465,15 @@ export function AITutorView({
               <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
                 QuizTube AI Tutor
               </h2>
-              <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
-                24/7 Academic Mentor
-              </span>
+              {isPro ? (
+                <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full shadow-sm">
+                  PRO
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
+                  24/7 Academic Mentor
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
               Grounded in your lectures, mistakes, and university model solutions
@@ -515,6 +534,26 @@ export function AITutorView({
           )}
         </div>
       </div>
+
+      {/* Pro Locked Banner (if not Pro) */}
+      {!isPro && (
+        <div className="px-4 py-3 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0 animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Crown className="w-4 h-4 text-amber-400 shrink-0 fill-current" />
+            <span className="text-slate-200 truncate">
+              <strong className="text-amber-300">QuizTube Pro Feature:</strong> Unlock unlimited 1-on-1 AI Tutoring, mistake diagnosis, & multimodal reasoning.
+            </span>
+          </div>
+          {onOpenUpgradeModal && (
+            <button
+              onClick={onOpenUpgradeModal}
+              className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition shrink-0"
+            >
+              Get Pro &middot; &#8377;149
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 2. Active Context Banner (if present) */}
       {context && (
@@ -600,154 +639,120 @@ export function AITutorView({
               </p>
             </div>
 
-            {/* Quick Starter Chips */}
-            <div className="space-y-2 text-left pt-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block text-center">
-                Suggested Prompts
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {getContextSuggestions().map((s, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSendMessage(s.prompt)}
-                    className="p-3 text-left bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl transition group"
-                  >
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                      {s.label}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
-                      {s.prompt}
-                    </p>
-                  </button>
-                ))}
-              </div>
+            {/* Context-aware suggestions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-left">
+              {getContextSuggestions().map((s, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendMessage(s.prompt)}
+                  className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl text-xs transition group"
+                >
+                  <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    {s.label}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {s.prompt}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
         ) : (
-          /* Conversation Messages List */
-          messages.map(msg => {
-            const isUser = msg.role === 'user';
-            const isSpeaking = isSpeakingMsgId === msg.id;
+          messages.map(msg => (
+            <div
+              key={msg.id}
+              className={`flex gap-3 max-w-3xl ${
+                msg.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'
+              }`}
+            >
+              {msg.role === 'assistant' && (
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-1 shadow-md">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+              )}
 
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-3 items-start animate-in fade-in ${
-                  isUser ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
+              <div className="space-y-2 max-w-[85%] sm:max-w-[80%]">
+                {/* User Image Attachment in chat */}
+                {msg.imagePreviewUrl && (
+                  <img
+                    src={msg.imagePreviewUrl}
+                    alt="User attached"
+                    className="max-h-48 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
+                  />
                 )}
 
                 <div
-                  className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm ${
-                    isUser
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-none'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/70 text-slate-900 dark:text-slate-100 rounded-tl-none'
+                  className={`p-4 rounded-3xl text-xs sm:text-sm leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                      : 'bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700/60 shadow-sm'
                   }`}
                 >
-                  {/* User Uploaded Image Preview */}
-                  {msg.imagePreviewUrl && (
-                    <div className="rounded-xl overflow-hidden border border-white/20 max-w-xs">
-                      <img
-                        src={msg.imagePreviewUrl}
-                        alt="Uploaded for analysis"
-                        className="w-full object-cover max-h-48"
-                      />
-                    </div>
-                  )}
-
-                  {/* Message Text Content */}
-                  <div
-                    className={`prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans ${
-                      isUser ? 'text-white prose-p:text-white' : 'text-slate-800 dark:text-slate-200'
-                    }`}
-                  >
+                  <div className="prose prose-sm dark:prose-invert max-w-none space-y-2 whitespace-pre-wrap font-sans">
                     {msg.content}
                   </div>
-
-                  {/* Assistant Message Actions (TTS, Copy, Suggested Action Chips) */}
-                  {!isUser && (
-                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 space-y-3">
-                      {/* Secondary Utility Controls */}
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span className="text-[10px] font-mono opacity-70">
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleSpeakText(msg.content, msg.id)}
-                            className={`p-1.5 rounded-lg transition ${
-                              isSpeaking
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-bold'
-                                : 'hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500'
-                            }`}
-                            title={isSpeaking ? 'Stop speech' : 'Listen to explanation'}
-                          >
-                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleCopyText(msg.content, msg.id)}
-                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 transition"
-                            title="Copy explanation"
-                          >
-                            {copiedMsgId === msg.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Post-Explanation Suggested Action Buttons */}
-                      {msg.suggestedActions && msg.suggestedActions.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {msg.suggestedActions.map((action, aIdx) => (
-                            <button
-                              key={aIdx}
-                              type="button"
-                              onClick={() => handleActionClick(action)}
-                              className="px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded-xl transition shadow-xs flex items-center gap-1 active:scale-95"
-                            >
-                              <span>{action.label}</span>
-                              <ArrowRight className="w-2.5 h-2.5" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
+
+                {/* Assistant Message Actions */}
+                {msg.role === 'assistant' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-1">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyText(msg.content, msg.id)}
+                        className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition"
+                        title="Copy text"
+                      >
+                        {copiedMsgId === msg.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSpeakText(msg.content, msg.id)}
+                        className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition"
+                        title="Listen to explanation"
+                      >
+                        {isSpeakingMsgId === msg.id ? (
+                          <VolumeX className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                        ) : (
+                          <Volume2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Suggested Follow-up Actions */}
+                    {msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {msg.suggestedActions.map((act, actIdx) => (
+                          <button
+                            key={actIdx}
+                            type="button"
+                            onClick={() => handleActionClick(act)}
+                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-xl text-[11px] font-semibold transition"
+                          >
+                            {act.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            );
-          })
+            </div>
+          ))
         )}
 
-        {/* Loading / Thinking Indicator */}
         {isLoading && (
-          <div className="flex gap-3 items-start animate-in fade-in">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-1 animate-pulse">
-              <Sparkles className="w-4 h-4" />
+          <div className="flex items-center gap-3 text-xs text-slate-500 animate-pulse">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 animate-spin" />
             </div>
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/70 rounded-2xl rounded-tl-none text-xs text-slate-600 dark:text-slate-300 flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="w-2 h-2 rounded-full bg-purple-600 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="w-2 h-2 rounded-full bg-pink-600 animate-bounce" style={{ animationDelay: '300ms' }}></span>
-              </div>
-              <span className="font-medium">
-                AI Tutor is analyzing your question & crafting personalized guidance...
-              </span>
-            </div>
+            <span>QuizTube AI Tutor is synthesizing explanation...</span>
           </div>
         )}
 

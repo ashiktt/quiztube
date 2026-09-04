@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateTutorResponse } from '@/lib/geminiTutor';
 import { TutorChatRequest } from '@/types';
 import { formatGeminiErrorMessage } from '@/lib/gemini';
+import { checkAndReserveDailyQuota } from '@/lib/serverSubscription';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,12 +23,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Server-side Pro Verification for AI Tutor
+    const quotaCheck = await checkAndReserveDailyQuota({
+      userId: body.userId,
+      featureType: 'tutor',
+      hasCustomApiKey: Boolean(body.apiKey),
+    });
+
+    if (!quotaCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: quotaCheck.message || 'QuizTube AI Tutor is a Pro feature.',
+          proRequired: true,
+          reason: quotaCheck.reason,
+        },
+        { status: 403 }
+      );
+    }
+
     // Call Gemini Tutor Engine
     const tutorMessage = await generateTutorResponse(body);
 
     return NextResponse.json({
       success: true,
       message: tutorMessage,
+      isPro: quotaCheck.isPro,
     });
   } catch (error: any) {
     console.error('API /api/tutor POST error:', error);

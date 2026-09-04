@@ -6,9 +6,13 @@ import {
   formatTranscriptWithTimestamps,
 } from '@/lib/youtube';
 import { generateStudySetWithGemini, formatGeminiErrorMessage } from '@/lib/gemini';
+import { checkAndReserveDailyQuota, rollbackDailyQuota } from '@/lib/serverSubscription';
 import { LectureStudySet, QuizGenerationRequest } from '@/types';
 
 export async function POST(req: NextRequest) {
+  let reservedQuota = false;
+  let requestUserId: string | undefined = undefined;
+
   try {
     const body: QuizGenerationRequest = await req.json();
     const {
@@ -21,7 +25,33 @@ export async function POST(req: NextRequest) {
       topicFocus,
       apiKey,
       preferredModel,
+      userId,
     } = body;
+
+    requestUserId = userId;
+
+    // Server-side Quota & Subscription Verification (Asia/Kolkata timezone)
+    const quotaCheck = await checkAndReserveDailyQuota({
+      userId,
+      featureType: 'quiz_ai',
+      hasCustomApiKey: Boolean(apiKey),
+    });
+
+    if (!quotaCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: quotaCheck.message || 'Daily Quiz AI limit reached.',
+          reason: quotaCheck.reason,
+          limitReached: quotaCheck.reason === 'limit_reached',
+          proRequired: quotaCheck.reason === 'pro_required',
+          authRequired: quotaCheck.reason === 'auth_required',
+        },
+        { status: 403 }
+      );
+    }
+
+    reservedQuota = true;
 
     let videoId = '';
     let videoTitle = customTitle || 'Custom Lecture Notes';
@@ -32,6 +62,9 @@ export async function POST(req: NextRequest) {
     if (url) {
       const extracted = extractVideoId(url);
       if (!extracted) {
+        if (reservedQuota) {
+          await rollbackDailyQuota({ userId: requestUserId, featureType: 'quiz_ai' });
+        }
         return NextResponse.json(
           { error: 'Invalid YouTube URL. Please provide a valid YouTube video link.' },
           { status: 400 }
@@ -63,6 +96,9 @@ Topics covered include fundamental principles, core equations/syntax, standard p
       transcriptText = customTranscript;
       videoTitle = customTitle || 'Imported Lecture / Study Material';
     } else {
+      if (reservedQuota) {
+        await rollbackDailyQuota({ userId: requestUserId, featureType: 'quiz_ai' });
+      }
       return NextResponse.json(
         { error: 'Please provide either a YouTube lecture URL or custom lecture transcript text.' },
         { status: 400 }
@@ -70,6 +106,9 @@ Topics covered include fundamental principles, core equations/syntax, standard p
     }
 
     if (!transcriptText || transcriptText.trim().length < 50) {
+      if (reservedQuota) {
+        await rollbackDailyQuota({ userId: requestUserId, featureType: 'quiz_ai' });
+      }
       return NextResponse.json(
         { error: 'The transcript content is too short to generate a meaningful quiz. Please provide more content.' },
         { status: 400 }
@@ -113,9 +152,18 @@ Topics covered include fundamental principles, core equations/syntax, standard p
         : undefined,
     };
 
-    return NextResponse.json({ success: true, studySet });
+    return NextResponse.json({
+      success: true,
+      studySet,
+      remainingQuota: quotaCheck.remaining,
+      isPro: quotaCheck.isPro,
+    });
   } catch (error: any) {
     console.error('Quiz generation API error:', error);
+    // Rollback daily quota on failure
+    if (reservedQuota && requestUserId) {
+      await rollbackDailyQuota({ userId: requestUserId, featureType: 'quiz_ai' });
+    }
     const friendlyError = formatGeminiErrorMessage(error);
     return NextResponse.json(
       {

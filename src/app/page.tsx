@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles,
   BookOpen,
@@ -23,8 +23,21 @@ import {
   AlertTriangle,
   ExternalLink,
   Heart,
+  Download,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
-import { LectureStudySet, QuizGenerationRequest, UserQuizAttempt, StudentUser, UniversitySolvedExam, TutorConversation, TutorContext, QuizQuestion } from '@/types';
+import {
+  LectureStudySet,
+  QuizGenerationRequest,
+  UserQuizAttempt,
+  StudentUser,
+  UniversitySolvedExam,
+  TutorConversation,
+  TutorContext,
+  QuizQuestion,
+  UserUsageSummary,
+} from '@/types';
 import { Navbar } from '@/components/Navbar';
 import { LectureInput } from '@/components/LectureInput';
 import { VideoPlayer } from '@/components/VideoPlayer';
@@ -38,6 +51,11 @@ import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { AuthModal } from '@/components/AuthModal';
 import { UniversityQuestionSolver } from '@/components/UniversityQuestionSolver';
 import { AITutorView } from '@/components/AITutorView';
+import { ProUpgradeModal } from '@/components/ProUpgradeModal';
+import { ApkDownloadSection } from '@/components/ApkDownloadSection';
+import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
+import { LegalModals, LegalModalType } from '@/components/LegalModals';
+import { APK_CONFIG } from '@/config/apk';
 import {
   getSavedStudySets,
   saveStudySet,
@@ -73,13 +91,37 @@ export default function Home() {
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [currentUser, setCurrentUser] = useState<StudentUser | null>(null);
 
+  // Subscription & Daily AI Quota State
+  const [userUsage, setUserUsage] = useState<UserUsageSummary | null>(null);
+  const [isPro, setIsPro] = useState(false);
+
   // Modals & Drawers
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [proModalOpen, setProModalOpen] = useState(false);
+  const [apkModalOpen, setApkModalOpen] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [hasServerKey, setHasServerKey] = useState(false);
+
+  // Fetch live usage & subscription status
+  const refreshUserUsage = useCallback(async (userId?: string) => {
+    try {
+      const targetUserId = userId ?? currentUser?.id;
+      const url = targetUserId ? `/api/user/usage?userId=${encodeURIComponent(targetUserId)}` : '/api/user/usage';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setUserUsage(data);
+        setIsPro(Boolean(data.isPro));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch user usage/quota summary:', err);
+    }
+  }, [currentUser?.id]);
 
   // Initial load & Supabase sync
   useEffect(() => {
@@ -107,23 +149,7 @@ export default function Home() {
     getCurrentStudent().then(student => {
       setCurrentUser(student);
       if (student) {
-        fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
-          setSavedSets(sets);
-          setIsCloudConnected(isCloudConnected);
-        });
-        fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
-          setSavedExams(exams);
-        });
-        fetchAndMergeCloudTutorConversations(student.id).then(({ conversations }) => {
-          setSavedTutorConversations(conversations);
-        });
-      }
-    });
-
-    // Listen for auth changes
-    const unsubscribe = onAuthStateChange(student => {
-      setCurrentUser(student);
-      if (student) {
+        refreshUserUsage(student.id);
         fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
           setSavedSets(sets);
           setIsCloudConnected(isCloudConnected);
@@ -135,6 +161,27 @@ export default function Home() {
           setSavedTutorConversations(conversations);
         });
       } else {
+        refreshUserUsage();
+      }
+    });
+
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChange(student => {
+      setCurrentUser(student);
+      if (student) {
+        refreshUserUsage(student.id);
+        fetchAndMergeCloudStudySets(student.id).then(({ sets, isCloudConnected }) => {
+          setSavedSets(sets);
+          setIsCloudConnected(isCloudConnected);
+        });
+        fetchAndMergeCloudSolvedExams(student.id).then(({ exams }) => {
+          setSavedExams(exams);
+        });
+        fetchAndMergeCloudTutorConversations(student.id).then(({ conversations }) => {
+          setSavedTutorConversations(conversations);
+        });
+      } else {
+        refreshUserUsage();
         clearLocalStorageStudySets();
         setSavedSets([SAMPLE_STUDY_SET]);
         setSavedExams([]);
@@ -147,17 +194,20 @@ export default function Home() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [refreshUserUsage]);
 
   const handleSignOut = async () => {
     await signOutStudent();
     setCurrentUser(null);
+    setIsPro(false);
+    setUserUsage(null);
     clearLocalStorageStudySets();
     setSavedSets([SAMPLE_STUDY_SET]);
     setSavedExams([]);
     setSavedTutorConversations([]);
     setActiveSolvedExam(null);
     setActiveTutorConversation(null);
+    refreshUserUsage();
   };
 
   const handleAskTutorFromQuiz = (question: QuizQuestion, selectedOptionIndex?: number) => {
@@ -195,6 +245,7 @@ export default function Home() {
       const payload: QuizGenerationRequest = {
         ...request,
         apiKey: storedKey || undefined,
+        userId: currentUser?.id,
       };
 
       const res = await fetch('/api/generate-quiz', {
@@ -206,6 +257,9 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data?.limitReached || data?.proRequired) {
+          setProModalOpen(true);
+        }
         if (data?.error?.includes('Gemini API key is required')) {
           setApiKeyModalOpen(true);
         }
@@ -220,6 +274,7 @@ export default function Home() {
       saveStudySet(newStudySet);
       setSavedSets(getSavedStudySets());
       setActiveTab('cheatsheet');
+      refreshUserUsage();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsGenerating(false);
@@ -271,9 +326,13 @@ export default function Home() {
         }}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         onSignOut={handleSignOut}
+        onOpenUpgradeModal={() => setProModalOpen(true)}
+        onOpenApkModal={() => setApkModalOpen(true)}
+        onOpenAccountModal={() => setAccountModalOpen(true)}
         currentUser={currentUser}
         savedCount={savedSets.length + savedExams.length + savedTutorConversations.length}
         hasApiKey={hasApiKey}
+        isPro={isPro}
         appMode={appMode}
         onSwitchMode={mode => {
           if (mode === 'youtube') {
@@ -303,6 +362,8 @@ export default function Home() {
             onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
             activeConversation={activeTutorConversation}
             onConversationUpdated={() => setSavedTutorConversations(getSavedTutorConversations())}
+            isPro={isPro}
+            onOpenUpgradeModal={() => setProModalOpen(true)}
             onPracticeTopic={topic => {
               setAppMode('youtube');
               setStudySet(null);
@@ -322,12 +383,16 @@ export default function Home() {
             userId={currentUser?.id}
             activeSolvedExam={activeSolvedExam}
             onExamSolved={() => setSavedExams(getSavedSolvedExams())}
+            usageSummary={userUsage}
+            isPro={isPro}
+            onOpenUpgradeModal={() => setProModalOpen(true)}
+            onQuotaUsed={() => refreshUserUsage()}
           />
         ) : !studySet ? (
           /* Landing / Input Screen */
           <div className="space-y-8">
             {/* Top Feature Switcher Banners Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 1. University Solver Banner Card */}
               <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-indigo-500/30">
                 <div className="flex items-start gap-3 text-left">
@@ -337,14 +402,14 @@ export default function Home() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-extrabold text-xs sm:text-sm">
-                        University Exam Solver (2, 5, 10, 15 M)
+                        Advanced Question Solver
                       </h4>
                       <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
                         New
                       </span>
                     </div>
                     <p className="text-[11px] text-indigo-200 mt-1 leading-relaxed">
-                      Generate structured model answers with Mermaid diagrams and export as PDF booklets.
+                      Generate structured model answers (2, 5, 10, 15 M) with Mermaid diagrams and export PDF booklets.
                     </p>
                   </div>
                 </div>
@@ -368,14 +433,14 @@ export default function Home() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-extrabold text-xs sm:text-sm">
-                        QuizTube AI Academic Tutor
+                        QuizTube AI Tutor
                       </h4>
                       <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
-                        24/7 AI
+                        PRO
                       </span>
                     </div>
                     <p className="text-[11px] text-pink-200 mt-1 leading-relaxed">
-                      Socratic learning mode, mistake diagnosis, step-by-step logic derivations, and voice input.
+                      Socratic learning mode, mistake diagnosis, step-by-step logic derivations, and voice chat.
                     </p>
                   </div>
                 </div>
@@ -393,12 +458,46 @@ export default function Home() {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* 3. Android APK Download Banner */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-emerald-500/30">
+                <div className="flex items-start gap-3 text-left">
+                  <div className="p-2.5 bg-gradient-to-tr from-emerald-600 to-teal-600 rounded-2xl text-white shadow-md shrink-0">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-xs sm:text-sm">
+                        QuizTube for Android
+                      </h4>
+                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full">
+                        v{APK_CONFIG.version}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-200 mt-1 leading-relaxed">
+                      Direct APK download with offline review, full screen lectures, and real-time cloud sync.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setApkModalOpen(true)}
+                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download APK ({APK_CONFIG.fileSize})</span>
+                </button>
+              </div>
             </div>
 
             <LectureInput
               onGenerate={handleGenerateQuiz}
               isLoading={isGenerating}
               onLoadSample={handleLoadSample}
+              usageSummary={userUsage}
+              isPro={isPro}
+              onOpenUpgradeModal={() => setProModalOpen(true)}
             />
 
             {/* Feature Highlights Grid */}
@@ -608,7 +707,39 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm py-8 mt-12 mb-16 sm:mb-0 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3">
+      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm py-8 mt-12 mb-16 sm:mb-0 text-center text-xs text-slate-500 dark:text-slate-400 space-y-4">
+        {/* Policy & APK Links */}
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
+          <button
+            onClick={() => setApkModalOpen(true)}
+            className="text-emerald-500 hover:text-emerald-400 font-semibold flex items-center gap-1 transition"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Android APK</span>
+          </button>
+          <span>&middot;</span>
+          <button
+            onClick={() => setLegalModalType('terms')}
+            className="hover:text-indigo-400 transition"
+          >
+            Terms of Service
+          </button>
+          <span>&middot;</span>
+          <button
+            onClick={() => setLegalModalType('privacy')}
+            className="hover:text-indigo-400 transition"
+          >
+            Privacy Policy
+          </button>
+          <span>&middot;</span>
+          <button
+            onClick={() => setLegalModalType('refund')}
+            className="hover:text-indigo-400 transition"
+          >
+            30-Day Pro & Refund Policy
+          </button>
+        </div>
+
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
           <span>QuizTube AI • Built with</span>
           <Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" />
@@ -641,6 +772,7 @@ export default function Home() {
         onClose={() => setAuthModalOpen(false)}
         onAuthSuccess={user => {
           setCurrentUser(user);
+          refreshUserUsage(user.id);
           fetchAndMergeCloudStudySets(user.id).then(({ sets, isCloudConnected }) => {
             setSavedSets(sets);
             setIsCloudConnected(isCloudConnected);
@@ -701,6 +833,43 @@ export default function Home() {
             setActiveTutorConversation(null);
           }
         }}
+      />
+
+      {/* QuizTube Pro Upgrade Modal */}
+      <ProUpgradeModal
+        isOpen={proModalOpen}
+        onClose={() => setProModalOpen(false)}
+        user={currentUser}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
+        onUpgradeSuccess={() => {
+          refreshUserUsage();
+        }}
+      />
+
+      {/* Android APK Download Modal */}
+      <ApkDownloadSection
+        isOpen={apkModalOpen}
+        onClose={() => setApkModalOpen(false)}
+      />
+
+      {/* Account & Subscription Dashboard View */}
+      {accountModalOpen && (
+        <AccountSubscriptionView
+          user={currentUser}
+          usageSummary={userUsage}
+          isPro={isPro}
+          onOpenUpgradeModal={() => setProModalOpen(true)}
+          onOpenApkModal={() => setApkModalOpen(true)}
+          onOpenLegalModal={type => setLegalModalType(type)}
+          onLogout={handleSignOut}
+          onClose={() => setAccountModalOpen(false)}
+        />
+      )}
+
+      {/* Legal & Policy Modals */}
+      <LegalModals
+        type={legalModalType}
+        onClose={() => setLegalModalType(null)}
       />
 
       {studySet && (

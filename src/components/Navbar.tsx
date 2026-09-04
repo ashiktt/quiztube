@@ -12,6 +12,8 @@ import {
   LogOut,
   LogIn,
   FileQuestion,
+  Download,
+  Crown,
 } from 'lucide-react';
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
@@ -22,9 +24,13 @@ interface NavbarProps {
   onNewQuiz: () => void;
   onOpenAuthModal: () => void;
   onSignOut: () => void;
+  onOpenUpgradeModal?: () => void;
+  onOpenApkModal?: () => void;
+  onOpenAccountModal?: () => void;
   currentUser: StudentUser | null;
   savedCount: number;
   hasApiKey: boolean;
+  isPro?: boolean;
   appMode?: 'youtube' | 'examSolver' | 'tutor';
   onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor') => void;
 }
@@ -35,9 +41,13 @@ export function Navbar({
   onNewQuiz,
   onOpenAuthModal,
   onSignOut,
+  onOpenUpgradeModal,
+  onOpenApkModal,
+  onOpenAccountModal,
   currentUser,
   savedCount,
   hasApiKey,
+  isPro = false,
   appMode = 'youtube',
   onSwitchMode,
 }: NavbarProps) {
@@ -61,9 +71,16 @@ export function Navbar({
             <div>
               <div className="flex items-center gap-1.5 font-bold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
                 <span>QuizTube</span>
-                <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md border border-indigo-200/60 dark:border-indigo-800">
-                  AI
-                </span>
+                {isPro ? (
+                  <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-md shadow-sm shadow-amber-500/20 flex items-center gap-1">
+                    <Crown className="w-2.5 h-2.5 fill-current" />
+                    <span>PRO</span>
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md border border-indigo-200/60 dark:border-indigo-800">
+                    AI
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 hidden xl:block">
                 YouTube Lectures & University Exam Question Solver
@@ -114,22 +131,51 @@ export function Navbar({
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>AI Tutor</span>
-                <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-indigo-500 text-white rounded-full">
-                  AI
-                </span>
+                {isPro ? (
+                  <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
+                    PRO
+                  </span>
+                ) : (
+                  <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-indigo-500 text-white rounded-full">
+                    PRO
+                  </span>
+                )}
               </button>
             </div>
           )}
 
           {/* Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Download APK Button */}
+            {onOpenApkModal && (
+              <button
+                onClick={onOpenApkModal}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/60 rounded-xl transition"
+                title="Download QuizTube for Android (APK)"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="hidden md:inline">Android APK</span>
+              </button>
+            )}
+
+            {/* Upgrade to Pro Button (if not Pro) */}
+            {!isPro && onOpenUpgradeModal && (
+              <button
+                onClick={onOpenUpgradeModal}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl shadow-md shadow-amber-500/20 transition transform hover:scale-[1.02] active:scale-95"
+              >
+                <Crown className="w-3.5 h-3.5 fill-current" />
+                <span>Get Pro &middot; &#8377;149</span>
+              </button>
+            )}
+
             {/* Desktop Study Library Button */}
             <button
               onClick={onOpenHistory}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition border border-slate-200 dark:border-slate-800 relative"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition border border-slate-200 dark:border-slate-800 relative"
             >
               <FolderOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="hidden md:inline">My Study Library</span>
+              <span className="hidden xl:inline">Study Library</span>
               {savedCount > 0 && (
                 <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
                   {savedCount}
@@ -142,7 +188,7 @@ export function Navbar({
               onClick={onOpenApiKeyModal}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl transition border ${
                 hasApiKey
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                  ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
                   : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100'
               }`}
               title="Configure Gemini API Key"
@@ -153,15 +199,24 @@ export function Navbar({
 
             {/* Student Auth Button / Profile Menu */}
             {currentUser ? (
-              <div className="flex items-center gap-1.5 pl-1">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs">
+              <div className="flex items-center gap-1 pl-1">
+                <button
+                  onClick={onOpenAccountModal || onOpenAuthModal}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs transition"
+                  title="My Account & Subscription"
+                >
                   <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase shrink-0">
                     {currentUser.fullName ? currentUser.fullName[0] : currentUser.email ? currentUser.email[0] : 'S'}
                   </div>
                   <span className="font-bold text-indigo-700 dark:text-indigo-300 max-w-[80px] sm:max-w-[90px] truncate hidden sm:inline">
                     {currentUser.fullName || currentUser.email?.split('@')[0]}
                   </span>
-                </div>
+                  {isPro && (
+                    <span className="px-1 py-0.2 text-[9px] font-extrabold bg-amber-400 text-amber-950 rounded">
+                      PRO
+                    </span>
+                  )}
+                </button>
 
                 <button
                   onClick={onSignOut}
@@ -264,7 +319,8 @@ export function Navbar({
             type="button"
             onClick={() => {
               if (currentUser) {
-                onOpenApiKeyModal();
+                if (onOpenAccountModal) onOpenAccountModal();
+                else onOpenApiKeyModal();
               } else {
                 onOpenAuthModal();
               }

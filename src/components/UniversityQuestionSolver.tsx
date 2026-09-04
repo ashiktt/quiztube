@@ -27,8 +27,9 @@ import {
   Image as ImageIcon,
   X,
   FileUp,
+  Crown,
 } from 'lucide-react';
-import { SolvedQuestionItem, UniversitySolvedExam } from '@/types';
+import { SolvedQuestionItem, UniversitySolvedExam, UserUsageSummary } from '@/types';
 import { exportUniversityExamPdf } from '@/lib/examPdfExport';
 import { MermaidRenderer } from '@/components/MermaidRenderer';
 import { saveSolvedExam } from '@/lib/storage';
@@ -76,6 +77,10 @@ interface UniversityQuestionSolverProps {
   userId?: string;
   activeSolvedExam?: UniversitySolvedExam | null;
   onExamSolved?: (exam: UniversitySolvedExam) => void;
+  usageSummary?: UserUsageSummary | null;
+  isPro?: boolean;
+  onOpenUpgradeModal?: () => void;
+  onQuotaUsed?: () => void;
 }
 
 export function UniversityQuestionSolver({
@@ -86,6 +91,10 @@ export function UniversityQuestionSolver({
   userId,
   activeSolvedExam,
   onExamSolved,
+  usageSummary,
+  isPro = false,
+  onOpenUpgradeModal,
+  onQuotaUsed,
 }: UniversityQuestionSolverProps) {
   const [subject, setSubject] = useState('Computer Science & Engineering');
   const [academicLevel, setAcademicLevel] = useState('Undergraduate / B.Tech / BSC');
@@ -97,6 +106,10 @@ export function UniversityQuestionSolver({
   const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
+
+  // Daily quota
+  const solverRemaining = usageSummary?.questionSolverRemaining ?? (isPro ? 100 : 2);
+  const isQuotaExhausted = !isPro && solverRemaining <= 0;
 
   // Sync external activeSolvedExam selection from library
   React.useEffect(() => {
@@ -201,6 +214,15 @@ export function UniversityQuestionSolver({
 
   const handleSolve = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isQuotaExhausted) {
+      setErrorMessage(
+        'You have reached your daily limit of 2 free Question Solver generations. Quota resets at 12:00 AM IST (Asia/Kolkata). Upgrade to QuizTube Pro for high limits.'
+      );
+      if (onOpenUpgradeModal) onOpenUpgradeModal();
+      return;
+    }
+
     const hasText = questionsText.trim().length >= 5;
     const hasFile = Boolean(uploadedFile);
 
@@ -225,12 +247,16 @@ export function UniversityQuestionSolver({
           fileBase64: uploadedFile?.base64,
           fileMimeType: uploadedFile?.mimeType,
           fileName: uploadedFile?.file.name,
+          userId,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data?.isQuotaExceeded && onOpenUpgradeModal) {
+          onOpenUpgradeModal();
+        }
         if (data?.error?.includes('API key is required') && onOpenApiKeyModal) {
           onOpenApiKeyModal();
         }
@@ -245,6 +271,7 @@ export function UniversityQuestionSolver({
       setSolvedExam(newSolvedExam);
       saveSolvedExam(newSolvedExam);
       if (onExamSolved) onExamSolved(newSolvedExam);
+      if (onQuotaUsed) onQuotaUsed();
 
       // Expand all solutions by default
       const initialExpanded: Record<string, boolean> = {};
@@ -322,7 +349,6 @@ export function UniversityQuestionSolver({
     }));
   };
 
-  // Helper for mark badge colors
   const getMarkBadgeStyle = (marks: number) => {
     if (marks <= 2) {
       return 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
@@ -358,7 +384,50 @@ export function UniversityQuestionSolver({
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Upload your question paper as a <strong>PDF or Image</strong>, or paste question text with marks (2, 5, 10, 15 M) to generate accurate, mark-scaled model answers and download as PDF booklets.
             </p>
+
+            {/* Daily Quota Indicator */}
+            <div className="flex items-center justify-center gap-2 pt-1 text-xs">
+              {isPro ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-full font-medium">
+                  <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
+                  <span>QuizTube Pro &middot; Advanced Question Solver (High AI limits)</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
+                  <Clock className="w-3.5 h-3.5 text-purple-500" />
+                  <span>
+                    Free Daily Quota: <strong className="text-purple-600 dark:text-purple-400">{solverRemaining}/2</strong> generations remaining today (Asia/Kolkata)
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Quota Exhausted Banner */}
+          {isQuotaExhausted && (
+            <div className="p-4 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                  <Crown className="w-5 h-5 fill-current" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-xs sm:text-sm font-bold text-white">Daily Free Question Solver Limit Reached</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-300">
+                    You have used 2/2 free generations for today (IST timezone). Upgrade to Pro for Advanced Question Solver with High AI limits.
+                  </p>
+                </div>
+              </div>
+              {onOpenUpgradeModal && (
+                <button
+                  type="button"
+                  onClick={onOpenUpgradeModal}
+                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition transform hover:scale-[1.02] shrink-0"
+                >
+                  Upgrade &middot; &#8377;149/mo
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Quick Presets */}
           <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-sm">
@@ -505,7 +574,7 @@ export function UniversityQuestionSolver({
               )}
             </div>
 
-            {/* Questions Textarea (Optional if file uploaded, or for additional prompts) */}
+            {/* Questions Textarea */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">

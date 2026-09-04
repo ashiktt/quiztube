@@ -118,6 +118,7 @@ export interface QuizGenerationRequest {
   topicFocus?: string;
   apiKey?: string;
   preferredModel?: string;
+  userId?: string;
 }
 
 export interface TranscriptSegment {
@@ -160,6 +161,7 @@ export interface UniversityExamRequest {
   fileBase64?: string;
   fileMimeType?: string;
   fileName?: string;
+  userId?: string;
 }
 
 // ==========================================
@@ -240,5 +242,75 @@ export interface TutorChatRequest {
   preferredModel?: string;
   userId?: string;
 }
+
+// ==========================================
+// QUIZTUBE PRO & MONETIZATION TYPES
+// ==========================================
+
+export type UserPlan = 'free' | 'pro';
+
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';
+
+export type AiFeatureType = 'quiz_ai' | 'question_solver' | 'tutor';
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  plan: UserPlan;
+  status: SubscriptionStatus;
+  paymentProvider?: 'razorpay' | 'manual';
+  orderId?: string;
+  paymentId?: string;
+  subscriptionId?: string;
+  amount: number; // in INR paise or rupees (e.g., 14900 or 149)
+  currency: string; // 'INR'
+  startDate: string;
+  expiryDate: string; // 30 days from start or next billing date
+  autoRenew?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyAiUsage {
+  id?: string;
+  userId: string;
+  featureType: AiFeatureType;
+  usageDate: string; // YYYY-MM-DD in Asia/Kolkata timezone
+  promptCount: number;
+  updatedAt: string;
+}
+
+export interface UserUsageSummary {
+  userId?: string;
+  plan: UserPlan;
+  isPro: boolean;
+  subscription?: UserSubscription | null;
+  quizAiUsed: number;
+  quizAiLimit: number; // 2 for Free, 100 for Pro (fair-use)
+  quizAiRemaining: number;
+  questionSolverUsed: number;
+  questionSolverLimit: number; // 2 for Free, 100 for Pro (fair-use)
+  questionSolverRemaining: number;
+  tutorAllowed: boolean;
+  timezone: string; // 'Asia/Kolkata'
+  date: string; // 'YYYY-MM-DD'
+}
+
+export interface PaymentOrderRequest {
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  plan: 'pro';
+  period: 'monthly_30d';
+}
+
+export interface PaymentVerificationRequest {
+  userId: string;
+  userEmail?: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 
 

@@ -124,12 +124,104 @@ DROP POLICY IF EXISTS "Public Tutor Conversations Write" ON public.tutor_convers
 CREATE POLICY "Public Tutor Conversations Read" ON public.tutor_conversations FOR SELECT USING (true);
 CREATE POLICY "Public Tutor Conversations Write" ON public.tutor_conversations FOR ALL USING (true) WITH CHECK (true);
 
--- 6. High-Performance Indexes
+-- 6. Create Subscriptions Table (Stores QuizTube Pro ₹149/month student subscriptions)
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  plan TEXT DEFAULT 'free' NOT NULL, -- 'free', 'pro'
+  status TEXT DEFAULT 'active' NOT NULL, -- 'active', 'expired', 'cancelled', 'pending'
+  payment_provider TEXT DEFAULT 'razorpay',
+  order_id TEXT,
+  payment_id TEXT,
+  subscription_id TEXT,
+  amount INTEGER DEFAULT 14900, -- in paise (₹149 = 14900 paise)
+  currency TEXT DEFAULT 'INR',
+  start_date TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  expiry_date TIMESTAMPTZ,
+  auto_renew BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Subscriptions Read Access" ON public.subscriptions;
+DROP POLICY IF EXISTS "Public Subscriptions Write Access" ON public.subscriptions;
+CREATE POLICY "Public Subscriptions Read Access" ON public.subscriptions FOR SELECT USING (true);
+CREATE POLICY "Public Subscriptions Write Access" ON public.subscriptions FOR ALL USING (true) WITH CHECK (true);
+
+-- 7. Create Daily AI Usage Table (Atomic server-side tracking of Free tier daily quotas)
+CREATE TABLE IF NOT EXISTS public.daily_ai_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  feature_type TEXT NOT NULL, -- 'quiz_ai', 'question_solver', 'tutor'
+  usage_date DATE DEFAULT CURRENT_DATE NOT NULL, -- Date in Asia/Kolkata timezone
+  prompt_count INTEGER DEFAULT 0 NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT unique_user_feature_date UNIQUE (user_id, feature_type, usage_date)
+);
+
+ALTER TABLE public.daily_ai_usage ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Daily Usage Read Access" ON public.daily_ai_usage;
+DROP POLICY IF EXISTS "Public Daily Usage Write Access" ON public.daily_ai_usage;
+CREATE POLICY "Public Daily Usage Read Access" ON public.daily_ai_usage FOR SELECT USING (true);
+CREATE POLICY "Public Daily Usage Write Access" ON public.daily_ai_usage FOR ALL USING (true) WITH CHECK (true);
+
+-- 8. Atomic Stored Procedures for Quota Increment and Rollback
+CREATE OR REPLACE FUNCTION public.increment_daily_usage(
+  p_user_id UUID,
+  p_feature_type TEXT,
+  p_usage_date DATE
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  INSERT INTO public.daily_ai_usage (user_id, feature_type, usage_date, prompt_count, updated_at)
+  VALUES (p_user_id, p_feature_type, p_usage_date, 1, timezone('utc'::text, now()))
+  ON CONFLICT (user_id, feature_type, usage_date)
+  DO UPDATE SET
+    prompt_count = public.daily_ai_usage.prompt_count + 1,
+    updated_at = timezone('utc'::text, now())
+  RETURNING prompt_count INTO v_count;
+
+  RETURN v_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.decrement_daily_usage(
+  p_user_id UUID,
+  p_feature_type TEXT,
+  p_usage_date DATE
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE public.daily_ai_usage
+  SET prompt_count = GREATEST(0, prompt_count - 1),
+      updated_at = timezone('utc'::text, now())
+  WHERE user_id = p_user_id
+    AND feature_type = p_feature_type
+    AND usage_date = p_usage_date
+  RETURNING prompt_count INTO v_count;
+
+  RETURN COALESCE(v_count, 0);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. High-Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_study_sets_created_at ON public.study_sets (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_study_sets_user_id ON public.study_sets (user_id);
 CREATE INDEX IF NOT EXISTS idx_solved_exams_created_at ON public.solved_exams (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_solved_exams_user_id ON public.solved_exams (user_id);
 CREATE INDEX IF NOT EXISTS idx_tutor_conversations_created_at ON public.tutor_conversations (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tutor_conversations_user_id ON public.tutor_conversations (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions (status);
+CREATE INDEX IF NOT EXISTS idx_daily_usage_user_feature_date ON public.daily_ai_usage (user_id, feature_type, usage_date);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email);
+
 
