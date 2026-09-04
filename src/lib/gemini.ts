@@ -185,10 +185,10 @@ export const studySetResponseSchema: Schema = {
 
 // Candidate models in order of stability and performance
 const FALLBACK_MODELS = [
-  'gemini-2.5-flash',
   'gemini-3.7-flash',
+  'gemini-2.5-flash',
   'gemini-3.5-flash-lite',
-  'gemini-2.5-pro',
+  'gemini-3.1-pro-preview',
 ];
 
 /**
@@ -213,6 +213,9 @@ export function formatGeminiErrorMessage(error: any): string {
     // Not JSON string
   }
 
+  if (msg.includes('no longer available') || msg.includes('deprecated')) {
+    return 'The requested AI model version is no longer active. Automatically switching to the newest Gemini 3 models.';
+  }
   if (msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE')) {
     return 'Google Gemini servers are currently experiencing temporary high demand. Please try again in a few moments.';
   }

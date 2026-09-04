@@ -392,11 +392,11 @@ export function LectureInput({
                     onChange={e => setPreferredModel(e.target.value)}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="">Auto-Select & Fallback (Gemini 2.5 Flash / 3.7 Flash) [Recommended]</option>
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultra-Stable & Fast)</option>
-                    <option value="gemini-3.7-flash">Gemini 3.7 Flash (Hybrid Reasoning)</option>
+                    <option value="">Auto-Select & Fallback (Gemini 3.7 Flash / 2.5 Flash / 3.1 Pro) [Recommended]</option>
+                    <option value="gemini-3.7-flash">Gemini 3.7 Flash (Hybrid Reasoning & Fast)</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultra-Stable)</option>
                     <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (High Throughput)</option>
-                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Conceptual Analysis)</option>
+                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Deep Conceptual Analysis)</option>
                   </select>
                 </div>
               </div>
