@@ -117,7 +117,7 @@ export function AccountSubscriptionView({
                     Active Subscription Plan
                   </div>
                   <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-                    <span>{isAdmin ? 'QuizTube Pro (Admin Access)' : isPro ? 'QuizTube Pro' : 'QuizTube Free'}</span>
+                    <span>{isAdmin ? 'Saberio AI Pro (Admin Access)' : isPro ? 'Saberio AI Pro' : 'Saberio AI Free'}</span>
                     {!isAdmin && isPro && <span className="text-sm font-normal text-slate-300">(&#8377;149 / month)</span>}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
@@ -312,7 +312,7 @@ export function AccountSubscriptionView({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                   </div>
-                  <span className="text-slate-300 font-medium">QuizTube AI Tutor</span>
+                  <span className="text-slate-300 font-medium">Saberio AI Tutor</span>
                 </div>
                 <div>
                   {isAdmin || isPro ? (
@@ -339,7 +339,7 @@ export function AccountSubscriptionView({
                 </svg>
               </div>
               <div>
-                <h5 className="text-sm font-bold text-white">QuizTube for Android</h5>
+                <h5 className="text-sm font-bold text-white">Saberio AI for Android</h5>
                 <p className="text-xs text-slate-400">Direct APK &middot; Version {APK_CONFIG.version} &middot; {APK_CONFIG.fileSize}</p>
               </div>
             </div>

@@ -467,7 +467,7 @@ export function AITutorView({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
-                QuizTube AI Tutor
+                Saberio AI Tutor
               </h2>
               {SUBSCRIPTION_ENABLED && isPro && (
                 <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full shadow-sm">
@@ -752,7 +752,7 @@ export function AITutorView({
             <div className="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 animate-spin" />
             </div>
-            <span>QuizTube AI Tutor is synthesizing explanation...</span>
+            <span>Saberio AI Tutor is synthesizing explanation...</span>
           </div>
         )}
 
@@ -849,7 +849,7 @@ export function AITutorView({
         </div>
 
         <p className="text-[10px] text-center text-slate-400">
-          QuizTube AI Tutor guides student learning and fosters critical thinking.
+          Saberio AI Tutor guides student learning and fosters critical thinking.
         </p>
       </div>
     </div>

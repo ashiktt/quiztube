@@ -52,12 +52,16 @@ export function Footer({
           {/* ========================================================= */}
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
-                <GraduationCap className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 shrink-0 border border-slate-700/50">
+                <img
+                  src="/icon.png"
+                  alt="Saberio AI"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <span className="font-extrabold text-base sm:text-lg text-white tracking-tight">
-                  QuizTube
+                  Saberio AI
                 </span>
                 <p className="text-[11px] font-medium text-slate-400 leading-tight">
                   AI-powered learning for students
@@ -68,21 +72,6 @@ export function Footer({
             <p className="text-slate-400 leading-relaxed text-xs max-w-sm">
               Transform YouTube lectures into interactive quizzes and solve university exam papers with mark-proportional model answers.
             </p>
-
-            {/* Creator Credit Button */}
-            <div className="pt-1 flex items-center gap-2">
-              <span className="text-xs text-slate-400">Created by</span>
-              <a
-                href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 transition transform hover:scale-105 active:scale-95"
-                title="Ashikur's Portfolio"
-              >
-                <span>Ashikur</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
           </div>
 
           {/* ========================================================= */}
@@ -230,7 +219,7 @@ export function Footer({
             </div>
             <div>
               <h5 className="font-bold text-sm text-white flex items-center justify-center sm:justify-start gap-2">
-                <span>Download QuizTube for Android</span>
+                <span>Download Saberio AI for Android</span>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
                   {APK_CONFIG.version ? `v${APK_CONFIG.version}` : 'Latest'}
                 </span>
@@ -263,7 +252,7 @@ export function Footer({
         {/* Bottom Credits Bar */}
         <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
-            &copy; {new Date().getFullYear()} QuizTube AI. Built for academic excellence.
+            &copy; {new Date().getFullYear()} Saberio AI. Built for academic excellence.
           </p>
         </div>
 

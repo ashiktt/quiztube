@@ -1,6 +1,6 @@
 {
-  "name": "QuizTube AI - Video Quizzes & University Exam Solver",
-  "short_name": "QuizTube AI",
+  "name": "Saberio AI - Video Quizzes & University Exam Solver",
+  "short_name": "Saberio AI",
   "description": "Transform YouTube lectures into interactive quizzes and solve university exam papers with mark-proportional model answers.",
   "start_url": "/",
   "id": "/",

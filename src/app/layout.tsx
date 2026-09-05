@@ -25,20 +25,20 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'QuizTube AI - Convert YouTube Lectures to Quizzes & Study Sets',
+  title: 'Saberio AI - Convert YouTube Lectures to Quizzes & Study Sets',
   description: 'AI-powered active recall tool that converts educational YouTube lectures into interactive quizzes, spaced repetition flashcards, and timestamped study notes for students.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'QuizTube AI',
+    title: 'Saberio AI',
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: '/icon-512.png',
-    apple: '/icon-512.png',
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
 };
 

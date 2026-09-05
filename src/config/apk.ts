@@ -29,14 +29,14 @@ export const APK_CONFIG: ApkConfig = {
     'Direct APK installation with native performance & offline storage',
     'AI-powered YouTube lecture to interactive quiz generator',
     'University exam solver with marks-proportional model answers (2, 5, 10, 15 M)',
-    '24/7 QuizTube AI Academic Tutor with Socratic learning & mistake diagnosis',
+    '24/7 Saberio AI Academic Tutor with Socratic learning & mistake diagnosis',
     'Visual Mermaid architecture diagrams & formula cheatsheets',
     'Native bottom navigation bar with Dark and Light mode support',
   ],
   installSteps: [
     {
       stepNumber: 1,
-      title: 'Download QuizTube APK',
+      title: 'Download Saberio AI APK',
       description: 'Tap the Download APK button above to save the official package directly to your Android device.',
     },
     {
@@ -56,13 +56,13 @@ export const APK_CONFIG: ApkConfig = {
     },
     {
       stepNumber: 5,
-      title: 'Launch QuizTube App',
-      description: 'Open QuizTube from your app drawer or home screen.',
+      title: 'Launch Saberio AI App',
+      description: 'Open Saberio AI from your app drawer or home screen.',
     },
     {
       stepNumber: 6,
       title: 'Sign In with Same Account',
-      description: 'Log in with your existing QuizTube student account to instantly synchronize all your saved quizzes, solved exams, and Pro subscription.',
+      description: 'Log in with your existing Saberio AI student account to instantly synchronize all your saved quizzes, solved exams, and Pro subscription.',
     },
   ],
 };

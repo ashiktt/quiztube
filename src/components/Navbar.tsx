@@ -15,7 +15,6 @@ import {
   Settings,
   Crown,
   ChevronDown,
-  ExternalLink,
 } from 'lucide-react';
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
@@ -114,12 +113,16 @@ export function Navbar({
             onClick={() => handleNavClick('youtube')}
             className="flex items-center gap-3 group text-left focus:outline-none shrink-0"
           >
-            <div className="relative p-2.5 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 rounded-xl text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
-              <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+              <img
+                src="/icon.png"
+                alt="Saberio AI"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5 font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
-                <span>QuizTube</span>
+                <span>Saberio AI</span>
                 {SUBSCRIPTION_ENABLED && isPro && (
                   <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm">
                     <Crown className="w-2.5 h-2.5 fill-current" />
@@ -210,18 +213,6 @@ export function Navbar({
               </button>
             )}
 
-            {/* Credit Button: Ashikur */}
-            <a
-              href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 hover:bg-indigo-50/80 dark:bg-slate-900 dark:hover:bg-indigo-950/60 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-800 rounded-xl transition shadow-sm group"
-              title="Creator Portfolio - Ashikur"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform"></span>
-              <span className="font-bold">Ashikur</span>
-              <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-500 transition" />
-            </a>
 
             {/* Profile Avatar & Dropdown Menu */}
             {currentUser ? (
@@ -346,11 +337,15 @@ export function Navbar({
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-lg text-white">
-                    <GraduationCap className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+                    <img
+                      src="/icon.png"
+                      alt="Saberio AI"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">QuizTube</h3>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Saberio AI</h3>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered learning</p>
                   </div>
                 </div>
@@ -433,19 +428,6 @@ export function Navbar({
                     <span>Download Android App</span>
                   </button>
                 )}
-
-                <a
-                  href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition border border-slate-200/80 dark:border-slate-800/80"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Created by Ashikur</span>
-                  </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                </a>
               </div>
             </div>
 

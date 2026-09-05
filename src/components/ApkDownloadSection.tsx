@@ -59,7 +59,7 @@ export function ApkDownloadSection({
           </div>
 
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            Download QuizTube for Android
+            Download Saberio AI for Android
           </h2>
 
           <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
@@ -109,7 +109,7 @@ export function ApkDownloadSection({
             <span>Direct Website Distribution Notice</span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            This APK is digitally signed and distributed directly from the official QuizTube website (not distributed through Google Play Store). It contains the exact same secure code, Supabase account sync, and verified student features.
+            This APK is digitally signed and distributed directly from the official Saberio AI website (not distributed through Google Play Store). It contains the exact same secure code, Supabase account sync, and verified student features.
           </p>
         </div>
       </div>
@@ -147,7 +147,7 @@ export function ApkDownloadSection({
       <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-3">
         <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>What's New in QuizTube v{APK_CONFIG.version}</span>
+          <span>What's New in Saberio AI v{APK_CONFIG.version}</span>
         </h3>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">

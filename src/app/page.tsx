@@ -437,7 +437,7 @@ export default function Home() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-extrabold text-xs sm:text-sm">
-                        QuizTube AI Tutor
+                        Saberio AI Tutor
                       </h4>
                       {SUBSCRIPTION_ENABLED && isPro && (
                         <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
