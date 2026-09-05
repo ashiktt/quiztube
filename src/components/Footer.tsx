@@ -265,21 +265,6 @@ export function Footer({
           <p>
             &copy; {new Date().getFullYear()} QuizTube AI. Built for academic excellence.
           </p>
-
-          <div className="flex items-center gap-2">
-            <span>Designed & Developed by</span>
-            <a
-              href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 rounded-xl font-bold text-xs transition transform hover:scale-105 active:scale-95 shadow-sm"
-              title="Visit Ashikur's Portfolio"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Ashikur</span>
-              <ExternalLink className="w-3 h-3 text-slate-400" />
-            </a>
-          </div>
         </div>
 
       </div>
