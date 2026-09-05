@@ -715,59 +715,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm py-8 mt-12 mb-16 sm:mb-0 text-center text-xs text-slate-500 dark:text-slate-400 space-y-4">
-        {/* Policy & APK Links */}
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
-          <button
-            onClick={() => setApkModalOpen(true)}
-            className="text-emerald-500 hover:text-emerald-400 font-semibold flex items-center gap-1 transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Download Android APK</span>
-          </button>
-          <span>&middot;</span>
-          <button
-            onClick={() => setLegalModalType('terms')}
-            className="hover:text-indigo-400 transition"
-          >
-            Terms of Service
-          </button>
-          <span>&middot;</span>
-          <button
-            onClick={() => setLegalModalType('privacy')}
-            className="hover:text-indigo-400 transition"
-          >
-            Privacy Policy
-          </button>
-          <span>&middot;</span>
-          <button
-            onClick={() => setLegalModalType('refund')}
-            className="hover:text-indigo-400 transition"
-          >
-            30-Day Pro & Refund Policy
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-          <span>QuizTube AI • Built with</span>
-          <Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" />
-          <span>for students by</span>
-          <a
-            href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/80 dark:to-purple-950/80 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/90 dark:hover:to-purple-900/90 text-indigo-600 dark:text-indigo-300 font-bold rounded-xl border border-indigo-200/80 dark:border-indigo-800 shadow-sm transition hover:scale-105 group"
-          >
-            <span>Ashikur</span>
-            <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </a>
-        </div>
-        <p className="text-[11px] text-slate-400">
-          Transform YouTube educational lectures into active recall quizzes, flashcards & visual cheatsheets
-        </p>
-      </footer>
-
       {/* Modals & Slide-out Drawers */}
       <ApiKeyModal
         isOpen={apiKeyModalOpen}
