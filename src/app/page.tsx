@@ -22,8 +22,6 @@ import {
   PlusCircle,
   AlertTriangle,
   ExternalLink,
-  Heart,
-  Download,
   Crown,
   ShieldCheck,
 } from 'lucide-react';
@@ -56,7 +54,6 @@ import { ApkDownloadSection } from '@/components/ApkDownloadSection';
 import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
 import { LegalModals, LegalModalType } from '@/components/LegalModals';
 import { Footer } from '@/components/Footer';
-import { APK_CONFIG } from '@/config/apk';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import {
   getSavedStudySets,
@@ -402,7 +399,7 @@ export default function Home() {
           /* Landing / Input Screen */
           <div className="space-y-8">
             {/* Top Feature Switcher Banners Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 1. University Solver Banner Card */}
               <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-indigo-500/30">
                 <div className="flex items-start gap-3 text-left">
@@ -465,37 +462,6 @@ export default function Home() {
                 >
                   <span>Chat with AI Tutor</span>
                   <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* 3. Android APK Download Banner */}
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-emerald-500/30">
-                <div className="flex items-start gap-3 text-left">
-                  <div className="p-2.5 bg-gradient-to-tr from-emerald-600 to-teal-600 rounded-2xl text-white shadow-md shrink-0">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-xs sm:text-sm">
-                        QuizTube for Android
-                      </h4>
-                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full">
-                        v{APK_CONFIG.version}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-emerald-200 mt-1 leading-relaxed">
-                      Direct APK download with offline review, full screen lectures, and real-time cloud sync.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setApkModalOpen(true)}
-                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download APK ({APK_CONFIG.fileSize})</span>
                 </button>
               </div>
             </div>
