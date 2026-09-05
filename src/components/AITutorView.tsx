@@ -40,6 +40,7 @@ import {
 } from '@/types';
 import { saveTutorConversation, getStoredApiKey } from '@/lib/storage';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
+import { TutorAnswerCard } from './tutor/TutorAnswerCard';
 
 interface AITutorViewProps {
   initialContext?: TutorContext | null;
@@ -389,7 +390,7 @@ export function AITutorView({
       if (onPracticeTopic) {
         onPracticeTopic(topic);
       } else {
-        handleSendMessage(`Give me 3 practice multiple-choice questions on "${topic}" to test my understanding.`);
+        handleSendMessage(`Give me a practice question on "${topic}" to test my understanding.`);
       }
     } else if (action.action === 'flashcards') {
       const topic = action.topic || context?.topicTag || 'Key Terms';
@@ -404,6 +405,16 @@ export function AITutorView({
     } else if (action.action === 'example') {
       setExplanationMode('example');
       handleSendMessage('Can you provide another clear practical example or real-world application of this concept?');
+    } else if (action.action === 'socratic') {
+      setLearningMode('socratic');
+      handleSendMessage('Guide me through this step-by-step with small scaffolding questions instead of giving the answer away.');
+    } else if (action.action === 'solution') {
+      setLearningMode('direct');
+      handleSendMessage('Please provide the complete step-by-step solution now.');
+    } else if (action.action === 'similar') {
+      handleSendMessage('Give me a similar problem or question to solve so I can practice.');
+    } else if (action.action === 'diagram') {
+      handleSendMessage('Can you show a visual diagram or flowchart for this concept?');
     } else {
       handleSendMessage(action.label);
     }
@@ -662,8 +673,8 @@ export function AITutorView({
           messages.map(msg => (
             <div
               key={msg.id}
-              className={`flex gap-3 max-w-3xl ${
-                msg.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'
+              className={`flex gap-3 ${
+                msg.role === 'user' ? 'max-w-2xl ml-auto justify-end' : 'w-full mr-auto justify-start'
               }`}
             >
               {msg.role === 'assistant' && (
@@ -672,7 +683,7 @@ export function AITutorView({
                 </div>
               )}
 
-              <div className="space-y-2 max-w-[85%] sm:max-w-[80%]">
+              <div className={msg.role === 'user' ? 'space-y-2 max-w-[85%] sm:max-w-[80%]' : 'w-full flex-1 min-w-0'}>
                 {/* User Image Attachment in chat */}
                 {msg.imagePreviewUrl && (
                   <img
@@ -682,65 +693,20 @@ export function AITutorView({
                   />
                 )}
 
-                <div
-                  className={`p-4 rounded-3xl text-xs sm:text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                      : 'bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700/60 shadow-sm'
-                  }`}
-                >
-                  <div className="prose prose-sm dark:prose-invert max-w-none space-y-2 whitespace-pre-wrap font-sans">
+                {msg.role === 'user' ? (
+                  <div className="p-4 rounded-3xl text-xs sm:text-sm leading-relaxed bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md font-sans">
                     {msg.content}
                   </div>
-                </div>
-
-                {/* Assistant Message Actions */}
-                {msg.role === 'assistant' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-1">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(msg.content, msg.id)}
-                        className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition"
-                        title="Copy text"
-                      >
-                        {copiedMsgId === msg.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSpeakText(msg.content, msg.id)}
-                        className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition"
-                        title="Listen to explanation"
-                      >
-                        {isSpeakingMsgId === msg.id ? (
-                          <VolumeX className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                        ) : (
-                          <Volume2 className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Suggested Follow-up Actions */}
-                    {msg.suggestedActions && msg.suggestedActions.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {msg.suggestedActions.map((act, actIdx) => (
-                          <button
-                            key={actIdx}
-                            type="button"
-                            onClick={() => handleActionClick(act)}
-                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-xl text-[11px] font-semibold transition"
-                          >
-                            {act.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                ) : (
+                  <TutorAnswerCard
+                    message={msg}
+                    onActionClick={handleActionClick}
+                    onFollowUpClick={(q) => handleSendMessage(q)}
+                    isCopied={copiedMsgId === msg.id}
+                    onCopy={() => handleCopyText(msg.content, msg.id)}
+                    isSpeaking={isSpeakingMsgId === msg.id}
+                    onSpeak={() => handleSpeakText(msg.content, msg.id)}
+                  />
                 )}
               </div>
             </div>

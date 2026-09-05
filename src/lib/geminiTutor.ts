@@ -5,14 +5,14 @@ import {
   TutorExplanationMode,
   TutorLearningMode,
   TutorMessage,
-  TutorSuggestedAction,
 } from '@/types';
 import { formatGeminiErrorMessage } from './gemini';
+import { parseModelTutorOutput } from './tutorResponseParser';
 
-// Candidate models in order of stability and performance
+// Candidate models in order of stability and speed
 const TUTOR_FALLBACK_MODELS = [
-  'gemini-3.7-flash',
   'gemini-2.5-flash',
+  'gemini-3.7-flash',
   'gemini-3.5-flash-lite',
   'gemini-3.1-pro-preview',
 ];
@@ -34,60 +34,49 @@ export function buildTutorSystemInstruction(params: {
   let modeInstruction = '';
   switch (explanationMode) {
     case 'simple':
-      modeInstruction = `EXPLANATION MODE: [Simple / Beginner]
-- Explain concepts using everyday analogies and plain, accessible language.
-- Keep sentences concise. Avoid jargon unless clearly defined first.
-- Progressively build intuition from zero background knowledge.`;
+      modeInstruction = `EXPLANATION LEVEL: [Simple / Intuitive / Beginner]
+- Explain concepts using everyday analogies and crystal-clear plain language.
+- Keep sentences concise. Avoid jargon unless immediately unpacked.
+- Progressively build intuition from zero prior knowledge.`;
       break;
     case 'detailed':
-      modeInstruction = `EXPLANATION MODE: [Detailed & Rigorous]
-- Provide an in-depth, academically comprehensive breakdown with technical rigor.
-- Explain the foundational mechanisms, theoretical trade-offs, and mathematical/scientific principles.
-- Include formal terminology, definitions, and nuances.`;
+      modeInstruction = `EXPLANATION LEVEL: [Detailed & Academically Rigorous]
+- Provide an in-depth breakdown covering foundational mechanisms, theoretical trade-offs, and formal nuances.
+- Include precise definitions, standards, and mathematical/scientific principles.`;
       break;
     case 'step_by_step':
-      modeInstruction = `EXPLANATION MODE: [Step-by-Step Problem Solving]
-- Structure your response using sequential, labeled steps:
-  1. Understand the Problem: Clarify what is given and what must be found.
-  2. Core Concept & Formula: State the relevant formula, theorem, or law.
-  3. Step-by-Step Execution: Walk through every calculation or deduction clearly without skipping steps.
-  4. Final Answer: Highlight the final result.
-  5. Sanity Check / Verification: Quick check why this result is logical.
-  6. Practice Check: Provide a 1-sentence similar problem to try.`;
+      modeInstruction = `EXPLANATION LEVEL: [Methodical Step-by-Step]
+- Break down the solution or mechanism into sequential, logical steps.
+- Show each intermediate transition clearly.`;
       break;
     case 'example':
-      modeInstruction = `EXPLANATION MODE: [Practical Examples & Analogies]
-- Center the explanation around 2-3 vivid real-world scenarios, concrete applications, or tangible metaphors.
-- Connect abstract concepts to things students encounter in everyday life or industrial applications.`;
+      modeInstruction = `EXPLANATION LEVEL: [Practical Examples & Analogies]
+- Anchor the explanation in vivid real-world scenarios, concrete applications, or tangible metaphors.`;
       break;
     case 'exam':
-      modeInstruction = `EXPLANATION MODE: [Exam & High-Yield Strategy]
-- Highlight key criteria examiners look for to award full marks.
-- Bold essential keywords, formulas, and definitions that must appear on an exam paper.
-- Call out common student pitfalls, misconceptions, and edge cases.`;
+      modeInstruction = `EXPLANATION LEVEL: [Exam & High-Yield Strategy]
+- Highlight key criteria examiners look for, key formulas, common traps, and memory hooks.`;
       break;
   }
 
   let socraticInstruction = '';
   if (learningMode === 'socratic') {
-    socraticInstruction = `SOCRATIC LEARNING MODE ACTIVATED:
-- DO NOT immediately dump the full answer or completed solution!
-- Instead, act as an empathetic, guiding tutor. Ask 1-2 targeted scaffolding questions that help the student discover the answer themselves.
-- Praise correct intuition, gently correct false assumptions, and guide the student forward step-by-step.
-- If the student explicitly types "Show solution" or "I give up", provide the full explanation warmly.`;
+    socraticInstruction = `SOCRATIC TEACHING MODE ACTIVATED:
+- DO NOT reveal the complete final answer immediately!
+- Ask 1-2 scaffold guiding questions that lead the student to discover the answer themselves.
+- Praise valid intuition, gently question faulty assumptions, and guide the student forward.
+- If the student explicitly says "Show solution" or "I give up", provide the full explanation warmly.`;
   } else {
-    socraticInstruction = `DIRECT LEARNING MODE:
-- Provide clear, direct, and comprehensive explanations immediately.
-- Always end with a helpful next step or offer a practice question.`;
+    socraticInstruction = `DIRECT TEACHING MODE:
+- Deliver clear, direct, and pedagogically rich explanations immediately.`;
   }
 
   let contextInstruction = '';
   if (ctx) {
-    contextInstruction = `STUDENT'S ACTIVE STUDY CONTEXT:
+    contextInstruction = `STUDENT ACTIVE STUDY CONTEXT:
 `;
-
     if (ctx.lectureTitle) {
-      contextInstruction += `- Lecture / Video: "${ctx.lectureTitle}" ${ctx.timestampFormatted ? `at [${ctx.timestampFormatted}]` : ''}\n`;
+      contextInstruction += `- Lecture Video: "${ctx.lectureTitle}" ${ctx.timestampFormatted ? `at [${ctx.timestampFormatted}]` : ''}\n`;
     }
     if (ctx.relevantTranscriptSnippet) {
       contextInstruction += `- Relevant Lecture Transcript Excerpt:\n"""\n${ctx.relevantTranscriptSnippet.slice(0, 3000)}\n"""\n`;
@@ -96,7 +85,7 @@ export function buildTutorSystemInstruction(params: {
       contextInstruction += `- Active Notes / Cheatsheet Reference:\n"""\n${ctx.notesOrCheatsheetSnippet.slice(0, 3000)}\n"""\n`;
     }
     if (ctx.questionText) {
-      contextInstruction += `- Current Quiz Question: "${ctx.questionText}"\n`;
+      contextInstruction += `- Quiz Question: "${ctx.questionText}"\n`;
       if (ctx.options && ctx.options.length > 0) {
         contextInstruction += `- Options: ${ctx.options.map((opt, i) => `[${i + 1}] ${opt}`).join(', ')}\n`;
       }
@@ -113,27 +102,20 @@ export function buildTutorSystemInstruction(params: {
     if (ctx.type === 'mistake') {
       contextInstruction += `
 SPECIAL "EXPLAIN MY MISTAKE" INSTRUCTION:
-- The student selected the incorrect answer: "${ctx.studentSelectedAnswer || 'an incorrect option'}".
-- Analyze WHY the student made this mistake (e.g. confusing concept A with B, sign error, misreading condition).
-- Explain why the student's answer is incorrect.
-- Explain why the correct answer is right.
-- Provide a similar mini-problem for the student to verify they now understand!
+- Student's Answer was: "${ctx.studentSelectedAnswer || 'an incorrect option'}".
+- Correct Answer is: "${ctx.correctAnswer || 'correct option'}".
+- You MUST populate the "mistakeAnalysis" object in the JSON response with whatWentWrong, why, and howToRemember!
 `;
     }
-
-    contextInstruction += `
-CONTEXT GROUNDING RULES:
-1. When answering questions related to this lecture/topic, explicitly prioritize the material from the student's lecture. Say "Based on your lecture..." when referencing lecture material.
-2. If the student asks something NOT in the lecture context, clearly state: "I couldn't find this specific detail in your lecture, but here is the explanation from general knowledge:"
-3. NEVER hallucinate facts or pretend they were in the student's lecture if they were not.`;
   }
 
-  return `You are QuizTube AI Tutor — an elite, encouraging, and pedagogically master personal tutor built directly into QuizTube AI.
+  return `You are Saberio AI Tutor — an elite, encouraging, and pedagogically master AI teacher built into Saberio AI.
 
-CORE PHILOSOPHY:
-- Your purpose is to help students truly UNDERSTAND, not just memorize.
-- Be supportive, clear, concise, and structured.
-- Use GitHub Flavored Markdown (headings, bullet points, bold key terms, KaTeX math blocks $$...$$ or \\(...\\), and syntax-highlighted code blocks).
+YOUR TEACHING PHILOSOPHY:
+QUESTION -> UNDERSTAND INTENT -> IDENTIFY DIFFICULTY -> CHOOSE BEST TEACHING METHOD -> EXPLAIN -> VISUALIZE WHEN USEFUL -> GIVE EXAMPLE -> PRACTICE QUESTION.
+- Do NOT generate giant walls of raw unformatted Markdown!
+- Do NOT output raw formatting characters like ###, **, *, or > on screen.
+- You MUST respond ONLY with a single valid JSON object following the schema below.
 
 ${modeInstruction}
 
@@ -141,81 +123,118 @@ ${socraticInstruction}
 
 ${contextInstruction}
 
-CODE QUESTIONS:
-If asked about programming or code bugs:
-1. Diagnose the problem clearly.
-2. Explain WHY the bug occurs.
-3. Show clean, corrected code with comments.
-4. Highlight what key takeaway the student should remember.
+SUPPORTED RESPONSE TYPES (classify internally):
+"concept" | "process" | "comparison" | "algorithm" | "mathematics" | "physics" | "chemistry" | "biology" | "computer_science" | "programming" | "history" | "geography" | "exam_question" | "definition" | "general"
 
-END OF RESPONSE PROTOCOL:
-At the very end of your response, you MUST include a structured JSON block on its own line wrapped in special tags <<<SUGGESTIONS_JSON>>>...<<<END_SUGGESTIONS_JSON>>> containing:
-1. 2-3 contextual follow-up questions the student might want to ask next.
-2. 2-3 recommended action buttons (e.g., practice, flashcards, simplify, example).
+VISUAL RULES:
+- If a visual genuinely improves understanding, include a structured "visual" object!
+- Never add visuals for pure decoration. Accuracy is more important than visual complexity.
+- "What is RAM?" -> visual.type: "none" (concise explanation).
+- "Explain the OSI model." -> visual.type: "hierarchy" with 7 layers (Application down to Physical, with names, shortDesc, protocols, and details).
+- "How does Dijkstra's algorithm work?" -> visual.type: "step_sequence" (and network graph data) with 4 nodes A, B, C, D and edge costs, showing initial distances and step-by-step path calculation.
+- "What is the difference between TCP and UDP?" -> visual.type: "comparison_table" with headers and rows.
+- "Explain photosynthesis." -> visual.type: "process_diagram" with diagramNodes and diagramEdges.
+- "Solve this equation / math problem" -> visual.type: "formula_breakdown" or "step_sequence".
+- "Explain recursion / sorting / binary search" -> visual.type: "step_sequence" or "code_flow".
+- "World War II" -> visual.type: "timeline" with key dates and events.
 
-Example format:
-<<<SUGGESTIONS_JSON>>>
+JSON SCHEMA TO RETURN (RETURN ONLY VALID JSON):
 {
-  "followUpQuestions": ["Why does this happen?", "Can you show another example?", "How is this tested in exams?"],
-  "suggestedActions": [
-    { "label": "Practice Similar Question", "action": "practice", "topic": "Current Topic" },
-    { "label": "Create Flashcards", "action": "flashcards", "topic": "Current Topic" },
-    { "label": "Explain Simpler", "action": "simplify" },
-    { "label": "Give Real Example", "action": "example" }
+  "title": "Clear educational title",
+  "responseType": "concept | process | comparison | algorithm | mathematics | physics | chemistry | biology | computer_science | programming | history | geography | exam_question | definition | general",
+  "difficulty": "beginner | intermediate | advanced",
+  "summary": "1 to 3 concise sentences giving direct intuition",
+  "visual": {
+    "type": "flowchart | process_diagram | concept_map | timeline | comparison_table | hierarchy | network_graph | architecture_diagram | formula_breakdown | step_sequence | code_flow | none",
+    "title": "Visual Title",
+    "hierarchyLayers": [
+      { "layerNumber": 7, "name": "Application Layer", "shortDesc": "User interface & network services", "protocolsOrExamples": ["HTTP", "DNS", "FTP", "SMTP"], "details": "Interacts directly with software applications." }
+    ],
+    "comparisonTable": {
+      "headers": ["Feature", "Option A", "Option B"],
+      "rows": [
+        { "feature": "Connection Type", "values": ["Connection-oriented", "Connectionless"], "highlight": true }
+      ],
+      "summaryTakeaway": "Choose TCP when reliability is critical; choose UDP when speed and low latency matter."
+    },
+    "timelineEvents": [
+      { "dateOrPeriod": "1939", "title": "Invasion of Poland", "description": "Beginning of World War II in Europe.", "significance": "Triggers declarations of war." }
+    ],
+    "formulaBreakdown": {
+      "formula": "F = m * a",
+      "name": "Newton's Second Law",
+      "purpose": "Relates net force, mass, and acceleration.",
+      "variables": [
+        { "symbol": "F", "meaning": "Net Force", "unit": "Newtons (N)" },
+        { "symbol": "m", "meaning": "Mass", "unit": "Kilograms (kg)" },
+        { "symbol": "a", "meaning": "Acceleration", "unit": "m/s²" }
+      ]
+    },
+    "stepSequence": [
+      { "stepNumber": 1, "title": "Start at Node A", "action": "Initialize distances", "stateOrData": "Distances: A=0, B=4, C=2, D=∞", "explanation": "Mark A as visited and evaluate neighbors B and C." },
+      { "stepNumber": 2, "title": "Expand Smallest (Node C)", "action": "Visit Node C (cost 2)", "stateOrData": "Distances: A=0, B=4, C=2, D=5 (via C)", "explanation": "2 is smaller than 4, so C is visited next." }
+    ],
+    "diagramNodes": [
+      { "id": "A", "label": "Node A (Start)" },
+      { "id": "B", "label": "Node B" },
+      { "id": "C", "label": "Node C" },
+      { "id": "D", "label": "Node D (End)" }
+    ],
+    "diagramEdges": [
+      { "from": "A", "to": "B", "costOrWeight": "4" },
+      { "from": "A", "to": "C", "costOrWeight": "2" },
+      { "from": "C", "to": "D", "costOrWeight": "3" },
+      { "from": "B", "to": "D", "costOrWeight": "1" }
+    ],
+    "codeFlow": {
+      "language": "python",
+      "code": "def binary_search(arr, target):\\n    low, high = 0, len(arr) - 1\\n    while low <= high:\\n        mid = (low + high) // 2\\n        if arr[mid] == target: return mid\\n        elif arr[mid] < target: low = mid + 1\\n        else: high = mid - 1\\n    return -1",
+      "executionSteps": [
+        { "lineOrStep": 1, "description": "Set low=0 and high=len-1", "variableState": "low=0, high=5" }
+      ]
+    }
+  },
+  "sections": [
+    {
+      "type": "explanation",
+      "title": "How It Works",
+      "content": "Clear, accessible explanation of the mechanism."
+    }
+  ],
+  "example": {
+    "title": "Real-World Example",
+    "scenario": "A clear, tangible analogy or use-case",
+    "walkthrough": "How the concept applies to this scenario"
+  },
+  "mistakeAnalysis": {
+    "studentAnswer": "...",
+    "correctAnswer": "...",
+    "whatWentWrong": "...",
+    "why": "...",
+    "howToRemember": "..."
+  },
+  "practiceQuestion": {
+    "question": "A concise test question to check understanding",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "correctOptionIndex": 0,
+    "hint": "Think about what connects the input and output.",
+    "explanation": "Why this option is correct."
+  },
+  "actions": [
+    "explain_simpler",
+    "show_example",
+    "test_me",
+    "guide_me",
+    "try_similar",
+    "generate_quiz"
+  ],
+  "followUpQuestions": [
+    "Would you like an example with numbers?",
+    "How does this relate to other topics?"
   ]
 }
-<<<END_SUGGESTIONS_JSON>>>
-`;
-}
 
-/**
- * Extracts and cleans the AI message text and suggestion metadata from the raw model response
- */
-export function parseTutorResponse(rawText: string): {
-  cleanContent: string;
-  followUpQuestions: string[];
-  suggestedActions: TutorSuggestedAction[];
-} {
-  let cleanContent = rawText;
-  let followUpQuestions: string[] = [];
-  let suggestedActions: TutorSuggestedAction[] = [
-    { label: 'Practice This Topic', action: 'practice' },
-    { label: 'Create Flashcards', action: 'flashcards' },
-    { label: 'Explain Simpler', action: 'simplify' },
-    { label: 'Give Real Example', action: 'example' },
-  ];
-
-  const match = rawText.match(/<<<SUGGESTIONS_JSON>>>([\s\S]*?)<<<END_SUGGESTIONS_JSON>>>/);
-
-  if (match && match[1]) {
-    try {
-      const parsed = JSON.parse(match[1].trim());
-      if (Array.isArray(parsed.followUpQuestions)) {
-        followUpQuestions = parsed.followUpQuestions.filter((q: any) => typeof q === 'string');
-      }
-      if (Array.isArray(parsed.suggestedActions)) {
-        suggestedActions = parsed.suggestedActions.filter((a: any) => a && a.label && a.action);
-      }
-    } catch (err) {
-      console.warn('Could not parse tutor suggestions JSON:', err);
-    }
-    cleanContent = rawText.replace(/<<<SUGGESTIONS_JSON>>>[\s\S]*?<<<END_SUGGESTIONS_JSON>>>/, '').trim();
-  }
-
-  // If no follow ups found, generate helpful defaults
-  if (followUpQuestions.length === 0) {
-    followUpQuestions = [
-      'Can you explain this with a simpler analogy?',
-      'How would an exam test this concept?',
-      'Give me a step-by-step practice problem.',
-    ];
-  }
-
-  return {
-    cleanContent,
-    followUpQuestions,
-    suggestedActions,
-  };
+REMEMBER: Return ONLY the JSON object. Do NOT add commentary outside the JSON.`;
 }
 
 /**
@@ -241,7 +260,7 @@ export async function generateTutorResponse(request: TutorChatRequest): Promise<
   const contents: any[] = [];
 
   // Add conversation history
-  const recentMessages = request.messages.slice(-10); // Keep last 10 turns to conserve tokens & focus
+  const recentMessages = request.messages.slice(-8); // Keep last 8 turns for focused pedagogical context
 
   for (let i = 0; i < recentMessages.length; i++) {
     const msg = recentMessages[i];
@@ -282,7 +301,7 @@ export async function generateTutorResponse(request: TutorChatRequest): Promise<
   for (let i = 0; i < candidateModels.length; i++) {
     const modelName = candidateModels[i];
     try {
-      console.log(`AI Tutor generating response with model: ${modelName} (attempt ${i + 1}/${candidateModels.length})`);
+      console.log(`Saberio AI Tutor generating response with model: ${modelName} (attempt ${i + 1}/${candidateModels.length})`);
 
       const response = await ai.models.generateContent({
         model: modelName,
@@ -290,6 +309,7 @@ export async function generateTutorResponse(request: TutorChatRequest): Promise<
         config: {
           systemInstruction,
           temperature: request.learningMode === 'socratic' ? 0.35 : 0.25,
+          responseMimeType: 'application/json',
         },
       });
 
@@ -298,12 +318,15 @@ export async function generateTutorResponse(request: TutorChatRequest): Promise<
         throw new Error(`Model ${modelName} returned an empty response.`);
       }
 
-      const { cleanContent, followUpQuestions, suggestedActions } = parseTutorResponse(rawText);
+      // Parse structured pedagogical output safely
+      const latestUserPrompt = request.messages[request.messages.length - 1]?.content || 'Study Explanation';
+      const { structured, cleanContent, followUpQuestions, suggestedActions } = parseModelTutorOutput(rawText, latestUserPrompt);
 
       return {
         id: `tutor-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         role: 'assistant',
         content: cleanContent,
+        structured,
         createdAt: new Date().toISOString(),
         suggestedActions,
         followUpQuestions,
