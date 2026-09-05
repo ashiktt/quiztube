@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Sparkles,
   FolderOpen,
+  Key,
   User,
   LogOut,
   LogIn,
@@ -19,6 +20,7 @@ import {
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
+import { isUserAdmin } from '@/config/admin';
 
 interface NavbarProps {
   onOpenApiKeyModal: () => void;
@@ -98,6 +100,7 @@ export function Navbar({
     : 'U';
 
   const displayName = currentUser?.fullName || currentUser?.email?.split('@')[0] || 'Account';
+  const isAdmin = Boolean(currentUser?.isAdmin || isUserAdmin(currentUser?.email));
 
   return (
     <>
@@ -269,6 +272,21 @@ export function Navbar({
                         <User className="w-4 h-4 text-slate-400" />
                         <span>Profile & Account</span>
                       </button>
+
+                      {/* Admin-only: Gemini API Key connection */}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            onOpenApiKeyModal();
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
+                        >
+                          <Key className="w-4 h-4 text-amber-500" />
+                          <span>Gemini API Key</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
@@ -456,6 +474,21 @@ export function Navbar({
                     <User className="w-4 h-4 text-slate-400" />
                     <span>Profile & Account</span>
                   </button>
+
+                  {/* Admin-only: Gemini API Key connection */}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenApiKeyModal();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+                    >
+                      <Key className="w-4 h-4 text-amber-500" />
+                      <span>Gemini API Key</span>
+                    </button>
+                  )}
 
 
                   <button
