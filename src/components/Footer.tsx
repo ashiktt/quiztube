@@ -254,6 +254,16 @@ export function Footer({
           <p>
             &copy; {new Date().getFullYear()} Saberio AI. Built for academic excellence.
           </p>
+
+          <a
+            href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-slate-300 hover:text-white transition font-medium text-xs group"
+          >
+            <span>Created by <span className="text-white font-semibold group-hover:text-indigo-400 transition">Ashikur</span></span>
+            <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-400 transition" />
+          </a>
         </div>
 
       </div>
