@@ -38,7 +38,7 @@ export function ApkDownloadSection({
     // Trigger download
     const link = document.createElement('a');
     link.href = APK_CONFIG.downloadUrl;
-    link.download = `quiztube-v${APK_CONFIG.version}.apk`;
+    link.download = 'QuizTube.apk';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

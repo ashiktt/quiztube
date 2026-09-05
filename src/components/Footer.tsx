@@ -245,7 +245,7 @@ export function Footer({
             {isApkAvailable ? (
               <a
                 href={ANDROID_APK_URL}
-                download="quiztube.apk"
+                download="QuizTube.apk"
                 onClick={handleDownloadClick}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/40 transition transform hover:scale-[1.02] active:scale-95 cursor-pointer"
               >

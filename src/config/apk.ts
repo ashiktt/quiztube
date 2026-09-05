@@ -21,9 +21,9 @@ export const APK_CONFIG: ApkConfig = {
   version: process.env.NEXT_PUBLIC_APK_VERSION || '1.0.0',
   versionCode: 100,
   releaseDate: 'September 2026',
-  fileSize: '14.2 MB',
+  fileSize: '3.0 MB',
   minAndroidVersion: 'Android 8.0 (Oreo) or higher',
-  downloadUrl: process.env.NEXT_PUBLIC_APK_DOWNLOAD_URL || 'https://github.com/ashiktt/quiztube/releases/download/v1.0.0/quiztube-v1.0.0.apk',
+  downloadUrl: process.env.NEXT_PUBLIC_APK_DOWNLOAD_URL || 'https://quiztube-pi.vercel.app/QuizTube.apk',
   sha256Checksum: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
   changelog: [
     'Direct APK installation with native performance & offline storage',
@@ -42,7 +42,7 @@ export const APK_CONFIG: ApkConfig = {
     {
       stepNumber: 2,
       title: 'Open the Downloaded File',
-      description: 'Swipe down your notification bar or open your device\'s Files/Downloads folder and tap quiztube.apk.',
+      description: 'Swipe down your notification bar or open your device\'s Files/Downloads folder and tap QuizTube.apk.',
     },
     {
       stepNumber: 3,
