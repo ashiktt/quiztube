@@ -39,6 +39,7 @@ import {
   TutorSuggestedAction,
 } from '@/types';
 import { saveTutorConversation, getStoredApiKey } from '@/lib/storage';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 
 interface AITutorViewProps {
   initialContext?: TutorContext | null;
@@ -237,7 +238,7 @@ export function AITutorView({
     const query = (textToSend || inputText).trim();
     if (!query && !attachedImage) return;
 
-    if (!isPro && onOpenUpgradeModal) {
+    if (SUBSCRIPTION_ENABLED && !isPro && onOpenUpgradeModal) {
       onOpenUpgradeModal();
       return;
     }
@@ -468,13 +469,9 @@ export function AITutorView({
               <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
                 QuizTube AI Tutor
               </h2>
-              {isPro ? (
+              {SUBSCRIPTION_ENABLED && isPro && (
                 <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full shadow-sm">
                   PRO
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
-                  24/7 Academic Mentor
                 </span>
               )}
             </div>
@@ -538,8 +535,8 @@ export function AITutorView({
         </div>
       </div>
 
-      {/* Pro Locked Banner (if not Pro) */}
-      {!isPro && (
+      {/* Pro Locked Banner (if subscriptions enabled and not Pro) */}
+      {SUBSCRIPTION_ENABLED && !isPro && (
         <div className="px-4 py-3 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0 animate-fade-in">
           <div className="flex items-center gap-2.5 min-w-0">
             <Crown className="w-4 h-4 text-amber-400 shrink-0 fill-current" />

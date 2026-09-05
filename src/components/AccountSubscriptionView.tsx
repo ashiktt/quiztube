@@ -5,6 +5,7 @@ import { StudentUser, UserUsageSummary } from '@/types';
 import { APK_CONFIG } from '@/config/apk';
 import { LegalModalType } from './LegalModals';
 import { isUserAdmin } from '@/config/admin';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 
 interface AccountSubscriptionViewProps {
   user: StudentUser | null;
@@ -62,24 +63,26 @@ export function AccountSubscriptionView({
                 <h2 className="text-lg font-bold text-white">
                   {user?.fullName || user?.email?.split('@')[0] || 'My Account'}
                 </h2>
-                {isAdmin ? (
-                  <span className="px-2.5 py-0.5 text-xs font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 text-white rounded-full flex items-center space-x-1 shadow-md shadow-purple-500/20">
-                    <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span>ADMIN PRO</span>
-                  </span>
-                ) : isPro ? (
-                  <span className="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full flex items-center space-x-1 shadow-sm shadow-amber-500/20">
-                    <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span>PRO</span>
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                    FREE
-                  </span>
+                {SUBSCRIPTION_ENABLED && (
+                  isAdmin ? (
+                    <span className="px-2.5 py-0.5 text-xs font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 text-white rounded-full flex items-center space-x-1 shadow-md shadow-purple-500/20">
+                      <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span>ADMIN PRO</span>
+                    </span>
+                  ) : isPro ? (
+                    <span className="px-2.5 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-full flex items-center space-x-1 shadow-sm shadow-amber-500/20">
+                      <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span>PRO</span>
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
+                      FREE
+                    </span>
+                  )
                 )}
               </div>
               <p className="text-xs text-slate-400">{user?.email || 'Synced across Web & Android'}</p>
@@ -99,196 +102,233 @@ export function AccountSubscriptionView({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-6">
-          {/* Plan Card */}
-          <div className={`p-5 rounded-2xl border transition-all ${
-            isAdmin
-              ? 'bg-gradient-to-br from-purple-950/60 via-indigo-950/40 to-slate-900 border-purple-500/40 shadow-xl shadow-purple-950/40'
-              : isPro 
-              ? 'bg-gradient-to-br from-indigo-950/60 via-purple-950/30 to-slate-900 border-indigo-500/40 shadow-xl shadow-indigo-950/40' 
-              : 'bg-slate-800/40 border-slate-700/60'
-          }`}>
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">
-                  Active Subscription Plan
+          {/* Plan Card (Only when subscriptions are enabled) */}
+          {SUBSCRIPTION_ENABLED ? (
+            <div className={`p-5 rounded-2xl border transition-all ${
+              isAdmin
+                ? 'bg-gradient-to-br from-purple-950/60 via-indigo-950/40 to-slate-900 border-purple-500/40 shadow-xl shadow-purple-950/40'
+                : isPro 
+                ? 'bg-gradient-to-br from-indigo-950/60 via-purple-950/30 to-slate-900 border-indigo-500/40 shadow-xl shadow-indigo-950/40' 
+                : 'bg-slate-800/40 border-slate-700/60'
+            }`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">
+                    Active Subscription Plan
+                  </div>
+                  <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                    <span>{isAdmin ? 'QuizTube Pro (Admin Access)' : isPro ? 'QuizTube Pro' : 'QuizTube Free'}</span>
+                    {!isAdmin && isPro && <span className="text-sm font-normal text-slate-300">(&#8377;149 / month)</span>}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {isAdmin
+                      ? 'Permanent Administrator Access Active — All Pro Features Unlocked'
+                      : isPro
+                      ? expiryFormatted
+                        ? `Pro access valid until ${expiryFormatted}`
+                        : 'Active 30-Day Pro pass with High AI limits'
+                      : 'Standard student tier with daily free AI generations'}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-                  <span>{isAdmin ? 'QuizTube Pro (Admin Access)' : isPro ? 'QuizTube Pro' : 'QuizTube Free'}</span>
-                  {!isAdmin && isPro && <span className="text-sm font-normal text-slate-300">(&#8377;149 / month)</span>}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {isAdmin
-                    ? 'Permanent Administrator Access Active — All Pro Features Unlocked'
-                    : isPro
-                    ? expiryFormatted
-                      ? `Pro access valid until ${expiryFormatted}`
-                      : 'Active 30-Day Pro pass with High AI limits'
-                    : 'Standard student tier with daily free AI generations'}
-                </p>
-              </div>
 
-              {isAdmin ? (
-                <span className="px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold text-xs rounded-xl shadow-sm">
-                  Admin Active
-                </span>
-              ) : !isPro ? (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenUpgradeModal();
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:scale-[1.02]"
-                >
-                  Upgrade &middot; &#8377;149/mo
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenUpgradeModal();
-                  }}
-                  className="px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold rounded-xl transition"
-                >
-                  Renew / Extend
-                </button>
-              )}
-            </div>
-
-            {/* Pro Features pills */}
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs">
-              <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="font-medium">{isAdmin ? 'Max AI Capacity' : 'High AI limits'}</span>
-              </div>
-              <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span className="font-medium">Adv. Question Solver</span>
-              </div>
-              <div className="flex items-center space-x-1.5 text-slate-300">
-                <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                <span className="font-medium">AI Tutor</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Daily Quotas Card */}
-          <div className="bg-slate-800/30 border border-slate-700/60 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-bold text-white">Daily AI Usage Quota</h4>
-                <p className="text-xs text-slate-400">
-                  Resets every midnight at 12:00 AM (<span className="text-indigo-400 font-mono">Asia/Kolkata</span>)
-                </p>
-              </div>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-                IST Timezone
-              </span>
-            </div>
-
-            {/* Quiz AI Quota Bar */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                  <span>Quiz AI (YouTube &rarr; Quiz)</span>
-                </span>
-                <span className="text-slate-400">
-                  {isAdmin ? (
-                    <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
-                  ) : isPro ? (
-                    <span className="text-emerald-400 font-semibold">{quizUsed} used today (High Limit)</span>
-                  ) : (
-                    <span>
-                      <strong className="text-white">{quizRemaining}</strong> of {quizLimit} remaining today
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                <div
-                  className={`h-full transition-all duration-500 ${
-                    isAdmin
-                      ? 'bg-purple-500'
-                      : quizRemaining === 0 && !isPro
-                      ? 'bg-rose-500'
-                      : quizRemaining === 1 && !isPro
-                      ? 'bg-amber-500'
-                      : 'bg-indigo-500'
-                  }`}
-                  style={{
-                    width: isAdmin ? '100%' : isPro ? `${Math.min(100, (quizUsed / 100) * 100)}%` : `${Math.min(100, (quizUsed / 2) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Question Solver Quota Bar */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span>Question Solver (University Exam Solver)</span>
-                </span>
-                <span className="text-slate-400">
-                  {isAdmin ? (
-                    <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
-                  ) : isPro ? (
-                    <span className="text-emerald-400 font-semibold">{solverUsed} used today (High Limit)</span>
-                  ) : (
-                    <span>
-                      <strong className="text-white">{solverRemaining}</strong> of {solverLimit} remaining today
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                <div
-                  className={`h-full transition-all duration-500 ${
-                    isAdmin
-                      ? 'bg-purple-500'
-                      : solverRemaining === 0 && !isPro
-                      ? 'bg-rose-500'
-                      : solverRemaining === 1 && !isPro
-                      ? 'bg-amber-500'
-                      : 'bg-purple-500'
-                  }`}
-                  style={{
-                    width: isAdmin ? '100%' : isPro ? `${Math.min(100, (solverUsed / 100) * 100)}%` : `${Math.min(100, (solverUsed / 2) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* AI Tutor Card */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-              <div className="flex items-center space-x-2">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isPro || isAdmin ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                </div>
-                <span className="text-slate-300 font-medium">QuizTube AI Tutor</span>
-              </div>
-              <div>
-                {isAdmin || isPro ? (
-                  <span className="text-emerald-400 font-semibold flex items-center space-x-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Full Access Unlocked</span>
+                {isAdmin ? (
+                  <span className="px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold text-xs rounded-xl shadow-sm">
+                    Admin Active
                   </span>
+                ) : !isPro ? (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenUpgradeModal();
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:scale-[1.02]"
+                  >
+                    Upgrade &middot; &#8377;149/mo
+                  </button>
                 ) : (
-                  <span className="text-slate-400">Pro Feature (Upgrade to Unlock)</span>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenUpgradeModal();
+                    }}
+                    className="px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold rounded-xl transition"
+                  >
+                    Renew / Extend
+                  </button>
                 )}
               </div>
+
+              {/* Pro Features pills */}
+              <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs">
+                <div className="flex items-center space-x-1.5 text-slate-300">
+                  <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="font-medium">{isAdmin ? 'Max AI Capacity' : 'High AI limits'}</span>
+                </div>
+                <div className="flex items-center space-x-1.5 text-slate-300">
+                  <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="font-medium">Adv. Question Solver</span>
+                </div>
+                <div className="flex items-center space-x-1.5 text-slate-300">
+                  <svg className={`w-4 h-4 ${isPro || isAdmin ? 'text-amber-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <span className="font-medium">AI Tutor</span>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Clean Free Overview Card */
+            <div className="p-5 rounded-2xl border border-slate-700/60 bg-slate-800/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white">Student Account</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Your quizzes, exams, and study sets synchronize across web and mobile.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-500/20 text-indigo-300 rounded-xl border border-indigo-500/30">
+                  Active
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-center text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <span className="block font-bold text-white">YouTube Quiz</span>
+                  <span className="text-[10px] text-emerald-400">Available</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <span className="block font-bold text-white">Exam Solver</span>
+                  <span className="text-[10px] text-emerald-400">Available</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <span className="block font-bold text-white">AI Tutor</span>
+                  <span className="text-[10px] text-emerald-400">Available</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <span className="block font-bold text-white">Study Library</span>
+                  <span className="text-[10px] text-emerald-400">Available</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Quotas Card (Only when subscriptions are enabled) */}
+          {SUBSCRIPTION_ENABLED && (
+            <div className="bg-slate-800/30 border border-slate-700/60 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Daily AI Usage Quota</h4>
+                  <p className="text-xs text-slate-400">
+                    Resets every midnight at 12:00 AM (<span className="text-indigo-400 font-mono">Asia/Kolkata</span>)
+                  </p>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                  IST Timezone
+                </span>
+              </div>
+
+              {/* Quiz AI Quota Bar */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-300 font-medium flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    <span>Quiz AI (YouTube &rarr; Quiz)</span>
+                  </span>
+                  <span className="text-slate-400">
+                    {isAdmin ? (
+                      <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
+                    ) : isPro ? (
+                      <span className="text-emerald-400 font-semibold">{quizUsed} used today (High Limit)</span>
+                    ) : (
+                      <span>
+                        <strong className="text-white">{quizRemaining}</strong> of {quizLimit} remaining today
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      isAdmin
+                        ? 'bg-purple-500'
+                        : quizRemaining === 0 && !isPro
+                        ? 'bg-rose-500'
+                        : quizRemaining === 1 && !isPro
+                        ? 'bg-amber-500'
+                        : 'bg-indigo-500'
+                    }`}
+                    style={{
+                      width: isAdmin ? '100%' : isPro ? `${Math.min(100, (quizUsed / 100) * 100)}%` : `${Math.min(100, (quizUsed / 2) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Question Solver Quota Bar */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-300 font-medium flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    <span>Question Solver (University Exam Solver)</span>
+                  </span>
+                  <span className="text-slate-400">
+                    {isAdmin ? (
+                      <span className="text-purple-400 font-semibold">Admin Unlimited Quota</span>
+                    ) : isPro ? (
+                      <span className="text-emerald-400 font-semibold">{solverUsed} used today (High Limit)</span>
+                    ) : (
+                      <span>
+                        <strong className="text-white">{solverRemaining}</strong> of {solverLimit} remaining today
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      isAdmin
+                        ? 'bg-purple-500'
+                        : solverRemaining === 0 && !isPro
+                        ? 'bg-rose-500'
+                        : solverRemaining === 1 && !isPro
+                        ? 'bg-amber-500'
+                        : 'bg-purple-500'
+                    }`}
+                    style={{
+                      width: isAdmin ? '100%' : isPro ? `${Math.min(100, (solverUsed / 100) * 100)}%` : `${Math.min(100, (solverUsed / 2) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* AI Tutor Card */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isPro || isAdmin ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  </div>
+                  <span className="text-slate-300 font-medium">QuizTube AI Tutor</span>
+                </div>
+                <div>
+                  {isAdmin || isPro ? (
+                    <span className="text-emerald-400 font-semibold flex items-center space-x-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Full Access Unlocked</span>
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">Pro Feature (Upgrade to Unlock)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Android App CTA */}
           <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between">

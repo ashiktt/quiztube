@@ -66,3 +66,5 @@ export const APK_CONFIG: ApkConfig = {
     },
   ],
 };
+
+export const ANDROID_APK_URL = APK_CONFIG.downloadUrl;

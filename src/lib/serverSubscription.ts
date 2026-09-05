@@ -1,6 +1,7 @@
 import { getSupabaseClient } from './supabase';
 import { AiFeatureType, UserPlan, UserSubscription, UserUsageSummary } from '@/types';
 import { isUserAdmin } from '@/config/admin';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 
 /**
  * Returns today's date in Asia/Kolkata (IST, UTC+5:30) timezone in 'YYYY-MM-DD' format
@@ -152,13 +153,34 @@ export async function getUserUsageSummary(
       questionSolverUsed: 0,
       questionSolverLimit: 2,
       questionSolverRemaining: 2,
-      tutorAllowed: false,
+      tutorAllowed: !SUBSCRIPTION_ENABLED,
       timezone: 'Asia/Kolkata',
       date: dateStr,
     };
   }
 
   const { isPro, plan, subscription, isAdmin } = await checkUserSubscription(userId, userEmail);
+
+  // If subscription is disabled globally, hide Pro badges and plan, but keep tutor open
+  if (!SUBSCRIPTION_ENABLED) {
+    return {
+      userId,
+      userEmail,
+      plan: 'free',
+      isPro: false,
+      isAdmin: Boolean(isAdmin),
+      subscription: null,
+      quizAiUsed: 0,
+      quizAiLimit: 100,
+      quizAiRemaining: 100,
+      questionSolverUsed: 0,
+      questionSolverLimit: 100,
+      questionSolverRemaining: 100,
+      tutorAllowed: true,
+      timezone: 'Asia/Kolkata',
+      date: dateStr,
+    };
+  }
 
   if (isPro) {
     return {
@@ -216,7 +238,7 @@ export async function getUserUsageSummary(
     questionSolverUsed: solverUsed,
     questionSolverLimit: 2,
     questionSolverRemaining: Math.max(0, 2 - solverUsed),
-    tutorAllowed: false,
+    tutorAllowed: !SUBSCRIPTION_ENABLED,
     timezone: 'Asia/Kolkata',
     date: dateStr,
   };
@@ -265,7 +287,12 @@ export async function checkAndReserveDailyQuota(params: {
   // Check Pro subscription / Admin status
   const { isPro, isAdmin } = await checkUserSubscription(userId, userEmail);
 
-  // AI Tutor is exclusive to QuizTube Pro
+  // When subscription system is temporarily disabled, all features operate freely
+  if (!SUBSCRIPTION_ENABLED) {
+    return { allowed: true, isPro: false, isAdmin };
+  }
+
+  // AI Tutor is exclusive to QuizTube Pro when subscriptions are enabled
   if (featureType === 'tutor') {
     if (isPro) {
       return { allowed: true, isPro: true, isAdmin };

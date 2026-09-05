@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { YoutubeIcon } from '@/components/Icons';
 import { DifficultyLevel, QuestionType, QuizGenerationRequest, UserUsageSummary } from '@/types';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { extractVideoId } from '@/lib/youtube';
 
 interface LectureInputProps {
@@ -144,22 +145,24 @@ export function LectureInput({
           Paste any educational video or lecture notes to instantly generate interactive multiple-choice questions, visual cheatsheets, timestamped video links, and summary sheets.
         </p>
 
-        {/* Daily Quota Indicator Badge */}
-        <div className="flex items-center justify-center gap-2 pt-1 text-xs">
-          {isPro ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-full font-medium">
-              <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
-              <span>QuizTube Pro &middot; High AI usage limits</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
-              <Clock className="w-3.5 h-3.5 text-indigo-500" />
-              <span>
-                Free Daily Quota: <strong className="text-indigo-600 dark:text-indigo-400">{quizRemaining}/2</strong> generations remaining today (Asia/Kolkata)
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Daily Quota Indicator Badge (Only when subscriptions are enabled) */}
+        {SUBSCRIPTION_ENABLED && (
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs">
+            {isPro ? (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-full font-medium">
+                <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
+                <span>QuizTube Pro &middot; High AI usage limits</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
+                <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                <span>
+                  Free Daily Quota: <strong className="text-indigo-600 dark:text-indigo-400">{quizRemaining}/2</strong> generations remaining today (Asia/Kolkata)
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Input Card */}
@@ -192,8 +195,8 @@ export function LectureInput({
           </button>
         </div>
 
-        {/* Quota Exhausted Banner */}
-        {isQuotaExhausted && (
+        {/* Quota Exhausted Banner (Only when subscriptions are enabled) */}
+        {SUBSCRIPTION_ENABLED && isQuotaExhausted && (
           <div className="p-4 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">

@@ -55,7 +55,9 @@ import { ProUpgradeModal } from '@/components/ProUpgradeModal';
 import { ApkDownloadSection } from '@/components/ApkDownloadSection';
 import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
 import { LegalModals, LegalModalType } from '@/components/LegalModals';
+import { Footer } from '@/components/Footer';
 import { APK_CONFIG } from '@/config/apk';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import {
   getSavedStudySets,
   saveStudySet,
@@ -263,7 +265,7 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        if (data?.limitReached || data?.proRequired) {
+        if (SUBSCRIPTION_ENABLED && (data?.limitReached || data?.proRequired)) {
           setProModalOpen(true);
         }
         if (data?.error?.includes('Gemini API key is required')) {
@@ -412,9 +414,6 @@ export default function Home() {
                       <h4 className="font-extrabold text-xs sm:text-sm">
                         Advanced Question Solver
                       </h4>
-                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
-                        New
-                      </span>
                     </div>
                     <p className="text-[11px] text-indigo-200 mt-1 leading-relaxed">
                       Generate structured model answers (2, 5, 10, 15 M) with Mermaid diagrams and export PDF booklets.
@@ -443,9 +442,11 @@ export default function Home() {
                       <h4 className="font-extrabold text-xs sm:text-sm">
                         QuizTube AI Tutor
                       </h4>
-                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
-                        PRO
-                      </span>
+                      {SUBSCRIPTION_ENABLED && isPro && (
+                        <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
+                          PRO
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-pink-200 mt-1 leading-relaxed">
                       Socratic learning mode, mistake diagnosis, step-by-step logic derivations, and voice chat.
@@ -887,6 +888,21 @@ export default function Home() {
           studySet={studySet}
         />
       )}
+
+      {/* Professional Responsive Footer */}
+      <Footer
+        onSwitchMode={(mode) => {
+          if (mode === 'youtube') {
+            setActiveSolvedExam(null);
+          }
+          setAppMode(mode);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenHistory={() => setHistoryDrawerOpen(true)}
+        onOpenApkModal={() => setApkModalOpen(true)}
+        onOpenLegalModal={(type) => setLegalModalType(type)}
+      />
     </div>
   );
 }
+

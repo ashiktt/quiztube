@@ -1,22 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   GraduationCap,
   Sparkles,
-  BookOpen,
-  Key,
-  PlusCircle,
   FolderOpen,
+  Key,
   User,
   LogOut,
   LogIn,
-  FileQuestion,
+  Menu,
+  X,
   Download,
+  Settings,
   Crown,
+  ChevronDown,
 } from 'lucide-react';
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
+import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 
 interface NavbarProps {
   onOpenApiKeyModal: () => void;
@@ -51,297 +53,437 @@ export function Navbar({
   appMode = 'youtube',
   onSwitchMode,
 }: NavbarProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile drawer on ESC key
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+        setProfileDropdownOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleNavClick = (mode: 'youtube' | 'examSolver' | 'tutor') => {
+    if (onSwitchMode) onSwitchMode(mode);
+    if (mode === 'youtube') onNewQuiz();
+    setMobileMenuOpen(false);
+  };
+
+  const handleLibraryClick = () => {
+    onOpenHistory();
+    setMobileMenuOpen(false);
+  };
+
+  const userInitial = currentUser?.fullName
+    ? currentUser.fullName[0].toUpperCase()
+    : currentUser?.email
+    ? currentUser.email[0].toUpperCase()
+    : 'U';
+
+  const displayName = currentUser?.fullName || currentUser?.email?.split('@')[0] || 'Account';
+
   return (
     <>
-      {/* Top App Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md transition-colors pt-safe">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
-          {/* Brand */}
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          
+          {/* ========================================================= */}
+          {/* LEFT: QuizTube Branding */}
+          {/* ========================================================= */}
           <button
-            onClick={onNewQuiz}
-            className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none shrink-0"
+            onClick={() => handleNavClick('youtube')}
+            className="flex items-center gap-3 group text-left focus:outline-none shrink-0"
           >
-            <div className="relative p-2 sm:p-2.5 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 rounded-xl text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
+            <div className="relative p-2.5 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 rounded-xl text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
               <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-purple-500"></span>
-              </span>
             </div>
             <div>
-              <div className="flex items-center gap-1.5 font-bold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
+              <div className="flex items-center gap-1.5 font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
                 <span>QuizTube</span>
-                {isPro ? (
-                  <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-md shadow-sm shadow-amber-500/20 flex items-center gap-1">
+                {SUBSCRIPTION_ENABLED && isPro && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm">
                     <Crown className="w-2.5 h-2.5 fill-current" />
-                    <span>PRO</span>
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md border border-indigo-200/60 dark:border-indigo-800">
-                    AI
+                    PRO
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 hidden xl:block">
-                YouTube Lectures & University Exam Question Solver
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                AI-powered learning
               </p>
             </div>
           </button>
 
-          {/* Desktop Center Mode Switcher Tabs */}
-          {onSwitchMode && (
-            <div className="hidden sm:flex items-center p-1 bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <button
-                type="button"
-                onClick={() => onSwitchMode('youtube')}
-                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold transition ${
-                  appMode === 'youtube'
-                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                <YoutubeIcon className="w-3.5 h-3.5" />
-                <span>YouTube Quiz</span>
-              </button>
+          {/* ========================================================= */}
+          {/* CENTER: Main Desktop Navigation */}
+          {/* ========================================================= */}
+          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
+            {/* 1. YouTube Quiz */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('youtube')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                appMode === 'youtube'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+              }`}
+            >
+              <YoutubeIcon className="w-4 h-4 text-red-500 shrink-0" />
+              <span>YouTube Quiz</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => onSwitchMode('examSolver')}
-                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold transition relative ${
-                  appMode === 'examSolver'
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm shadow-indigo-500/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                <FileQuestion className="w-3.5 h-3.5" />
-                <span>University Solver</span>
-                <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
-                  New
+            {/* 2. University Solver */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('examSolver')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                appMode === 'examSolver'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-purple-500 shrink-0" />
+              <span>University Solver</span>
+            </button>
+
+            {/* 3. AI Tutor */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('tutor')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                appMode === 'tutor'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
+              <span>AI Tutor</span>
+            </button>
+
+            {/* 4. Study Library */}
+            <button
+              type="button"
+              onClick={handleLibraryClick}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 transition"
+            >
+              <FolderOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+              <span>Study Library</span>
+              {savedCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[11px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full">
+                  {savedCount}
                 </span>
-              </button>
+              )}
+            </button>
+          </nav>
 
-              <button
-                type="button"
-                onClick={() => onSwitchMode('tutor')}
-                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold transition relative ${
-                  appMode === 'tutor'
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm shadow-purple-500/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Tutor</span>
-                {isPro ? (
-                  <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded-full">
-                    PRO
-                  </span>
-                ) : (
-                  <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase bg-indigo-500 text-white rounded-full">
-                    PRO
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Download APK Button */}
-            {onOpenApkModal && (
-              <button
-                onClick={onOpenApkModal}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/60 rounded-xl transition"
-                title="Download QuizTube for Android (APK)"
-              >
-                <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="hidden md:inline">Android APK</span>
-              </button>
-            )}
-
-            {/* Upgrade to Pro Button (if not Pro) */}
-            {!isPro && onOpenUpgradeModal && (
+          {/* ========================================================= */}
+          {/* RIGHT: User Profile & Actions */}
+          {/* ========================================================= */}
+          <div className="flex items-center gap-2.5">
+            {/* Optional Pro Upgrade button only if SUBSCRIPTION_ENABLED */}
+            {SUBSCRIPTION_ENABLED && !isPro && onOpenUpgradeModal && (
               <button
                 onClick={onOpenUpgradeModal}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl shadow-md shadow-amber-500/20 transition transform hover:scale-[1.02] active:scale-95"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl shadow-md shadow-amber-500/20 transition active:scale-95"
               >
                 <Crown className="w-3.5 h-3.5 fill-current" />
                 <span>Get Pro &middot; &#8377;149</span>
               </button>
             )}
 
-            {/* Desktop Study Library Button */}
-            <button
-              onClick={onOpenHistory}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition border border-slate-200 dark:border-slate-800 relative"
-            >
-              <FolderOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="hidden xl:inline">Study Library</span>
-              {savedCount > 0 && (
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
-                  {savedCount}
-                </span>
-              )}
-            </button>
-
-            {/* Gemini API Status Button */}
-            <button
-              onClick={onOpenApiKeyModal}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl transition border ${
-                hasApiKey
-                  ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
-                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100'
-              }`}
-              title="Configure Gemini API Key"
-            >
-              <Key className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">{hasApiKey ? 'Gemini Ready' : 'API Key'}</span>
-            </button>
-
-            {/* Student Auth Button / Profile Menu */}
+            {/* Profile Avatar & Dropdown Menu */}
             {currentUser ? (
-              <div className="flex items-center gap-1 pl-1">
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={onOpenAccountModal || onOpenAuthModal}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs transition"
-                  title="My Account & Subscription"
+                  type="button"
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold transition"
+                  title="Account Menu"
                 >
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase shrink-0">
-                    {currentUser.fullName ? currentUser.fullName[0] : currentUser.email ? currentUser.email[0] : 'S'}
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                    {userInitial}
                   </div>
-                  <span className="font-bold text-indigo-700 dark:text-indigo-300 max-w-[80px] sm:max-w-[90px] truncate hidden sm:inline">
-                    {currentUser.fullName || currentUser.email?.split('@')[0]}
+                  <span className="hidden sm:inline font-medium text-slate-800 dark:text-slate-200 max-w-[100px] truncate">
+                    {displayName}
                   </span>
-                  {isPro && (
-                    <span className="px-1 py-0.2 text-[9px] font-extrabold bg-amber-400 text-amber-950 rounded">
-                      PRO
-                    </span>
-                  )}
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
                 </button>
 
-                <button
-                  onClick={onSignOut}
-                  className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
+                {/* Dropdown Box */}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl shadow-slate-950/10 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                      <p className="font-bold text-slate-900 dark:text-white truncate">
+                        {currentUser.fullName || 'Student Account'}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        {currentUser.email}
+                      </p>
+                      {SUBSCRIPTION_ENABLED && isPro && (
+                        <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded">
+                          <Crown className="w-2.5 h-2.5 fill-current" />
+                          Pro Member
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          if (onOpenAccountModal) onOpenAccountModal();
+                          else onOpenAuthModal();
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
+                      >
+                        <User className="w-4 h-4 text-slate-400" />
+                        <span>Profile & Account</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          onOpenApiKeyModal();
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
+                      >
+                        <Key className="w-4 h-4 text-slate-400" />
+                        <span>Gemini API Key</span>
+                      </button>
+                    </div>
+
+                    <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          onSignOut();
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2.5 text-red-600 dark:text-red-400 font-medium transition"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <button
+                type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-sm transition active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-sm transition active:scale-95"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Login</span>
               </button>
             )}
+
+            {/* Mobile Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 focus:outline-none transition"
+              aria-label="Open Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Native Android Mobile Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-t border-slate-200/80 dark:border-slate-800/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <div className="grid grid-cols-5 h-16 max-w-md mx-auto items-center px-1">
-          {/* 1. YouTube Quiz Tab */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onSwitchMode) onSwitchMode('youtube');
-              onNewQuiz();
-            }}
-            className={`flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl ${
-              appMode === 'youtube'
-                ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${appMode === 'youtube' ? 'bg-indigo-50 dark:bg-indigo-950/80' : ''}`}>
-              <YoutubeIcon className="w-5 h-5" />
-            </div>
-            <span className="text-[9px] leading-none">YouTube</span>
-          </button>
+      {/* ========================================================= */}
+      {/* MOBILE NAVIGATION DRAWER */}
+      {/* ========================================================= */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+          />
 
-          {/* 2. University Solver Tab */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onSwitchMode) onSwitchMode('examSolver');
-            }}
-            className={`flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl relative ${
-              appMode === 'examSolver'
-                ? 'text-purple-600 dark:text-purple-400 font-bold scale-105'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${appMode === 'examSolver' ? 'bg-purple-50 dark:bg-purple-950/80' : ''}`}>
-              <FileQuestion className="w-5 h-5" />
-            </div>
-            <span className="text-[9px] leading-none">Solver</span>
-          </button>
-
-          {/* 3. AI Tutor Tab */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onSwitchMode) onSwitchMode('tutor');
-            }}
-            className={`flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl relative ${
-              appMode === 'tutor'
-                ? 'text-pink-600 dark:text-pink-400 font-bold scale-105'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${appMode === 'tutor' ? 'bg-pink-50 dark:bg-pink-950/80' : ''}`}>
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <span className="text-[9px] leading-none">AI Tutor</span>
-          </button>
-
-          {/* 4. Study Library Tab */}
-          <button
-            type="button"
-            onClick={onOpenHistory}
-            className="flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 relative"
-          >
-            <div className="relative p-1">
-              <FolderOpen className="w-5 h-5" />
-              {savedCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 px-1 py-0.2 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-extrabold bg-purple-600 text-white rounded-full">
-                  {savedCount}
-                </span>
-              )}
-            </div>
-            <span className="text-[9px] leading-none">Library</span>
-          </button>
-
-          {/* 5. Student Auth / Settings Tab */}
-          <button
-            type="button"
-            onClick={() => {
-              if (currentUser) {
-                if (onOpenAccountModal) onOpenAccountModal();
-                else onOpenApiKeyModal();
-              } else {
-                onOpenAuthModal();
-              }
-            }}
-            className="flex flex-col items-center justify-center py-1.5 gap-1 transition rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
-          >
-            <div className="p-1">
-              {currentUser ? (
-                <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase">
-                  {currentUser.fullName ? currentUser.fullName[0] : currentUser.email ? currentUser.email[0] : 'S'}
+          {/* Drawer Panel */}
+          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-5 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-250">
+            <div>
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-lg text-white">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">QuizTube</h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered learning</p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Main Navigation Links */}
+              <div className="py-4 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('youtube')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                    appMode === 'youtube'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <YoutubeIcon className="w-4 h-4 text-red-500 shrink-0" />
+                  <span>YouTube Quiz</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('examSolver')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                    appMode === 'examSolver'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4 text-purple-500 shrink-0" />
+                  <span>University Solver</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('tutor')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                    appMode === 'tutor'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
+                  <span>AI Tutor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLibraryClick}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <FolderOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span>Study Library</span>
+                  </div>
+                  {savedCount > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded-full">
+                      {savedCount}
+                    </span>
+                  )}
+                </button>
+
+                {onOpenApkModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenApkModal();
+                    }}
+                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition"
+                  >
+                    <Download className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Download Android App</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Drawer Footer / Profile section */}
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              {currentUser ? (
+                <>
+                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                    <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                      {currentUser.fullName || 'Student'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      {currentUser.email}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onOpenAccountModal) onOpenAccountModal();
+                      else onOpenAuthModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+                  >
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span>Profile & Account</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenApiKeyModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+                  >
+                    <Key className="w-4 h-4 text-slate-400" />
+                    <span>Gemini API Key</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onSignOut();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </>
               ) : (
-                <User className="w-5 h-5" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuthModal();
+                  }}
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Login / Register</span>
+                </button>
               )}
             </div>
-            <span className="text-[9px] leading-none">
-              {currentUser ? 'Account' : 'Sign In'}
-            </span>
-          </button>
+          </div>
         </div>
-      </nav>
+      )}
     </>
   );
 }
