@@ -5,7 +5,6 @@ import {
   GraduationCap,
   Sparkles,
   FolderOpen,
-  Key,
   User,
   LogOut,
   LogIn,
@@ -270,31 +269,6 @@ export function Navbar({
                         <User className="w-4 h-4 text-slate-400" />
                         <span>Profile & Account</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          onOpenApiKeyModal();
-                        }}
-                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
-                      >
-                        <Key className="w-4 h-4 text-slate-400" />
-                        <span>Gemini API Key</span>
-                      </button>
-
-                      <a
-                        href="https://personal-portfolio-blue-eight-9p8guawbf5.vercel.app/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-slate-700 dark:text-slate-300 font-medium"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          <span>Ashikur (Portfolio)</span>
-                        </div>
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                      </a>
                     </div>
 
                     <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
@@ -483,17 +457,6 @@ export function Navbar({
                     <span>Profile & Account</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      onOpenApiKeyModal();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
-                  >
-                    <Key className="w-4 h-4 text-slate-400" />
-                    <span>Gemini API Key</span>
-                  </button>
 
                   <button
                     type="button"
