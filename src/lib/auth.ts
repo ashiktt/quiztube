@@ -82,14 +82,6 @@ export async function signUpStudent(
   if (!supabase) return { user: null, error: 'Database connection failed' };
 
   try {
-    const domain = email.trim().toLowerCase().split('@')[1];
-    if (domain === 'gmail.com' || domain === 'googlemail.com') {
-      return {
-        user: null,
-        error: 'Please use the "Continue with Google" button above to sign in with your real Gmail account.',
-      };
-    }
-
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const emailRedirectTo = `${origin}/auth/callback`;
 

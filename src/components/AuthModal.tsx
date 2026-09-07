@@ -296,12 +296,6 @@ export function AuthModal({
     }
 
     if (mode === 'signup') {
-      const emailDomain = email.trim().toLowerCase().split('@')[1];
-      if (emailDomain === 'gmail.com' || emailDomain === 'googlemail.com') {
-        setError('For Gmail accounts, please use the "Continue with Google" button above for verified Google sign-in.');
-        return;
-      }
-
       if (password !== confirmPassword) {
         setError('Passwords do not match. Please verify your confirmation password.');
         return;
