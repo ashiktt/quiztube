@@ -97,10 +97,17 @@ export async function signUpStudent(
     });
 
     if (error) {
-      if (error.message.toLowerCase().includes('rate limit')) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('rate limit')) {
         return {
           user: null,
           error: 'Email confirmation rate limit reached. Please wait a moment or check your Supabase Auth rate limits.',
+        };
+      }
+      if (msg.includes('already registered') || msg.includes('already exists')) {
+        return {
+          user: null,
+          error: 'An account with this email already exists. Please switch to "Sign In" above to access your account.',
         };
       }
       return { user: null, error: error.message };
@@ -255,106 +262,6 @@ export async function verifyPasswordResetOtp(
     return { error: 'Verification could not be confirmed.', success: false };
   } catch (err: any) {
     return { error: err?.message || 'Verification failed.', success: false };
-  }
-}
-
-/**
- * Verify 6-digit email OTP for student sign up
- * Confirms the student's email, activates account, and creates session
- */
-export async function verifySignupOtp(
-  email: string,
-  token: string
-): Promise<{ user: StudentUser | null; error: string | null; success: boolean }> {
-  if (!isSupabaseConfigured()) {
-    return { user: null, error: 'Supabase is not configured.', success: false };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { user: null, error: 'Database connection failed', success: false };
-
-  try {
-    const cleanToken = token.trim();
-    const cleanEmail = email.trim();
-
-    // Verify OTP using official signup type
-    let { data, error } = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: cleanToken,
-      type: 'signup',
-    });
-
-    // Fallback if provider configured type as 'email'
-    if (error && (error.message.toLowerCase().includes('type') || error.message.toLowerCase().includes('invalid'))) {
-      const fallback = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: cleanToken,
-        type: 'email',
-      });
-      if (!fallback.error && fallback.data) {
-        data = fallback.data;
-        error = null;
-      }
-    }
-
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('expired')) {
-        return { user: null, error: 'This verification code has expired. Please request a new code.', success: false };
-      }
-      if (msg.includes('invalid') || msg.includes('token')) {
-        return { user: null, error: 'Invalid verification code. Please check your Gmail and try again.', success: false };
-      }
-      return { user: null, error: error.message || 'Verification failed. Please try again.', success: false };
-    }
-
-    if (data?.user) {
-      return { user: formatStudentUser(data.user), error: null, success: true };
-    }
-
-    return { user: null, error: 'Could not verify account. Please try signing in.', success: false };
-  } catch (err: any) {
-    return { user: null, error: err?.message || 'Verification failed.', success: false };
-  }
-}
-
-/**
- * Resend 6-digit signup OTP to email
- */
-export async function resendSignupOtp(
-  email: string
-): Promise<{ error: string | null; success: boolean }> {
-  if (!isSupabaseConfigured()) {
-    return { error: 'Supabase is not configured.', success: false };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: 'Database connection failed', success: false };
-
-  try {
-    const cleanEmail = email.trim();
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const emailRedirectTo = `${origin}/auth/callback`;
-
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: cleanEmail,
-      options: {
-        emailRedirectTo,
-      },
-    });
-
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('rate limit')) {
-        return { error: 'Too many requests. Please wait a minute before requesting another code.', success: false };
-      }
-      return { error: error.message, success: false };
-    }
-
-    return { error: null, success: true };
-  } catch (err: any) {
-    return { error: err?.message || 'Failed to resend verification code.', success: false };
   }
 }
 

@@ -26,15 +26,12 @@ import {
   verifyPasswordResetOtp,
   updateStudentPassword,
   signInWithGoogle,
-  verifySignupOtp,
-  resendSignupOtp,
 } from '@/lib/auth';
 import { StudentUser } from '@/types';
 
 export type AuthModalMode =
   | 'signin'
   | 'signup'
-  | 'signup_otp'
   | 'forgot_email'
   | 'forgot_otp'
   | 'forgot_new_password'
@@ -93,7 +90,7 @@ export function AuthModal({
 
   // Cooldown countdown timer for OTP resend
   useEffect(() => {
-    if ((mode !== 'forgot_otp' && mode !== 'signup_otp') || resendCooldown <= 0) return;
+    if (mode !== 'forgot_otp' || resendCooldown <= 0) return;
     const timer = setInterval(() => {
       setResendCooldown((prev) => Math.max(0, prev - 1));
     }, 1000);
@@ -159,24 +156,13 @@ export function AuthModal({
     setIsLoading(true);
 
     try {
-      if (mode === 'signup_otp') {
-        const { success, error: err } = await resendSignupOtp(email.trim());
-        if (err) {
-          setError(err);
-        } else if (success) {
-          setResendCooldown(60);
-          setOtpAttempts(0);
-          setSuccessMsg(`A new 6-digit verification code has been sent to ${email.trim()}.`);
-        }
-      } else {
-        const { success, error: err } = await resetStudentPassword(email.trim());
-        if (err) {
-          setError(err);
-        } else if (success) {
-          setResendCooldown(60);
-          setOtpAttempts(0);
-          setSuccessMsg('A new 6-digit code has been sent to your email.');
-        }
+      const { success, error: err } = await resetStudentPassword(email.trim());
+      if (err) {
+        setError(err);
+      } else if (success) {
+        setResendCooldown(60);
+        setOtpAttempts(0);
+        setSuccessMsg('A new 6-digit code has been sent to your email.');
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to resend code.');
@@ -257,43 +243,6 @@ export function AuthModal({
     }
 
     // ==========================================
-    // 2B. SIGNUP STEP 2: VERIFY 6-DIGIT SIGNUP OTP
-    // ==========================================
-    if (mode === 'signup_otp') {
-      const otp = otpDigits.join('');
-      if (otp.length < 6) {
-        setError('Please enter all 6 digits of your verification code.');
-        return;
-      }
-
-      if (otpAttempts >= 5) {
-        setError('Too many invalid attempts. Please request a new verification code.');
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const { user, error: err } = await verifySignupOtp(email.trim(), otp);
-        if (err) {
-          setOtpAttempts((prev) => prev + 1);
-          setError(err);
-        } else if (user) {
-          setSuccessMsg('Email verified successfully! Welcome to Saberio AI.');
-          onAuthSuccess(user);
-          setTimeout(() => onClose(), 800);
-        } else {
-          setError('Could not confirm verification. Please check your code or try signing in.');
-        }
-      } catch (err: any) {
-        setOtpAttempts((prev) => prev + 1);
-        setError(err?.message || 'Verification failed. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // ==========================================
     // 3. FORGOT STEP 3: SET NEW PASSWORD
     // ==========================================
     if (mode === 'forgot_new_password') {
@@ -363,21 +312,17 @@ export function AuthModal({
         if (err) {
           setError(err);
         } else if (requiresEmailVerification) {
-          setOtpDigits(['', '', '', '', '', '']);
-          setResendCooldown(60);
-          setOtpAttempts(0);
-          setMode('signup_otp');
-          setSuccessMsg(`We've sent a 6-digit verification code to ${email.trim()}. Enter it below to activate your account.`);
+          setVerificationNotice(
+            `Account created successfully! We've sent a confirmation email to ${email.trim()}. Please verify your email before signing in.`
+          );
+          setMode('signin');
         } else if (user) {
           setSuccessMsg('Account created successfully!');
           onAuthSuccess(user);
           setTimeout(() => onClose(), 800);
         } else {
-          setOtpDigits(['', '', '', '', '', '']);
-          setResendCooldown(60);
-          setOtpAttempts(0);
-          setMode('signup_otp');
-          setSuccessMsg(`We've sent a 6-digit verification code to ${email.trim()}.`);
+          setSuccessMsg('Account created! You can now sign in.');
+          setMode('signin');
         }
       } catch (err: any) {
         setError(err?.message || 'Sign up failed.');
@@ -389,12 +334,7 @@ export function AuthModal({
       try {
         const { user, error: err } = await signInStudent(email.trim(), password);
         if (err) {
-          if (err.toLowerCase().includes('verify your email')) {
-            setError('Please verify your email before signing in. Check your inbox for the verification code.');
-            setVerificationNotice('Need to verify your account with a 6-digit code?');
-          } else {
-            setError(err);
-          }
+          setError(err);
         } else if (user) {
           setSuccessMsg('Welcome back, student!');
           onAuthSuccess(user);
@@ -433,8 +373,6 @@ export function AuthModal({
           <div className="p-2.5 sm:p-3 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl text-white shadow-md shadow-indigo-500/20 shrink-0">
             {isForgotFlow ? (
               <KeyRound className="w-6 h-6 sm:w-7 sm:h-7" />
-            ) : mode === 'signup_otp' ? (
-              <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7" />
             ) : (
               <GraduationCap className="w-6 h-6 sm:w-7 sm:h-7" />
             )}
@@ -445,8 +383,6 @@ export function AuthModal({
                 ? 'Welcome to Saberio AI'
                 : mode === 'signup'
                 ? 'Create Student Account'
-                : mode === 'signup_otp'
-                ? 'Verify Your Email'
                 : mode === 'forgot_email'
                 ? 'Reset Password'
                 : mode === 'forgot_otp'
@@ -460,8 +396,6 @@ export function AuthModal({
                 ? 'Sign in to access your quizzes, exams, and AI Tutor'
                 : mode === 'signup'
                 ? 'Start learning smarter with AI-powered study tools'
-                : mode === 'signup_otp'
-                ? `Enter the 6-digit code sent to ${email || 'your email'}`
                 : mode === 'forgot_email'
                 ? 'Enter your email to receive a secure recovery code'
                 : mode === 'forgot_otp'
@@ -473,21 +407,8 @@ export function AuthModal({
           </div>
         </div>
 
-        {/* Mode Switcher / Navigation */}
-        {mode === 'signup_otp' ? (
-          <button
-            type="button"
-            onClick={() => {
-              setMode('signup');
-              setError(null);
-              setSuccessMsg(null);
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Sign Up (Edit Info)</span>
-          </button>
-        ) : !isForgotFlow ? (
+        {/* Mode Switcher (Sign In / Sign Up) */}
+        {!isForgotFlow ? (
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
             <button
               type="button"
@@ -540,34 +461,31 @@ export function AuthModal({
 
         {/* Unverified Email Notice Alert */}
         {verificationNotice && (
-          <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex flex-col gap-2 text-xs text-amber-800 dark:text-amber-200 animate-in fade-in">
-            <div className="flex items-start gap-2.5">
-              <Mail className="w-4 h-4 flex-shrink-0 text-amber-500 mt-0.5" />
-              <p className="leading-relaxed">{verificationNotice}</p>
-            </div>
-            {mode === 'signin' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpDigits(['', '', '', '', '', '']);
-                  setResendCooldown(60);
-                  setOtpAttempts(0);
-                  setMode('signup_otp');
-                  setError(null);
-                }}
-                className="self-start text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1"
-              >
-                <span>Enter 6-digit verification code &rarr;</span>
-              </button>
-            )}
+          <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200 animate-in fade-in">
+            <Mail className="w-4 h-4 flex-shrink-0 text-amber-500 mt-0.5" />
+            <p className="leading-relaxed">{verificationNotice}</p>
           </div>
         )}
 
         {/* Feedback Alerts */}
         {error && (
-          <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" />
-            <p className="leading-relaxed">{error}</p>
+          <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex flex-col gap-2 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" />
+              <p className="leading-relaxed">{error}</p>
+            </div>
+            {mode === 'signup' && (error.toLowerCase().includes('already exists') || error.toLowerCase().includes('already registered')) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                }}
+                className="self-start font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 pl-6"
+              >
+                <span>Switch to Sign In &rarr;</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -578,8 +496,8 @@ export function AuthModal({
           </div>
         )}
 
-        {/* Google OAuth Button (Shown in Sign In & Sign Up only) */}
-        {!isForgotFlow && mode !== 'signup_otp' && (
+        {/* Google OAuth Button (Shown in Sign In & Sign Up) */}
+        {!isForgotFlow && (
           <div className="space-y-3">
             <button
               type="button"
@@ -699,8 +617,8 @@ export function AuthModal({
               </div>
             )}
 
-            {/* 6-DIGIT OTP INPUT (Signup Step 2 or Forgot Step 2) */}
-            {(mode === 'forgot_otp' || mode === 'signup_otp') && (
+            {/* 6-DIGIT OTP INPUT (Forgot Step 2) */}
+            {mode === 'forgot_otp' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -708,7 +626,7 @@ export function AuthModal({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setMode(mode === 'signup_otp' ? 'signup' : 'forgot_email')}
+                    onClick={() => setMode('forgot_email')}
                     className="text-[11px] text-indigo-500 hover:underline"
                   >
                     Change Email
@@ -757,12 +675,6 @@ export function AuthModal({
                     </button>
                   )}
                 </div>
-
-                {mode === 'signup_otp' && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center pt-1">
-                    Please check your Gmail inbox and spam folder for the verification code.
-                  </p>
-                )}
               </div>
             )}
 
@@ -850,9 +762,7 @@ export function AuthModal({
                     {mode === 'signin'
                       ? 'Sign In to Library'
                       : mode === 'signup'
-                      ? 'Continue & Send Code'
-                      : mode === 'signup_otp'
-                      ? 'Verify Code & Create Account'
+                      ? 'Create Account & Start Learning'
                       : mode === 'forgot_email'
                       ? 'Send 6-Digit Code'
                       : mode === 'forgot_otp'
@@ -867,7 +777,7 @@ export function AuthModal({
         )}
 
         {/* Footer Navigation Switchers */}
-        {!isForgotFlow && mode !== 'signup_otp' && (
+        {!isForgotFlow && (
           <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
             {mode === 'signup' ? (
               <p>

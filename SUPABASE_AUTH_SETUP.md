@@ -91,12 +91,11 @@ To ensure the password recovery email sends the secure **6-digit verification co
 
 ---
 
-## 5. Email Verification Template (6-Digit OTP)
+## 5. Email Verification Template
 
-1. Ensure **Confirm email** is toggled to **ON** in [Supabase Email Provider Settings](https://supabase.com/dashboard/project/hagqafhhjlvqfugsoqdo/auth/providers).
-2. Navigate to **Authentication** > **Email Templates** > **Confirm signup**.
-3. Set **Subject**: `Verify your Saberio AI account`
-4. Set **Body**:
+1. Navigate to **Authentication** > **Email Templates** > **Confirm signup**.
+2. Set **Subject**: `Verify your Saberio AI account`
+3. Set **Body**:
 
 ```html
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #0f172a; color: #f8fafc; border-radius: 20px; border: 1px solid #1e293b;">
@@ -105,18 +104,15 @@ To ensure the password recovery email sends the secure **6-digit verification co
     <p style="font-size: 13px; color: #94a3b8; margin-top: 6px;">Smart AI Learning & Quiz Platform</p>
   </div>
   <div style="background: #1e293b; padding: 24px; border-radius: 16px; border: 1px solid #334155; text-align: center;">
-    <h2 style="font-size: 18px; font-weight: 700; color: #ffffff; margin-top: 0;">Your Verification Code</h2>
+    <h2 style="font-size: 16px; font-weight: 700; color: #ffffff; margin-top: 0;">Welcome to Saberio AI!</h2>
     <p style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
-      Enter the 6-digit verification code below in Saberio AI to activate your account:
+      Please confirm your email address to activate your student account and access your private study library:
     </p>
-    <div style="margin: 24px 0; padding: 14px 20px; background: #0f172a; border-radius: 12px; border: 1px solid #4f46e5; display: inline-block;">
-      <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; font-family: monospace; color: #a5b4fc;">{{ .Token }}</span>
+    <div style="margin: 24px 0;">
+      <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">Verify Email Address</a>
     </div>
-    <div style="margin: 16px 0;">
-      <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 10px 22px; background: #334155; color: #cbd5e1; font-size: 12px; font-weight: 600; text-decoration: none; border-radius: 8px; border: 1px solid #475569;">Or click here to verify instantly</a>
-    </div>
-    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
-      This code expires in 10 minutes. If you did not create a Saberio AI account, please ignore this email.
+    <p style="font-size: 11px; color: #94a3b8;">
+      Or enter this code if prompted: <strong style="color: #a5b4fc; font-family: monospace;">{{ .Token }}</strong>
     </p>
   </div>
   <div style="text-align: center; margin-top: 24px; font-size: 11px; color: #64748b;">
@@ -125,7 +121,7 @@ To ensure the password recovery email sends the secure **6-digit verification co
 </div>
 ```
 
-5. Click **Save**.
+4. Click **Save**.
 
 ---
 
