@@ -43,6 +43,7 @@ import {
 import { saveTutorConversation, getStoredApiKey } from '@/lib/storage';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { TutorAnswerCard } from './tutor/TutorAnswerCard';
+import { getAuthHeaders } from '@/lib/auth';
 
 interface AITutorViewProps {
   initialContext?: TutorContext | null;
@@ -308,9 +309,13 @@ export function AITutorView({
         userEmail,
       };
 
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/tutor', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
         body: JSON.stringify(payload),
       });
 

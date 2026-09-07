@@ -6,7 +6,7 @@ import {
   formatTranscriptWithTimestamps,
 } from '@/lib/youtube';
 import { generateStudySetWithGemini, formatGeminiErrorMessage } from '@/lib/gemini';
-import { checkAndReserveDailyQuota, rollbackDailyQuota } from '@/lib/serverSubscription';
+import { checkAndReserveDailyQuota, rollbackDailyQuota, getAuthenticatedUser } from '@/lib/serverSubscription';
 import { LectureStudySet, QuizGenerationRequest } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
   let requestUserId: string | undefined = undefined;
 
   try {
+    const authUser = await getAuthenticatedUser(req);
     const body: QuizGenerationRequest = await req.json();
     const {
       url,
@@ -29,12 +30,16 @@ export async function POST(req: NextRequest) {
       userEmail,
     } = body;
 
-    requestUserId = userId;
+    // Use verified Supabase Auth user as source of truth if available
+    const effectiveUserId = authUser?.id || userId;
+    const effectiveUserEmail = authUser?.email || userEmail;
+
+    requestUserId = effectiveUserId;
 
     // Server-side Quota & Subscription Verification (Asia/Kolkata timezone)
     const quotaCheck = await checkAndReserveDailyQuota({
-      userId,
-      userEmail,
+      userId: effectiveUserId,
+      userEmail: effectiveUserEmail,
       featureType: 'quiz_ai',
       hasCustomApiKey: Boolean(apiKey),
     });

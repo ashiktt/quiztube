@@ -72,7 +72,7 @@ import {
   deleteTutorConversation,
   fetchAndMergeCloudTutorConversations,
 } from '@/lib/storage';
-import { getCurrentStudent, signOutStudent, onAuthStateChange } from '@/lib/auth';
+import { getCurrentStudent, signOutStudent, onAuthStateChange, getAuthHeaders } from '@/lib/auth';
 import { SAMPLE_STUDY_SET } from '@/lib/sampleData';
 
 export default function Home() {
@@ -99,6 +99,7 @@ export default function Home() {
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup' | 'forgot' | 'new_password'>('signin');
   const [proModalOpen, setProModalOpen] = useState(false);
   const [apkModalOpen, setApkModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
@@ -116,7 +117,8 @@ export default function Home() {
       if (targetEmail) params.set('email', targetEmail);
 
       const url = `/api/user/usage${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(url, { headers: authHeaders });
       const data = await res.json();
       if (data.success) {
         setUserUsage(data);
@@ -148,6 +150,21 @@ export default function Home() {
       .catch(() => {
         setHasApiKey(Boolean(localKey));
       });
+
+    // Check for auth callback error or password reset URL params
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const authErr = urlParams.get('auth_error');
+      const passwordReset = urlParams.get('password_reset');
+      if (authErr) {
+        alert(decodeURIComponent(authErr));
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (passwordReset) {
+        setAuthModalInitialMode('new_password');
+        setAuthModalOpen(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
 
     // Check current student auth
     getCurrentStudent().then(student => {
@@ -253,9 +270,13 @@ export default function Home() {
         userEmail: currentUser?.email,
       };
 
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/generate-quiz', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -691,7 +712,11 @@ export default function Home() {
 
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalInitialMode}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setAuthModalInitialMode('signin');
+        }}
         onAuthSuccess={user => {
           setCurrentUser(user);
           refreshUserUsage(user.id, user.email);

@@ -1,7 +1,52 @@
+import { NextRequest } from 'next/server';
 import { getSupabaseClient } from './supabase';
 import { AiFeatureType, UserPlan, UserSubscription, UserUsageSummary } from '@/types';
 import { isUserAdmin } from '@/config/admin';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
+
+/**
+ * Verifies Supabase session JWT token from incoming request Authorization header.
+ * Returns the authentic user ID and email verified directly by Supabase Auth server.
+ */
+export async function getAuthenticatedUser(req: NextRequest): Promise<{
+  id: string;
+  email?: string;
+  fullName?: string;
+  isAdmin: boolean;
+} | null> {
+  const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+  const token = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : null;
+
+  if (!token) {
+    return null;
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return null;
+  }
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return null;
+    }
+
+    const email = user.email || '';
+    const fullName = user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0];
+    const isAdmin = isUserAdmin(email);
+
+    return {
+      id: user.id,
+      email,
+      fullName,
+      isAdmin,
+    };
+  } catch (err) {
+    console.error('getAuthenticatedUser error:', err);
+    return null;
+  }
+}
 
 /**
  * Returns today's date in Asia/Kolkata (IST, UTC+5:30) timezone in 'YYYY-MM-DD' format

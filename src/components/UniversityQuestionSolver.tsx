@@ -33,6 +33,7 @@ import { SolvedQuestionItem, UniversityExamRequest, UniversitySolvedExam, UserUs
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { exportUniversityExamPdf } from '@/lib/examPdfExport';
 import { MermaidRenderer } from '@/components/MermaidRenderer';
+import { getAuthHeaders } from '@/lib/auth';
 import { saveSolvedExam } from '@/lib/storage';
 
 const SAMPLE_EXAMS = [
@@ -238,9 +239,13 @@ export function UniversityQuestionSolver({
     setErrorMessage(null);
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/solve-exam', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
         body: JSON.stringify({
           questionsText: questionsText.trim() || undefined,
           subject: subject.trim() || 'University Examination',

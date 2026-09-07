@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
+import { getAuthenticatedUser } from '@/lib/serverSubscription';
 import { LectureStudySet } from '@/types';
 
 // Helper to map DB row to LectureStudySet
@@ -67,8 +68,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ connected: false, studySets: [] });
     }
 
+    const authUser = await getAuthenticatedUser(req);
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const userId = authUser?.id || searchParams.get('userId');
 
     let query = supabase
       .from('study_sets')
@@ -119,7 +121,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ connected: false, saved: false });
     }
 
+    const authUser = await getAuthenticatedUser(req);
     const row = mapStudySetToRow(studySet);
+    if (authUser?.id) {
+      row.user_id = authUser.id;
+    }
+
     const { data, error } = await supabase
       .from('study_sets')
       .upsert(row, { onConflict: 'id' })

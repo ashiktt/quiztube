@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { solveUniversityQuestionsWithGemini } from '@/lib/geminiSolver';
 import { formatGeminiErrorMessage } from '@/lib/gemini';
-import { checkAndReserveDailyQuota, rollbackDailyQuota } from '@/lib/serverSubscription';
+import { checkAndReserveDailyQuota, rollbackDailyQuota, getAuthenticatedUser } from '@/lib/serverSubscription';
 import { UniversityExamRequest } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   let requestUserId: string | undefined = undefined;
 
   try {
+    const authUser = await getAuthenticatedUser(req);
     const body: UniversityExamRequest = await req.json();
     const {
       questionsText,
@@ -23,12 +24,15 @@ export async function POST(req: NextRequest) {
       userEmail,
     } = body;
 
-    requestUserId = userId;
+    const effectiveUserId = authUser?.id || userId;
+    const effectiveUserEmail = authUser?.email || userEmail;
+
+    requestUserId = effectiveUserId;
 
     // Server-side Quota & Subscription Verification (Asia/Kolkata timezone)
     const quotaCheck = await checkAndReserveDailyQuota({
-      userId,
-      userEmail,
+      userId: effectiveUserId,
+      userEmail: effectiveUserEmail,
       featureType: 'question_solver',
       hasCustomApiKey: Boolean(apiKey),
     });

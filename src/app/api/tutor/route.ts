@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateTutorResponse } from '@/lib/geminiTutor';
 import { TutorChatRequest } from '@/types';
 import { formatGeminiErrorMessage } from '@/lib/gemini';
-import { checkAndReserveDailyQuota } from '@/lib/serverSubscription';
+import { checkAndReserveDailyQuota, getAuthenticatedUser } from '@/lib/serverSubscription';
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = await getAuthenticatedUser(req);
     const body: TutorChatRequest = await req.json();
 
     if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
@@ -23,10 +24,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const effectiveUserId = authUser?.id || body.userId;
+    const effectiveUserEmail = authUser?.email || body.userEmail;
+
     // Server-side Pro Verification for AI Tutor
     const quotaCheck = await checkAndReserveDailyQuota({
-      userId: body.userId,
-      userEmail: body.userEmail,
+      userId: effectiveUserId,
+      userEmail: effectiveUserEmail,
       featureType: 'tutor',
       hasCustomApiKey: Boolean(body.apiKey),
     });

@@ -1,5 +1,6 @@
 import { LectureStudySet, UserQuizAttempt, UniversitySolvedExam, TutorConversation } from '@/types';
 import { SAMPLE_STUDY_SET } from './sampleData';
+import { getAuthHeaders } from './auth';
 
 const STORAGE_KEYS = {
   API_KEY: 'lecture_quiz_gemini_api_key',
@@ -114,9 +115,13 @@ export function saveQuizAttempt(studySetId: string, attempt: UserQuizAttempt): L
  */
 export async function syncStudySetToCloud(set: LectureStudySet): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch('/api/study-sets', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
       body: JSON.stringify(set),
     });
     const data = await res.json();
@@ -132,8 +137,10 @@ export async function syncStudySetToCloud(set: LectureStudySet): Promise<boolean
  */
 export async function deleteStudySetFromCloud(id: string): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/study-sets?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
+      headers: authHeaders,
     });
     const data = await res.json();
     return Boolean(data.deleted);
@@ -148,8 +155,9 @@ export async function deleteStudySetFromCloud(id: string): Promise<boolean> {
  */
 export async function fetchAndMergeCloudStudySets(userId?: string): Promise<{ sets: LectureStudySet[]; isCloudConnected: boolean }> {
   try {
+    const authHeaders = await getAuthHeaders();
     const endpoint = userId ? `/api/study-sets?userId=${encodeURIComponent(userId)}` : '/api/study-sets';
-    const res = await fetch(endpoint);
+    const res = await fetch(endpoint, { headers: authHeaders });
     const data = await res.json();
 
     if (data.connected && Array.isArray(data.studySets) && data.studySets.length > 0) {
@@ -288,9 +296,13 @@ export function deleteSolvedExam(id: string): void {
 
 export async function syncSolvedExamToCloud(exam: UniversitySolvedExam): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch('/api/solved-exams', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
       body: JSON.stringify(exam),
     });
     const data = await res.json();
@@ -303,8 +315,10 @@ export async function syncSolvedExamToCloud(exam: UniversitySolvedExam): Promise
 
 export async function deleteSolvedExamFromCloud(id: string): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/solved-exams?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
+      headers: authHeaders,
     });
     const data = await res.json();
     return Boolean(data.deleted);
@@ -316,8 +330,9 @@ export async function deleteSolvedExamFromCloud(id: string): Promise<boolean> {
 
 export async function fetchAndMergeCloudSolvedExams(userId?: string): Promise<{ exams: UniversitySolvedExam[]; isCloudConnected: boolean }> {
   try {
+    const authHeaders = await getAuthHeaders();
     const endpoint = userId ? `/api/solved-exams?userId=${encodeURIComponent(userId)}` : '/api/solved-exams';
-    const res = await fetch(endpoint);
+    const res = await fetch(endpoint, { headers: authHeaders });
     const data = await res.json();
 
     if (data.connected && Array.isArray(data.solvedExams) && data.solvedExams.length > 0) {
@@ -404,9 +419,13 @@ export function deleteTutorConversation(id: string): void {
 
 export async function syncTutorConversationToCloud(conv: TutorConversation): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch('/api/tutor/conversations', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
       body: JSON.stringify(conv),
     });
     const data = await res.json();
@@ -419,8 +438,10 @@ export async function syncTutorConversationToCloud(conv: TutorConversation): Pro
 
 export async function deleteTutorConversationFromCloud(id: string): Promise<boolean> {
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/tutor/conversations?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
+      headers: authHeaders,
     });
     const data = await res.json();
     return Boolean(data.deleted);
@@ -432,8 +453,9 @@ export async function deleteTutorConversationFromCloud(id: string): Promise<bool
 
 export async function fetchAndMergeCloudTutorConversations(userId?: string): Promise<{ conversations: TutorConversation[]; isCloudConnected: boolean }> {
   try {
+    const authHeaders = await getAuthHeaders();
     const endpoint = userId ? `/api/tutor/conversations?userId=${encodeURIComponent(userId)}` : '/api/tutor/conversations';
-    const res = await fetch(endpoint);
+    const res = await fetch(endpoint, { headers: authHeaders });
     const data = await res.json();
 
     if (data.connected && Array.isArray(data.conversations) && data.conversations.length > 0) {

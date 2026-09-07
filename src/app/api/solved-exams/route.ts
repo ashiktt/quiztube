@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
+import { getAuthenticatedUser } from '@/lib/serverSubscription';
 import { UniversitySolvedExam } from '@/types';
 
 // Helper to map DB row to UniversitySolvedExam
@@ -51,8 +52,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ connected: false, solvedExams: [] });
     }
 
+    const authUser = await getAuthenticatedUser(req);
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const userId = authUser?.id || searchParams.get('userId');
 
     let query = supabase
       .from('solved_exams')
@@ -104,7 +106,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ connected: false, saved: false });
     }
 
+    const authUser = await getAuthenticatedUser(req);
     const row = mapSolvedExamToRow(exam);
+    if (authUser?.id) {
+      row.user_id = authUser.id;
+    }
+
     const { data, error } = await supabase
       .from('solved_exams')
       .upsert(row, { onConflict: 'id' })

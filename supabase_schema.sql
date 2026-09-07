@@ -33,16 +33,25 @@ WITH CHECK (auth.uid() = id OR auth.uid() IS NULL);
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, created_at)
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, created_at)
   VALUES (
     new.id,
     new.email,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    COALESCE(
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'name',
+      split_part(new.email, '@', 1)
+    ),
+    COALESCE(
+      new.raw_user_meta_data->>'avatar_url',
+      new.raw_user_meta_data->>'picture'
+    ),
     now()
   )
   ON CONFLICT (id) DO UPDATE
   SET email = EXCLUDED.email,
-      full_name = EXCLUDED.full_name,
+      full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+      avatar_url = COALESCE(EXCLUDED.avatar_url, public.profiles.avatar_url),
       updated_at = now();
   RETURN NEW;
 END;
