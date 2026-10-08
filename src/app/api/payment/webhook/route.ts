@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { getSupabaseClient } from '@/lib/supabase';
+import { connectDB } from '@/lib/mongodb';
+import { Subscription } from '@/models/Subscription';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,42 +28,41 @@ export async function POST(req: NextRequest) {
     const notes = payment?.notes || {};
     const userId = notes.userId;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ received: true });
-    }
+    await connectDB();
 
     // Process payment.captured event
     if (event === 'payment.captured' && userId) {
       const now = new Date();
       const expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      // Idempotent insertion
-      await supabase.from('subscriptions').upsert(
+      await Subscription.findOneAndUpdate(
+        { paymentId: payment.id },
         {
-          user_id: userId,
-          plan: 'pro',
-          status: 'active',
-          payment_provider: 'razorpay',
-          order_id: payment.order_id,
-          payment_id: payment.id,
-          amount: payment.amount || 14900,
-          currency: payment.currency || 'INR',
-          start_date: now.toISOString(),
-          expiry_date: expiryDate.toISOString(),
-          updated_at: now.toISOString(),
+          $set: {
+            id: subId,
+            userId,
+            plan: 'pro',
+            status: 'active',
+            paymentProvider: 'razorpay',
+            orderId: payment.order_id,
+            paymentId: payment.id,
+            amount: payment.amount || 14900,
+            currency: payment.currency || 'INR',
+            startDate: now,
+            expiryDate,
+          },
         },
-        { onConflict: 'payment_id' }
+        { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     }
 
     // Process subscription.cancelled or payment.failed
     if ((event === 'subscription.cancelled' || event === 'payment.failed') && userId) {
-      await supabase
-        .from('subscriptions')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('status', 'active');
+      await Subscription.updateMany(
+        { userId, status: 'active' },
+        { $set: { status: 'cancelled' } }
+      );
     }
 
     return NextResponse.json({ received: true, event });

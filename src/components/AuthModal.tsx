@@ -263,7 +263,7 @@ export function AuthModal({
 
       setIsLoading(true);
       try {
-        const { success, error: err } = await updateStudentPassword(password);
+        const { success, error: err } = await updateStudentPassword(password, email.trim());
         if (err) {
           setError(err);
         } else if (success) {

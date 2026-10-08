@@ -1,80 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
+import { connectDB } from '@/lib/mongodb';
+import { SolvedExam } from '@/models/SolvedExam';
 import { getAuthenticatedUser } from '@/lib/serverSubscription';
 import { UniversitySolvedExam } from '@/types';
 
-// Helper to map DB row to UniversitySolvedExam
-function mapRowToSolvedExam(row: any): UniversitySolvedExam {
+// Helper to map Mongoose doc to UniversitySolvedExam
+function mapDocToSolvedExam(doc: any): UniversitySolvedExam {
   return {
-    id: row.id,
-    userId: row.user_id || undefined,
-    createdAt: row.created_at || new Date().toISOString(),
-    subject: row.subject || 'University Examination',
-    academicLevel: row.academic_level || 'Undergraduate',
-    totalMarks: Number(row.total_marks) || 0,
-    rawQuestionsText: row.raw_questions_text || '',
-    overallExamSummary: row.overall_exam_summary || '',
-    solutions: Array.isArray(row.solutions) ? row.solutions : [],
-  };
-}
-
-// Helper to map UniversitySolvedExam to DB row
-function mapSolvedExamToRow(exam: UniversitySolvedExam): any {
-  return {
-    id: exam.id,
-    user_id: exam.userId || null,
-    created_at: exam.createdAt || new Date().toISOString(),
-    subject: exam.subject,
-    academic_level: exam.academicLevel,
-    total_marks: exam.totalMarks,
-    raw_questions_text: exam.rawQuestionsText,
-    overall_exam_summary: exam.overallExamSummary,
-    solutions: exam.solutions || [],
+    id: doc.id,
+    userId: doc.userId || undefined,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+    subject: doc.subject || 'University Examination',
+    academicLevel: doc.academicLevel || 'Undergraduate',
+    totalMarks: Number(doc.totalMarks) || 0,
+    rawQuestionsText: doc.rawQuestionsText || '',
+    overallExamSummary: doc.overallExamSummary || '',
+    solutions: Array.isArray(doc.solutions) ? doc.solutions : [],
   };
 }
 
 /**
  * GET /api/solved-exams?userId=...
- * Fetches solved exam papers from Supabase
+ * Fetches solved exam papers from MongoDB
  */
 export async function GET(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({
-      connected: false,
-      solvedExams: [],
-      message: 'Supabase credentials not configured.',
-    });
-  }
-
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, solvedExams: [] });
-    }
+    await connectDB();
 
     const authUser = await getAuthenticatedUser(req);
     const { searchParams } = new URL(req.url);
     const userId = authUser?.id || searchParams.get('userId');
 
-    let query = supabase
-      .from('solved_exams')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
-
+    let filter: any = {};
     if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+      filter = { $or: [{ userId }, { userId: null }, { userId: { $exists: false } }] };
     }
 
-    const { data, error } = await query;
+    const docs = await SolvedExam.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
 
-    if (error) {
-      // If table doesn't exist yet, return empty list gracefully
-      console.warn('Supabase solved_exams query:', error.message);
-      return NextResponse.json({ connected: true, solvedExams: [] });
-    }
-
-    const solvedExams = (data || []).map(mapRowToSolvedExam);
+    const solvedExams = docs.map(mapDocToSolvedExam);
     return NextResponse.json({ connected: true, solvedExams });
   } catch (err: any) {
     console.error('API /api/solved-exams GET error:', err);
@@ -84,46 +51,45 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/solved-exams
- * Upserts a solved exam paper in Supabase
+ * Upserts a solved exam paper in MongoDB
  */
 export async function POST(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({
-      connected: false,
-      saved: false,
-      message: 'Supabase not configured. Saved to local storage only.',
-    });
-  }
-
   try {
     const exam: UniversitySolvedExam = await req.json();
     if (!exam || !exam.id || !exam.subject) {
       return NextResponse.json({ error: 'Invalid solved exam payload' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, saved: false });
-    }
-
+    await connectDB();
     const authUser = await getAuthenticatedUser(req);
-    const row = mapSolvedExamToRow(exam);
+
+    const updateData: any = {
+      id: exam.id,
+      subject: exam.subject,
+      academicLevel: exam.academicLevel || 'Undergraduate',
+      totalMarks: exam.totalMarks || 0,
+      rawQuestionsText: exam.rawQuestionsText || '',
+      overallExamSummary: exam.overallExamSummary || '',
+      solutions: exam.solutions || [],
+    };
+
     if (authUser?.id) {
-      row.user_id = authUser.id;
+      updateData.userId = authUser.id;
+    } else if (exam.userId) {
+      updateData.userId = exam.userId;
     }
 
-    const { data, error } = await supabase
-      .from('solved_exams')
-      .upsert(row, { onConflict: 'id' })
-      .select()
-      .single();
+    const updatedDoc = await SolvedExam.findOneAndUpdate(
+      { id: exam.id },
+      { $set: updateData },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    if (error) {
-      console.warn('Supabase solved_exams upsert error:', error.message);
-      return NextResponse.json({ connected: true, saved: false, error: error.message });
-    }
-
-    return NextResponse.json({ connected: true, saved: true, solvedExam: mapRowToSolvedExam(data) });
+    return NextResponse.json({
+      connected: true,
+      saved: true,
+      solvedExam: mapDocToSolvedExam(updatedDoc),
+    });
   } catch (err: any) {
     console.error('API /api/solved-exams POST error:', err);
     return NextResponse.json({ connected: false, saved: false, error: err.message }, { status: 500 });
@@ -132,13 +98,9 @@ export async function POST(req: NextRequest) {
 
 /**
  * DELETE /api/solved-exams?id=...
- * Deletes a solved exam paper from Supabase
+ * Deletes a solved exam paper from MongoDB
  */
 export async function DELETE(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ connected: false, deleted: false });
-  }
-
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -147,17 +109,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing solved exam id' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, deleted: false });
-    }
-
-    const { error } = await supabase.from('solved_exams').delete().eq('id', id);
-
-    if (error) {
-      console.warn('Supabase solved_exams delete error:', error.message);
-      return NextResponse.json({ connected: true, deleted: false, error: error.message });
-    }
+    await connectDB();
+    await SolvedExam.deleteOne({ id });
 
     return NextResponse.json({ connected: true, deleted: true });
   } catch (err: any) {

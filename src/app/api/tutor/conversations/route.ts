@@ -1,78 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
+import { connectDB } from '@/lib/mongodb';
+import { TutorConversation } from '@/models/TutorConversation';
 import { getAuthenticatedUser } from '@/lib/serverSubscription';
-import { TutorConversation } from '@/types';
+import { TutorConversation as ITutorConvType } from '@/types';
 
-// Helper to map DB row to TutorConversation
-function mapRowToConversation(row: any): TutorConversation {
+// Helper to map Mongoose doc to TutorConversation type
+function mapDocToConversation(doc: any): ITutorConvType {
   return {
-    id: row.id,
-    userId: row.user_id || undefined,
-    title: row.title || 'Tutoring Session',
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at || new Date().toISOString(),
-    messages: Array.isArray(row.messages) ? row.messages : [],
-    context: row.context || undefined,
-    explanationMode: row.explanation_mode || 'simple',
-    learningMode: row.learning_mode || 'direct',
-  };
-}
-
-// Helper to map TutorConversation to DB row
-function mapConversationToRow(conv: TutorConversation): any {
-  return {
-    id: conv.id,
-    user_id: conv.userId || null,
-    title: conv.title,
-    created_at: conv.createdAt || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    messages: conv.messages || [],
-    context: conv.context || null,
-    explanation_mode: conv.explanationMode || 'simple',
-    learning_mode: conv.learningMode || 'direct',
+    id: doc.id,
+    userId: doc.userId || undefined,
+    title: doc.title || 'Tutoring Session',
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
+    messages: Array.isArray(doc.messages) ? doc.messages : [],
+    context: doc.context || undefined,
+    explanationMode: doc.explanationMode || 'simple',
+    learningMode: doc.learningMode || 'direct',
   };
 }
 
 /**
  * GET /api/tutor/conversations?userId=...
+ * Fetches tutoring conversations from MongoDB
  */
 export async function GET(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({
-      connected: false,
-      conversations: [],
-      message: 'Supabase credentials not configured.',
-    });
-  }
-
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, conversations: [] });
-    }
+    await connectDB();
 
     const authUser = await getAuthenticatedUser(req);
     const { searchParams } = new URL(req.url);
     const userId = authUser?.id || searchParams.get('userId');
 
-    let query = supabase
-      .from('tutor_conversations')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(50);
-
+    let filter: any = {};
     if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+      filter = { $or: [{ userId }, { userId: null }, { userId: { $exists: false } }] };
     }
 
-    const { data, error } = await query;
+    const docs = await TutorConversation.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(50)
+      .lean();
 
-    if (error) {
-      console.warn('Supabase tutor_conversations query:', error.message);
-      return NextResponse.json({ connected: true, conversations: [] });
-    }
-
-    const conversations = (data || []).map(mapRowToConversation);
+    const conversations = docs.map(mapDocToConversation);
     return NextResponse.json({ connected: true, conversations });
   } catch (err: any) {
     console.error('API /api/tutor/conversations GET error:', err);
@@ -82,45 +51,45 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/tutor/conversations
+ * Upserts a tutoring conversation in MongoDB
  */
 export async function POST(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({
-      connected: false,
-      saved: false,
-      message: 'Supabase not configured. Saved to local storage only.',
-    });
-  }
-
   try {
-    const conv: TutorConversation = await req.json();
+    const conv: ITutorConvType = await req.json();
     if (!conv || !conv.id || !conv.title) {
       return NextResponse.json({ error: 'Invalid conversation payload' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, saved: false });
-    }
-
+    await connectDB();
     const authUser = await getAuthenticatedUser(req);
-    const row = mapConversationToRow(conv);
+
+    const updateData: any = {
+      id: conv.id,
+      title: conv.title,
+      messages: conv.messages || [],
+      context: conv.context || null,
+      explanationMode: conv.explanationMode || 'simple',
+      learningMode: conv.learningMode || 'direct',
+      updatedAt: new Date(),
+    };
+
     if (authUser?.id) {
-      row.user_id = authUser.id;
+      updateData.userId = authUser.id;
+    } else if (conv.userId) {
+      updateData.userId = conv.userId;
     }
 
-    const { data, error } = await supabase
-      .from('tutor_conversations')
-      .upsert(row, { onConflict: 'id' })
-      .select()
-      .single();
+    const updatedDoc = await TutorConversation.findOneAndUpdate(
+      { id: conv.id },
+      { $set: updateData },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    if (error) {
-      console.warn('Supabase tutor_conversations upsert error:', error.message);
-      return NextResponse.json({ connected: true, saved: false, error: error.message });
-    }
-
-    return NextResponse.json({ connected: true, saved: true, conversation: mapRowToConversation(data) });
+    return NextResponse.json({
+      connected: true,
+      saved: true,
+      conversation: mapDocToConversation(updatedDoc),
+    });
   } catch (err: any) {
     console.error('API /api/tutor/conversations POST error:', err);
     return NextResponse.json({ connected: false, saved: false, error: err.message }, { status: 500 });
@@ -129,12 +98,9 @@ export async function POST(req: NextRequest) {
 
 /**
  * DELETE /api/tutor/conversations?id=...
+ * Deletes a tutoring conversation from MongoDB
  */
 export async function DELETE(req: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ connected: false, deleted: false });
-  }
-
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -143,17 +109,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing conversation id' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ connected: false, deleted: false });
-    }
-
-    const { error } = await supabase.from('tutor_conversations').delete().eq('id', id);
-
-    if (error) {
-      console.warn('Supabase tutor_conversations delete error:', error.message);
-      return NextResponse.json({ connected: true, deleted: false, error: error.message });
-    }
+    await connectDB();
+    await TutorConversation.deleteOne({ id });
 
     return NextResponse.json({ connected: true, deleted: true });
   } catch (err: any) {

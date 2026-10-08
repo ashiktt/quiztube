@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase';
 import { Sparkles, AlertCircle } from 'lucide-react';
 
 function AuthCallbackContent() {
@@ -27,31 +26,14 @@ function AuthCallbackContent() {
           return;
         }
 
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-          router.replace('/');
-          return;
+        const token = searchParams.get('token');
+        if (token && typeof window !== 'undefined') {
+          localStorage.setItem('saberio_auth_token', token);
         }
 
-        const code = searchParams.get('code');
         const type = searchParams.get('type');
-
-        if (code) {
-          setStatusMessage('Completing authentication...');
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) {
-            console.error('Code exchange error:', exchangeError);
-          }
-        }
-
-        // Check active session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.warn('Session retrieval error:', sessionError);
-        }
-
         if (isMounted) {
-          if (type === 'recovery' || (typeof window !== 'undefined' && window.location.hash.includes('type=recovery'))) {
+          if (type === 'recovery') {
             setStatusMessage('Verification successful! Opening password reset...');
             setTimeout(() => {
               router.replace('/?password_reset=true');
@@ -98,14 +80,10 @@ function AuthCallbackContent() {
 
         {errorMessage && (
           <div className="p-3 bg-red-950/40 border border-red-800/60 rounded-xl flex items-center gap-2 text-xs text-red-300">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
             <span>{errorMessage}</span>
           </div>
         )}
-
-        <div className="flex justify-center pt-2">
-          <div className="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-        </div>
       </div>
     </div>
   );
@@ -115,8 +93,8 @@ export default function AuthCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
-          <div className="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+        <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center text-white text-xs">
+          Loading Saberio AI session...
         </div>
       }
     >

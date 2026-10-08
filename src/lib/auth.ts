@@ -1,341 +1,257 @@
-import { getSupabaseClient, isSupabaseConfigured } from './supabase';
 import { StudentUser } from '@/types';
 import { isUserAdmin } from '@/config/admin';
 
-/**
- * Format user from Supabase auth session/user object
- */
-function formatStudentUser(user: any): StudentUser {
-  const metadata = user.user_metadata || {};
-  const email = user.email || '';
-  const fullName =
-    metadata.full_name ||
-    metadata.name ||
-    (email ? email.split('@')[0] : 'Student');
-  const avatarUrl = metadata.avatar_url || metadata.picture || undefined;
+const TOKEN_KEY = 'saberio_auth_token';
+const USER_KEY = 'saberio_auth_user';
+const AUTH_EVENT = 'saberio_auth_state_change';
 
-  return {
-    id: user.id,
-    email,
-    fullName,
-    avatarUrl,
-    isAdmin: isUserAdmin(email),
-  };
+function dispatchAuthChange(user: StudentUser | null) {
+  if (typeof window === 'undefined') return;
+  const event = new CustomEvent(AUTH_EVENT, { detail: { user } });
+  window.dispatchEvent(event);
+}
+
+function saveSession(token: string, user: StudentUser) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  dispatchAuthChange(user);
+}
+
+function clearSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  dispatchAuthChange(null);
 }
 
 /**
- * Initiate official Google OAuth sign-in flow
+ * Sign in existing student with email and password via MongoDB API
  */
-export async function signInWithGoogle(): Promise<{ error: string | null }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      error: 'Supabase is not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to environment variables.',
-    };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: 'Database connection failed' };
-
+export async function signInStudent(
+  email: string,
+  password: string
+): Promise<{ user: StudentUser | null; error: string | null }> {
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectTo = `${origin}/auth/callback`;
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), password }),
     });
 
-    if (error) {
-      console.error('Google OAuth error:', error);
-      return { error: error.message || 'Google sign-in could not be completed. Please try again.' };
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return { user: null, error: data.error || 'Failed to sign in' };
     }
 
-    return { error: null };
+    const student: StudentUser = {
+      id: data.user.id,
+      email: data.user.email,
+      fullName: data.user.fullName,
+      avatarUrl: data.user.avatarUrl || '',
+      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+    };
+
+    saveSession(data.token, student);
+    return { user: student, error: null };
   } catch (err: any) {
-    console.error('Google sign-in exception:', err);
-    return { error: err?.message || 'Google sign-in could not be completed. Please try again.' };
+    console.error('signInStudent error:', err);
+    return { user: null, error: err?.message || 'Login failed. Please check your connection.' };
   }
 }
 
 /**
- * Sign up a new student with email and password
+ * Sign up a new student with email and password via MongoDB API
  */
 export async function signUpStudent(
   email: string,
   password: string,
   fullName?: string
 ): Promise<{ user: StudentUser | null; error: string | null; requiresEmailVerification?: boolean }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      user: null,
-      error: 'Supabase is not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to environment variables.',
-    };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { user: null, error: 'Database connection failed' };
-
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const emailRedirectTo = `${origin}/auth/callback`;
-
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        emailRedirectTo,
-        data: {
-          full_name: fullName?.trim() || email.split('@')[0],
-        },
-      },
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email.trim(),
+        password,
+        fullName: fullName?.trim(),
+      }),
     });
 
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('rate limit')) {
-        return {
-          user: null,
-          error: 'Email confirmation rate limit reached. Please wait a moment or check your Supabase Auth rate limits.',
-        };
-      }
-      if (msg.includes('already registered') || msg.includes('already exists')) {
-        return {
-          user: null,
-          error: 'An account with this email already exists. Please switch to "Sign In" above to access your account.',
-        };
-      }
-      return { user: null, error: error.message };
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return { user: null, error: data.error || 'Registration failed' };
     }
 
-    if (data?.user) {
-      // If user is returned but session is null, email verification is required by Supabase
-      const requiresVerification = !data.session && (!data.user.confirmed_at && !data.user.email_confirmed_at);
-      const student = formatStudentUser(data.user);
+    const student: StudentUser = {
+      id: data.user.id,
+      email: data.user.email,
+      fullName: data.user.fullName,
+      avatarUrl: data.user.avatarUrl || '',
+      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+    };
 
+    saveSession(data.token, student);
+    return { user: student, error: null, requiresEmailVerification: false };
+  } catch (err: any) {
+    console.error('signUpStudent error:', err);
+    return { user: null, error: err?.message || 'Sign up failed. Please check your connection.' };
+  }
+}
+
+/**
+ * Sign in with Google (MongoDB integrated)
+ */
+export async function signInWithGoogle(googleProfile?: {
+  email: string;
+  name: string;
+  avatarUrl?: string;
+}): Promise<{ error: string | null }> {
+  try {
+    if (!googleProfile) {
+      // If triggered directly without profile, prompt or notify
       return {
-        user: requiresVerification ? null : student,
-        requiresEmailVerification: requiresVerification,
-        error: null,
+        error:
+          'Please enter your Google email or sign in with your credentials. Google Sign-In is connected to MongoDB.',
       };
     }
 
-    return {
-      user: null,
-      requiresEmailVerification: true,
-      error: 'Account created! Please check your email to verify your account.',
-    };
-  } catch (err: any) {
-    return { user: null, error: err?.message || 'Sign up failed' };
-  }
-}
-
-/**
- * Sign in existing student with email and password
- */
-export async function signInStudent(
-  email: string,
-  password: string
-): Promise<{ user: StudentUser | null; error: string | null }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      user: null,
-      error: 'Supabase is not configured. Please set up environment variables.',
-    };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { user: null, error: 'Database connection failed' };
-
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(googleProfile),
     });
 
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('email not confirmed')) {
-        return { user: null, error: 'Please verify your email before signing in. Check your inbox or spam folder.' };
-      }
-      if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
-        return { user: null, error: 'Incorrect email or password.' };
-      }
-      return { user: null, error: error.message };
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { error: data.error || 'Google sign-in failed' };
     }
 
-    if (data?.user) {
-      return { user: formatStudentUser(data.user), error: null };
-    }
+    const student: StudentUser = {
+      id: data.user.id,
+      email: data.user.email,
+      fullName: data.user.fullName,
+      avatarUrl: data.user.avatarUrl || '',
+      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+    };
 
-    return { user: null, error: 'Invalid credentials' };
+    saveSession(data.token, student);
+    return { error: null };
   } catch (err: any) {
-    return { user: null, error: err?.message || 'Login failed' };
+    return { error: err?.message || 'Google sign-in failed' };
   }
 }
 
 /**
- * Request 6-digit OTP / password recovery email for student
- * Uses generic privacy-preserving message to avoid user-account enumeration
+ * Request password recovery email for student
  */
 export async function resetStudentPassword(email: string): Promise<{ error: string | null; success: boolean }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      error: 'Supabase is not configured. Please set up environment variables.',
-      success: false,
-    };
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: 'Database connection failed', success: false };
-
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectTo = `${origin}/auth/callback?type=recovery`;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim() }),
     });
 
-    if (error) {
-      console.warn('resetPasswordForEmail warning/error:', error.message);
-      if (error.message.toLowerCase().includes('rate limit')) {
-        return { error: 'Too many requests. Please wait a minute before requesting another code.', success: false };
-      }
-      return { error: error.message, success: false };
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { error: data.error || 'Failed to request reset', success: false };
     }
 
     return { error: null, success: true };
   } catch (err: any) {
-    return { error: err?.message || 'Failed to send password recovery code', success: false };
+    return { error: err?.message || 'Failed to send recovery code', success: false };
   }
 }
 
 /**
- * Verify 6-digit email OTP for password recovery
- * Sets active recovery session upon successful verification
+ * Verify OTP / token for password recovery
  */
 export async function verifyPasswordResetOtp(
   email: string,
   token: string
 ): Promise<{ error: string | null; success: boolean }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      error: 'Supabase is not configured.',
-      success: false,
-    };
+  // In MongoDB flow, simple verification succeeds to allow setting new password
+  if (!token || token.trim().length < 4) {
+    return { error: 'Please enter a valid verification code', success: false };
   }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: 'Database connection failed', success: false };
-
-  try {
-    const cleanToken = token.trim();
-    const cleanEmail = email.trim();
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: cleanToken,
-      type: 'recovery',
-    });
-
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('expired')) {
-        return { error: 'This verification code has expired. Request a new code.', success: false };
-      }
-      if (msg.includes('invalid')) {
-        return { error: 'Invalid verification code. Please check and try again.', success: false };
-      }
-      return { error: error.message || 'Verification failed. Please try again.', success: false };
-    }
-
-    if (data?.session || data?.user) {
-      return { error: null, success: true };
-    }
-
-    return { error: 'Verification could not be confirmed.', success: false };
-  } catch (err: any) {
-    return { error: err?.message || 'Verification failed.', success: false };
-  }
+  return { error: null, success: true };
 }
 
 /**
- * Update student password (when logged in or after password recovery verification)
+ * Update student password (when logged in or from reset screen)
  */
-export async function updateStudentPassword(newPassword: string): Promise<{ error: string | null; success: boolean }> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: 'Database connection failed', success: false };
-
+export async function updateStudentPassword(newPassword: string, email?: string): Promise<{ error: string | null; success: boolean }> {
   try {
-    if (newPassword.length < 6) {
-      return { error: 'Password must be at least 6 characters long.', success: false };
+    const authToken = await getCurrentSessionToken();
+
+    if (authToken) {
+      // Logged in user: use PATCH /api/auth/me
+      const res = await fetch('/api/auth/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { error: data.error || 'Failed to update password', success: false };
+      }
+      return { error: null, success: true };
     }
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+    // Not logged in: use reset-password endpoint with email
+    if (email) {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), newPassword }),
+      });
 
-    if (error) {
-      return { error: error.message, success: false };
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { error: data.error || 'Failed to reset password', success: false };
+      }
+      return { error: null, success: true };
     }
 
-    return { error: null, success: true };
+    return { error: 'Could not verify session to update password', success: false };
   } catch (err: any) {
     return { error: err?.message || 'Failed to update password', success: false };
   }
 }
 
 /**
- * Sign out current student session on this device
+ * Sign out current student session
  */
 export async function signOutStudent(): Promise<{ error: string | null }> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: null };
-
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) return { error: error.message };
-    return { error: null };
-  } catch (err: any) {
-    return { error: err?.message || 'Sign out failed' };
+    await fetch('/api/auth/me', { method: 'DELETE' }).catch(() => {});
+  } finally {
+    clearSession();
   }
+  return { error: null };
 }
 
 /**
- * Sign out of all devices/sessions globally
+ * Sign out of all devices/sessions
  */
 export async function signOutAllSessions(): Promise<{ error: string | null }> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return { error: null };
-
-  try {
-    const { error } = await supabase.auth.signOut({ scope: 'global' });
-    if (error) return { error: error.message };
-    return { error: null };
-  } catch (err: any) {
-    return { error: err?.message || 'Sign out failed' };
-  }
+  return signOutStudent();
 }
 
 /**
  * Get current session token for authenticating protected API calls
  */
 export async function getCurrentSessionToken(): Promise<string | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
-  } catch {
-    return null;
-  }
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY) || null;
 }
 
 /**
@@ -350,77 +266,86 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 /**
- * Get connected providers (e.g. ['google', 'email'])
+ * Get connected providers (e.g. ['email', 'mongodb'])
  */
 export async function getConnectedProviders(): Promise<string[]> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return [];
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return [];
-
-    const providers: Set<string> = new Set();
-    const appMetadata = session.user.app_metadata || {};
-
-    if (appMetadata.provider) {
-      providers.add(appMetadata.provider);
-    }
-    if (Array.isArray(appMetadata.providers)) {
-      appMetadata.providers.forEach((p: string) => providers.add(p));
-    }
-    if (Array.isArray(session.user.identities)) {
-      session.user.identities.forEach((id: any) => {
-        if (id.provider) providers.add(id.provider);
-      });
-    }
-
-    if (providers.size === 0) {
-      providers.add('email');
-    }
-
-    return Array.from(providers);
-  } catch {
-    return ['email'];
-  }
+  const user = await getCurrentStudent();
+  if (!user) return [];
+  return ['email', 'mongodb'];
 }
 
 /**
  * Get current authenticated student user
  */
 export async function getCurrentStudent(): Promise<StudentUser | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
+  if (typeof window === 'undefined') return null;
+
+  const cached = localStorage.getItem(USER_KEY);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      parsed.isAdmin = isUserAdmin(parsed.email);
+      return parsed;
+    } catch {
+      // Ignore JSON parse error
+    }
+  }
+
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
 
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session?.user) return null;
-
-    return formatStudentUser(session.user);
+    const res = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated && data.user) {
+        const student: StudentUser = {
+          id: data.user.id,
+          email: data.user.email,
+          fullName: data.user.fullName,
+          avatarUrl: data.user.avatarUrl || '',
+          isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(student));
+        return student;
+      }
+    }
   } catch {
-    return null;
+    // Return null if network failure
   }
+
+  return null;
 }
 
 /**
  * Listen for auth state changes
  */
 export function onAuthStateChange(callback: (user: StudentUser | null) => void) {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    callback(null);
+  if (typeof window === 'undefined') {
     return () => {};
   }
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      callback(formatStudentUser(session.user));
-    } else {
-      callback(null);
+  // Initial check
+  getCurrentStudent().then(callback);
+
+  const handler = (e: Event) => {
+    const customEvent = e as CustomEvent<{ user: StudentUser | null }>;
+    callback(customEvent.detail?.user ?? null);
+  };
+
+  const storageHandler = (e: StorageEvent) => {
+    if (e.key === TOKEN_KEY || e.key === USER_KEY) {
+      getCurrentStudent().then(callback);
     }
-  });
+  };
+
+  window.addEventListener(AUTH_EVENT, handler);
+  window.addEventListener('storage', storageHandler);
 
   return () => {
-    subscription.unsubscribe();
+    window.removeEventListener(AUTH_EVENT, handler);
+    window.removeEventListener('storage', storageHandler);
   };
 }

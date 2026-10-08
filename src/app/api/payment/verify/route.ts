@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { getSupabaseClient } from '@/lib/supabase';
+import { connectDB } from '@/lib/mongodb';
+import { Subscription } from '@/models/Subscription';
 import { PaymentVerificationRequest } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -36,30 +37,26 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      // Upsert subscription record in Supabase
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          plan: 'pro',
-          status: 'active',
-          payment_provider: 'razorpay',
-          order_id: razorpay_order_id,
-          payment_id: razorpay_payment_id || `pay_${Date.now()}`,
-          amount: 14900, // ₹149 in paise
-          currency: 'INR',
-          start_date: now.toISOString(),
-          expiry_date: expiryDate.toISOString(),
-          auto_renew: false,
-          created_at: now.toISOString(),
-          updated_at: now.toISOString(),
-        });
+    try {
+      await connectDB();
+      const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      if (subError) {
-        console.error('Supabase subscription record error:', subError);
-      }
+      await Subscription.create({
+        id: subId,
+        userId,
+        plan: 'pro',
+        status: 'active',
+        paymentProvider: 'razorpay',
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id || `pay_${Date.now()}`,
+        amount: 14900,
+        currency: 'INR',
+        startDate: now,
+        expiryDate,
+        autoRenew: false,
+      });
+    } catch (dbErr) {
+      console.error('MongoDB subscription record error:', dbErr);
     }
 
     return NextResponse.json({
@@ -69,7 +66,7 @@ export async function POST(req: NextRequest) {
       status: 'active',
       startDate: now.toISOString(),
       expiryDate: expiryDate.toISOString(),
-      message: 'QuizTube Pro activated successfully for 30 days!',
+      message: 'Saberio AI Pro activated successfully for 30 days!',
     });
   } catch (error: any) {
     console.error('Payment verify API error:', error);
