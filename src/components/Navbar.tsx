@@ -122,7 +122,7 @@ export function Navbar({
             </div>
             <div>
               <div className="flex items-center gap-1.5 font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
-                <span>rio AI</span>
+                <span>Saberio AI</span>
                 {SUBSCRIPTION_ENABLED && isPro && (
                   <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm">
                     <Crown className="w-2.5 h-2.5 fill-current" />
