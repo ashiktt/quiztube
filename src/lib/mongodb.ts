@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/saberio_ai';
+function getMongoUri(): string {
+  return process.env.MONGODB_URI || 'mongodb://localhost:27017/saberio_ai';
+}
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -28,8 +30,8 @@ export async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,
       maxPoolSize: 10,
     };
-
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+    const uri = getMongoUri();
+    cached!.promise = mongoose.connect(uri, opts).then((mongooseInstance) => {
       console.log('MongoDB connected successfully');
       return mongooseInstance;
     });

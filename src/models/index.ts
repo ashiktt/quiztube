@@ -4,3 +4,7 @@ export { SolvedExam, type ISolvedExam } from './SolvedExam';
 export { TutorConversation, type ITutorConversation } from './TutorConversation';
 export { Subscription, type ISubscription } from './Subscription';
 export { DailyUsage, type IDailyUsage } from './DailyUsage';
+export { StudentEvent, type IStudentEvent } from './StudentEvent';
+export { StudentTask, type IStudentTask } from './StudentTask';
+export { StudentReminder, type IStudentReminder } from './StudentReminder';
+export { AssistantActionRun, type IAssistantActionRun } from './AssistantActionRun';

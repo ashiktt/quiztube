@@ -1,0 +1,347 @@
+{
+  "name": "Student Copilot - Academic Event Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "student-copilot-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "student-copilot-event-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.headers['x-webhook-secret'] }}",
+              "operation": "equal",
+              "value2": "={{ $env.N8N_WEBHOOK_SECRET || 'PLACEHOLDER_WEBHOOK_SECRET' }}"
+            }
+          ]
+        }
+      },
+      "id": "auth-check",
+      "name": "Authenticate Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Unauthorized: Invalid or missing X-Webhook-Secret header.\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "respond-unauthorized",
+      "name": "Reject Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 480]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.actionType }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "event.confirmed",
+              "output": 0
+            },
+            {
+              "value2": "task.created",
+              "output": 1
+            },
+            {
+              "value2": "reminders.create",
+              "output": 2
+            },
+            {
+              "value2": "event.updated",
+              "output": 3
+            },
+            {
+              "value2": "event.cancelled",
+              "output": 4
+            }
+          ]
+        },
+        "fallbackOutput": 5
+      },
+      "id": "switch-action",
+      "name": "Switch on Allowlisted Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "operation",
+              "value": "event_confirmed_processed"
+            },
+            {
+              "name": "eventId",
+              "value": "={{ $json.body.data.eventId }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.body.data.title }}"
+            },
+            {
+              "name": "status",
+              "value": "scheduled"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "action-event-confirmed",
+      "name": "Process Event Confirmed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [950, 80]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "operation",
+              "value": "task_created_processed"
+            },
+            {
+              "name": "taskTitle",
+              "value": "={{ $json.body.data.title }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "action-task-created",
+      "name": "Process Task Created",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [950, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "operation",
+              "value": "reminders_scheduled_processed"
+            },
+            {
+              "name": "eventId",
+              "value": "={{ $json.body.data.eventId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "action-reminders-create",
+      "name": "Process Reminders",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [950, 320]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "operation",
+              "value": "event_updated_processed"
+            },
+            {
+              "name": "eventId",
+              "value": "={{ $json.body.data.eventId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "action-event-updated",
+      "name": "Process Event Updated",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [950, 440]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "operation",
+              "value": "event_cancelled_processed"
+            },
+            {
+              "name": "eventId",
+              "value": "={{ $json.body.data.eventId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "action-event-cancelled",
+      "name": "Process Event Cancelled",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [950, 560]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"executionId\": \"={{ $execution.id }}\",\n  \"status\": \"completed\",\n  \"actionType\": \"={{ $('Switch on Allowlisted Action').item.json.body.actionType }}\",\n  \"idempotencyKey\": \"={{ $('Switch on Allowlisted Action').item.json.body.idempotencyKey }}\",\n  \"timestamp\": \"={{ new Date().toISOString() }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Authenticate Secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate Secret": {
+      "main": [
+        [
+          {
+            "node": "Switch on Allowlisted Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on Allowlisted Action": {
+      "main": [
+        [
+          {
+            "node": "Process Event Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Task Created",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Event Updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Event Cancelled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Event Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Task Created": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Reminders": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Event Updated": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Event Cancelled": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

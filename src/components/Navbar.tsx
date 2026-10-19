@@ -15,6 +15,7 @@ import {
   Settings,
   Crown,
   ChevronDown,
+  Bot,
 } from 'lucide-react';
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
@@ -34,8 +35,8 @@ interface NavbarProps {
   savedCount: number;
   hasApiKey: boolean;
   isPro?: boolean;
-  appMode?: 'youtube' | 'examSolver' | 'tutor';
-  onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor') => void;
+  appMode?: 'youtube' | 'examSolver' | 'tutor' | 'copilot';
+  onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor' | 'copilot') => void;
 }
 
 export function Navbar({
@@ -81,7 +82,7 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleNavClick = (mode: 'youtube' | 'examSolver' | 'tutor') => {
+  const handleNavClick = (mode: 'youtube' | 'examSolver' | 'tutor' | 'copilot') => {
     if (onSwitchMode) onSwitchMode(mode);
     if (mode === 'youtube') onNewQuiz();
     setMobileMenuOpen(false);
@@ -180,6 +181,23 @@ export function Navbar({
             >
               <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
               <span>AI Tutor</span>
+            </button>
+
+            {/* 4. Student Copilot */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('copilot')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                appMode === 'copilot'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+              }`}
+            >
+              <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Student Copilot</span>
+              <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                AI
+              </span>
             </button>
 
             {/* 4. Study Library */}
@@ -408,6 +426,24 @@ export function Navbar({
                 >
                   <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
                   <span>AI Tutor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('copilot')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                    appMode === 'copilot'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Student Copilot</span>
+                  </div>
+                  <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                    AI
+                  </span>
                 </button>
 
                 <button

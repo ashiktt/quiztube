@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Crown,
   ShieldCheck,
+  Bot,
 } from 'lucide-react';
 import {
   LectureStudySet,
@@ -49,6 +50,7 @@ import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { AuthModal } from '@/components/AuthModal';
 import { UniversityQuestionSolver } from '@/components/UniversityQuestionSolver';
 import { AITutorView } from '@/components/AITutorView';
+import { StudentCopilotView } from '@/components/copilot/StudentCopilotView';
 import { ProUpgradeModal } from '@/components/ProUpgradeModal';
 import { ApkDownloadSection } from '@/components/ApkDownloadSection';
 import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
@@ -84,7 +86,7 @@ export default function Home() {
   const [activeTutorConversation, setActiveTutorConversation] = useState<TutorConversation | null>(null);
   const [tutorContext, setTutorContext] = useState<TutorContext | null>(null);
   const [activeTab, setActiveTab] = useState<'cheatsheet' | 'quiz' | 'summary'>('cheatsheet');
-  const [appMode, setAppMode] = useState<'youtube' | 'examSolver' | 'tutor'>('youtube');
+  const [appMode, setAppMode] = useState<'youtube' | 'examSolver' | 'tutor' | 'copilot'>('youtube');
   const [currentVideoTimestamp, setCurrentVideoTimestamp] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -369,7 +371,16 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8">
-        {appMode === 'tutor' ? (
+        {appMode === 'copilot' ? (
+          /* Student Copilot - AI Automation Assistant Mode */
+          <StudentCopilotView
+            userId={currentUser?.id}
+            userEmail={currentUser?.email}
+            hasServerKey={hasServerKey}
+            onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
+            onOpenAuthModal={() => setAuthModalOpen(true)}
+          />
+        ) : appMode === 'tutor' ? (
           /* AI Tutor Interactive Chat Mode */
           <AITutorView
             initialContext={tutorContext}
@@ -420,7 +431,7 @@ export default function Home() {
           /* Landing / Input Screen */
           <div className="space-y-8">
             {/* Top Feature Switcher Banners Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* 1. University Solver Banner Card */}
               <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-indigo-500/30">
                 <div className="flex items-start gap-3 text-left">
@@ -482,6 +493,37 @@ export default function Home() {
                   className="w-full py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <span>Chat with AI Tutor</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* 3. Student Copilot Banner Card */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-emerald-500/30 sm:col-span-2 lg:col-span-1">
+                <div className="flex items-start gap-3 text-left">
+                  <div className="p-2.5 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-2xl text-white shadow-md shrink-0">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-xs sm:text-sm">
+                        Student Copilot
+                      </h4>
+                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full">
+                        AUTOMATION
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-200 mt-1 leading-relaxed">
+                      Transform college notices, exam schedules, and PDFs into verified events, study checkpoints, and n8n reminders.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAppMode('copilot')}
+                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <span>Launch Student Copilot</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

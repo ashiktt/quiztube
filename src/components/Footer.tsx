@@ -11,12 +11,13 @@ import {
   HelpCircle,
   ExternalLink,
   Smartphone,
+  Bot,
 } from 'lucide-react';
 import { YoutubeIcon, GithubIcon } from '@/components/Icons';
 import { ANDROID_APK_URL, APK_CONFIG } from '@/config/apk';
 
 interface FooterProps {
-  onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor') => void;
+  onSwitchMode?: (mode: 'youtube' | 'examSolver' | 'tutor' | 'copilot') => void;
   onOpenHistory?: () => void;
   onOpenApkModal?: () => void;
   onOpenLegalModal?: (type: 'terms' | 'privacy' | 'refund') => void;
@@ -110,6 +111,16 @@ export function Footer({
                 >
                   <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
                   <span>AI Tutor</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onSwitchMode && onSwitchMode('copilot')}
+                  className="flex items-center gap-2 hover:text-white transition text-left"
+                >
+                  <Bot className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Student Copilot</span>
                 </button>
               </li>
               <li>

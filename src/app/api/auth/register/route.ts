@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
     await connectDB();
 
     const normalizedEmail = email.trim().toLowerCase();
