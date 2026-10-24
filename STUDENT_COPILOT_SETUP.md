@@ -82,7 +82,7 @@ Saberio AI uses MongoDB via Mongoose as the canonical persistence layer.
 ### Connection
 Set `MONGODB_URI` in `.env.local` or environment:
 ```env
-MONGODB_URI=mongodb://localhost:27017/saberio_ai
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/saberio?retryWrites=true&w=majority
 ```
 
 ### Automatic Indexing
@@ -101,7 +101,7 @@ Add the following to `.env.local`:
 | Variable Name | Required | Purpose | Example |
 | :--- | :--- | :--- | :--- |
 | `JWT_SECRET` | **Yes** | 32+ char secret for JWT authentication. Fails closed if missing. | `your_long_random_jwt_secret_key_32_chars` |
-| `MONGODB_URI` | **Yes** | MongoDB connection string. | `mongodb://localhost:27017/saberio_ai` |
+| `MONGODB_URI` | **Yes** | MongoDB connection string (Atlas or local mongod). | `mongodb+srv://user:pass@cluster0.mongodb.net/saberio` |
 | `GEMINI_API_KEY` | **Yes** | Google Gemini API key from Google AI Studio. | `AIzaSy...` |
 | `N8N_EVENT_WEBHOOK_URL` | Optional | Webhook URL for the event automation workflow in n8n. | `http://localhost:5678/webhook/student-copilot-events` |
 | `N8N_WEBHOOK_SECRET` | Optional | Shared secret sent in `X-Webhook-Secret` header to n8n. | `n8n_secret_token_123` |

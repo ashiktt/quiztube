@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, getDatabaseErrorMessage } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { signToken } from '@/lib/jwt';
 import bcrypt from 'bcryptjs';
@@ -7,41 +7,76 @@ import { isUserAdmin } from '@/config/admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, fullName } = await req.json();
-
-    if (!email || !password) {
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { success: false, error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+
+    const { email, password, fullName } = body;
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Email is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!password || typeof password !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Password is required' },
         { status: 400 }
       );
     }
 
     if (password.length < 6) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
+        { success: false, error: 'Password must be at least 6 characters long' },
         { status: 400 }
       );
     }
-    await connectDB();
 
     const normalizedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return NextResponse.json(
+        { success: false, error: 'Please enter a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await connectDB();
+    } catch (dbErr: any) {
+      console.error('[Auth API] Register DB connection failure:', dbErr?.message || dbErr);
+      return NextResponse.json(
+        { success: false, error: getDatabaseErrorMessage(dbErr) },
+        { status: 503 }
+      );
+    }
+
     const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email already exists. Please switch to Sign In.' },
+        { success: false, error: 'An account with this email already exists. Please switch to Sign In.' },
         { status: 409 }
       );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const name = fullName?.trim() || normalizedEmail.split('@')[0];
+    const sanitizedName =
+      typeof fullName === 'string' && fullName.trim().length > 0
+        ? fullName.trim().slice(0, 80)
+        : normalizedEmail.split('@')[0];
     const isAdmin = isUserAdmin(normalizedEmail);
 
     const newUser = await User.create({
       email: normalizedEmail,
       password: hashedPassword,
-      name,
+      name: sanitizedName,
       isAdmin,
       provider: 'credentials',
     });
@@ -79,9 +114,9 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: any) {
-    console.error('Registration error:', err);
+    console.error('[Auth API] Registration error:', err?.message || err);
     return NextResponse.json(
-      { error: err.message || 'Registration failed' },
+      { success: false, error: getDatabaseErrorMessage(err) },
       { status: 500 }
     );
   }

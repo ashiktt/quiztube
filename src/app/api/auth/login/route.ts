@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, getDatabaseErrorMessage } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { signToken } from '@/lib/jwt';
 import bcrypt from 'bcryptjs';
@@ -7,30 +7,61 @@ import { isUserAdmin } from '@/config/admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { success: false, error: 'Invalid request body' },
         { status: 400 }
       );
     }
 
-    await connectDB();
+    const { email, password } = body;
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Email is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!password || typeof password !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Password is required' },
+        { status: 400 }
+      );
+    }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return NextResponse.json(
+        { success: false, error: 'Please enter a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await connectDB();
+    } catch (dbErr: any) {
+      console.error('[Auth API] Login DB connection failure:', dbErr?.message || dbErr);
+      return NextResponse.json(
+        { success: false, error: getDatabaseErrorMessage(dbErr) },
+        { status: 503 }
+      );
+    }
+
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Incorrect email or password.' },
+        { success: false, error: 'Incorrect email or password.' },
         { status: 401 }
       );
     }
 
     if (!user.password) {
       return NextResponse.json(
-        { error: 'This account was created via Google. Please use Google Sign In.' },
+        { success: false, error: 'This account was registered via Google. Please sign in with Google.' },
         { status: 400 }
       );
     }
@@ -38,7 +69,7 @@ export async function POST(req: NextRequest) {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
-        { error: 'Incorrect email or password.' },
+        { success: false, error: 'Incorrect email or password.' },
         { status: 401 }
       );
     }
@@ -82,9 +113,9 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: any) {
-    console.error('Login error:', err);
+    console.error('[Auth API] Unexpected login error:', err?.message || err);
     return NextResponse.json(
-      { error: err.message || 'Login failed' },
+      { success: false, error: getDatabaseErrorMessage(err) },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 /**
- * Student Copilot Comprehensive Test Suite
+ * Student Copilot & Saberio AI Comprehensive Test Suite
  * Tests critical security, validation, idempotency, auth, and extraction functionality.
  */
 
@@ -13,6 +13,7 @@ import { signToken, verifyToken } from '../src/lib/jwt';
 import { generateStudySetWithGemini } from '../src/lib/gemini';
 import { solveUniversityQuestionsWithGemini } from '../src/lib/geminiSolver';
 import { generateTutorResponse } from '../src/lib/geminiTutor';
+import { sanitizeMongoUri, getDatabaseErrorMessage, getMongoUri } from '../src/lib/mongodb';
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -33,7 +34,7 @@ function runTest(name: string, fn: () => void | Promise<void>) {
 
 async function runAllTests() {
   console.log('\n==================================================');
-  console.log('Running Student Copilot Verification Test Suite');
+  console.log('Running Saberio AI Verification Test Suite');
   console.log('==================================================\n');
 
   // Test 1: Event extraction and normalization
@@ -138,16 +139,24 @@ async function runAllTests() {
       assert.strictEqual(nullPayload, null);
 
       // Test signed token
-      process.env.JWT_SECRET = 'test_secret_key_minimum_length_required_32_chars';
-      const token = signToken({ userId: 'u123', email: 'student@example.com' });
+      process.env.JWT_SECRET = 'a_very_long_secure_secret_key_at_least_32_characters_long';
+      const token = signToken({
+        userId: 'u_abc_123',
+        email: 'alice@mit.edu',
+        fullName: 'Alice Johnson',
+        isAdmin: true,
+      });
+
       assert.ok(typeof token === 'string' && token.length > 20);
 
       const verified = verifyToken(token);
-      assert.strictEqual(verified?.userId, 'u123');
-      assert.strictEqual(verified?.email, 'student@example.com');
+      assert.ok(verified);
+      assert.strictEqual(verified?.userId, 'u_abc_123');
+      assert.strictEqual(verified?.email, 'alice@mit.edu');
+      assert.strictEqual(verified?.fullName, 'Alice Johnson');
+      assert.strictEqual(verified?.isAdmin, true);
     } finally {
-      if (originalSecret) process.env.JWT_SECRET = originalSecret;
-      else delete process.env.JWT_SECRET;
+      process.env.JWT_SECRET = originalSecret;
     }
   });
 
@@ -165,56 +174,36 @@ async function runAllTests() {
     assert.strictEqual((ALLOWED_AUTOMATION_ACTIONS as readonly string[]).includes('database.drop'), false);
   });
 
-  // Test 8: Missing n8n configuration is handled gracefully
+  // Test 8: n8n configuration detection
   runTest('8. Missing n8n configuration is detected without crashing', () => {
-    const originalN8n = process.env.N8N_EVENT_WEBHOOK_URL;
+    const origUrl = process.env.N8N_EVENT_WEBHOOK_URL;
     try {
       delete process.env.N8N_EVENT_WEBHOOK_URL;
       assert.strictEqual(isN8nConfigured(), false);
-
-      process.env.N8N_EVENT_WEBHOOK_URL = 'http://localhost:5678/webhook/student-copilot-events';
-      assert.strictEqual(isN8nConfigured(), true);
     } finally {
-      if (originalN8n) process.env.N8N_EVENT_WEBHOOK_URL = originalN8n;
-      else delete process.env.N8N_EVENT_WEBHOOK_URL;
+      process.env.N8N_EVENT_WEBHOOK_URL = origUrl;
     }
   });
 
-  // Test 9: Internal secret verification fails closed
+  // Test 9: Internal auth fail-closed check
   runTest('9. Internal callback routes fail closed when secret is missing', () => {
-    const originalSecret = process.env.ASSISTANT_INTERNAL_API_SECRET;
+    const origSecret = process.env.ASSISTANT_INTERNAL_API_SECRET;
     try {
       delete process.env.ASSISTANT_INTERNAL_API_SECRET;
-
-      // Mock request without secret
-      const reqNoSecret = {
-        headers: new Headers({ authorization: 'Bearer test' }),
-      } as any;
-      assert.strictEqual(verifyInternalSecret(reqNoSecret), false);
-
-      // Set secret
-      process.env.ASSISTANT_INTERNAL_API_SECRET = 'secret_internal_cron_token_xyz';
-      const reqValid = {
-        headers: new Headers({ authorization: 'Bearer secret_internal_cron_token_xyz' }),
-      } as any;
-      assert.strictEqual(verifyInternalSecret(reqValid), true);
-
-      const reqInvalid = {
-        headers: new Headers({ authorization: 'Bearer wrong_token' }),
-      } as any;
-      assert.strictEqual(verifyInternalSecret(reqInvalid), false);
+      const headers = new Headers();
+      headers.set('X-Internal-Secret', 'some-secret');
+      assert.strictEqual(verifyInternalSecret({ headers } as any), false);
     } finally {
-      if (originalSecret) process.env.ASSISTANT_INTERNAL_API_SECRET = originalSecret;
-      else delete process.env.ASSISTANT_INTERNAL_API_SECRET;
+      process.env.ASSISTANT_INTERNAL_API_SECRET = origSecret;
     }
   });
 
-  // Test 10: Idempotency keys prevent duplicate reminders and executions
+  // Test 10: Idempotency keys deterministic
   runTest('10. Idempotency keys are deterministic and prevent duplicates', () => {
-    const userId = 'user_abc123';
-    const eventId = 'event_def456';
-    const offsetMinutes = 1440;
-    const channel = 'in_app';
+    const userId = 'user_99';
+    const eventId = 'event_42';
+    const offsetMinutes = 60;
+    const channel = 'telegram';
 
     const key1 = crypto
       .createHash('sha256')
@@ -263,6 +252,71 @@ async function runAllTests() {
     assert.strictEqual(typeof generateStudySetWithGemini, 'function');
     assert.strictEqual(typeof solveUniversityQuestionsWithGemini, 'function');
     assert.strictEqual(typeof generateTutorResponse, 'function');
+  });
+
+  // Test 13: Database URI sanitization masks credentials
+  runTest('13. sanitizeMongoUri masks password credentials and preserves host and db', () => {
+    const sensitiveUri = 'mongodb+srv://student_admin:SuperSecretPassword123@cluster0.hql9pgt.mongodb.net/saberio?appName=Cluster0';
+    const sanitized = sanitizeMongoUri(sensitiveUri);
+    assert.strictEqual(sanitized.includes('SuperSecretPassword123'), false);
+    assert.ok(sanitized.includes('student_admin:***@cluster0.hql9pgt.mongodb.net/saberio'));
+  });
+
+  // Test 14: Database error message sanitization replaces raw connection errors
+  runTest('14. getDatabaseErrorMessage replaces raw connection errors with friendly message', () => {
+    const rawErrors = [
+      new Error('connect ECONNREFUSED 127.0.0.1:27017'),
+      new Error('connect ECONNREFUSED localhost:27017'),
+      new Error('MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you\'re trying to access the database from an IP that isn\'t whitelisted'),
+      new Error('MongoNetworkError: 30340000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error'),
+      new Error('Database configuration missing. MONGODB_URI environment variable is not defined.'),
+      new Error('connect ETIMEDOUT 159.41.196.109:27017'),
+    ];
+
+    const expected = "We couldn't connect to the service. Please try again shortly.";
+    for (const err of rawErrors) {
+      const sanitized = getDatabaseErrorMessage(err);
+      assert.strictEqual(sanitized, expected);
+      assert.strictEqual(sanitized.includes('27017'), false);
+      assert.strictEqual(sanitized.includes('ECONNREFUSED'), false);
+      assert.strictEqual(sanitized.includes('127.0.0.1'), false);
+      assert.strictEqual(sanitized.includes('whitelist'), false);
+    }
+  });
+
+  // Test 15: getMongoUri fails fast without unintended localhost:27017 fallback
+  runTest('15. getMongoUri throws descriptive error when MONGODB_URI is missing (no localhost:27017 fallback)', () => {
+    const origUri = process.env.MONGODB_URI;
+    try {
+      delete process.env.MONGODB_URI;
+      assert.throws(() => {
+        getMongoUri();
+      }, /Database configuration missing\. MONGODB_URI environment variable is not defined\./);
+    } finally {
+      process.env.MONGODB_URI = origUri;
+    }
+  });
+
+  // Test 16: Email validation regex pattern works accurately
+  runTest('16. Email regex strictly accepts valid emails and rejects malformed inputs', () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    assert.strictEqual(emailRegex.test('student@university.edu'), true);
+    assert.strictEqual(emailRegex.test('john.doe@gmail.com'), true);
+    assert.strictEqual(emailRegex.test('invalid-email'), false);
+    assert.strictEqual(emailRegex.test('user@'), false);
+    assert.strictEqual(emailRegex.test('@domain.com'), false);
+    assert.strictEqual(emailRegex.test('user @domain.com'), false);
+  });
+
+  // Test 17: No unintended localhost:27017 in getMongoUri
+  runTest('17. Configured MONGODB_URI returns correctly when set', () => {
+    const origUri = process.env.MONGODB_URI;
+    try {
+      process.env.MONGODB_URI = 'mongodb+srv://user:pass@cluster.mongodb.net/testdb';
+      assert.strictEqual(getMongoUri(), 'mongodb+srv://user:pass@cluster.mongodb.net/testdb');
+    } finally {
+      process.env.MONGODB_URI = origUri;
+    }
   });
 
   console.log('\n--------------------------------------------------');

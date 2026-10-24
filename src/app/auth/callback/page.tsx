@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Sparkles, AlertCircle } from 'lucide-react';
+import { isUserAdmin } from '@/config/admin';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -29,6 +30,31 @@ function AuthCallbackContent() {
         const token = searchParams.get('token');
         if (token && typeof window !== 'undefined') {
           localStorage.setItem('saberio_auth_token', token);
+
+          // Fetch profile to populate user session
+          try {
+            const meRes = await fetch('/api/auth/me', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (meRes.ok) {
+              const data = await meRes.json();
+              if (data?.authenticated && data?.user) {
+                const student = {
+                  id: data.user.id,
+                  email: data.user.email,
+                  fullName: data.user.fullName,
+                  avatarUrl: data.user.avatarUrl || '',
+                  isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+                };
+                localStorage.setItem('saberio_auth_user', JSON.stringify(student));
+                window.dispatchEvent(
+                  new CustomEvent('saberio_auth_state_change', { detail: { user: student } })
+                );
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to pre-fetch user in callback:', e);
+          }
         }
 
         const type = searchParams.get('type');

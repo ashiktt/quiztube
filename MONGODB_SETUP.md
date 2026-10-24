@@ -1,6 +1,6 @@
 # Saberio AI — MongoDB & Mongoose Architecture
 
-Saberio AI is now completely migrated to **MongoDB + Mongoose** for the database and authentication layers.
+Saberio AI uses **MongoDB + Mongoose** for the database and authentication layers.
 
 ---
 
@@ -9,18 +9,23 @@ Saberio AI is now completely migrated to **MongoDB + Mongoose** for the database
 In your `.env.local` file (or Vercel / production environment settings):
 
 ```env
-# MongoDB Connection String (Atlas or Local)
-# Atlas Example:
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/saberio_ai?retryWrites=true&w=majority
+# MongoDB Connection String (Atlas recommended)
+# IMPORTANT: In MongoDB Atlas Dashboard -> Network Access -> IP Access List,
+# ensure your current public IP address or 0.0.0.0/0 (Allow access from anywhere) is whitelisted.
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/saberio?retryWrites=true&w=majority
 
-# Local MongoDB Example:
-# MONGODB_URI=mongodb://localhost:27017/saberio_ai
+# Local MongoDB Example (Only if local mongod daemon is running on your machine):
+# MONGODB_URI=mongodb://127.0.0.1:27017/saberio_ai
 
-# JWT Secret for Session Authentication
-JWT_SECRET=saberio_ai_jwt_production_secret_key_2026
+# JWT Secret for Session Authentication (Required: 32+ characters)
+JWT_SECRET=saberio_ai_jwt_production_secret_key_2026_super_secure
 
 # Google Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Google OAuth 2.0 (Optional)
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
 ```
 
 ---
@@ -46,8 +51,11 @@ GEMINI_API_KEY=your_gemini_api_key_here
 - `GET /api/auth/me` — Retrieve currently authenticated user profile
 - `PATCH /api/auth/me` — Update password or profile
 - `DELETE /api/auth/me` — Sign out & clear cookie
-- `POST /api/auth/forgot-password` — Password reset request
-- `POST /api/auth/reset-password` — Reset password with new password
+- `POST /api/auth/forgot-password` — Password reset request (generates 6-digit OTP)
+- `POST /api/auth/verify-otp` — Verify 6-digit password reset OTP
+- `POST /api/auth/reset-password` — Reset password with new password & OTP
+- `GET /api/auth/google` — Initiate Google OAuth 2.0 flow
+- `GET /api/auth/google/callback` — Google OAuth callback and token exchange
 - `POST /api/auth/google` — Sign in / Register with Google profile
 
 ### Data APIs
@@ -64,4 +72,4 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ## 4. Frontend & React Integration
 
 - **`src/lib/auth.ts`**: Clean client-side library communicating with the Next.js MongoDB REST APIs. Handles token storage in `localStorage` and real-time state synchronization via custom events.
-- **`src/components/AuthModal.tsx`**: Sign in, sign up, and password reset modal working with the new MongoDB backend.
+- **`src/components/AuthModal.tsx`**: Sign in, sign up, Google OAuth, and OTP password reset modal with graceful error handling and field validation.

@@ -5,6 +5,28 @@ const TOKEN_KEY = 'saberio_auth_token';
 const USER_KEY = 'saberio_auth_user';
 const AUTH_EVENT = 'saberio_auth_state_change';
 
+function sanitizeClientError(err: any, fallbackMessage: string): string {
+  if (!err) return fallbackMessage;
+  const raw = typeof err === 'string' ? err : err?.message || '';
+  const lower = raw.toLowerCase();
+
+  if (
+    lower.includes('connect econnrefused') ||
+    lower.includes('127.0.0.1:27017') ||
+    lower.includes('localhost:27017') ||
+    lower.includes('serverselectionerror') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('couldn\'t connect') ||
+    lower.includes('ssl alert') ||
+    lower.includes('ip that isn\'t whitelisted')
+  ) {
+    return "We couldn't connect to the service. Please try again shortly.";
+  }
+
+  return raw || fallbackMessage;
+}
+
 function dispatchAuthChange(user: StudentUser | null) {
   if (typeof window === 'undefined') return;
   const event = new CustomEvent(AUTH_EVENT, { detail: { user } });
@@ -18,7 +40,7 @@ function saveSession(token: string, user: StudentUser) {
   dispatchAuthChange(user);
 }
 
-function clearSession() {
+export function clearSession() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
@@ -39,10 +61,11 @@ export async function signInStudent(
       body: JSON.stringify({ email: email.trim(), password }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.success) {
-      return { user: null, error: data.error || 'Failed to sign in' };
+      const err = sanitizeClientError(data.error, 'Failed to sign in. Please check your credentials.');
+      return { user: null, error: err };
     }
 
     const student: StudentUser = {
@@ -57,7 +80,10 @@ export async function signInStudent(
     return { user: student, error: null };
   } catch (err: any) {
     console.error('signInStudent error:', err);
-    return { user: null, error: err?.message || 'Login failed. Please check your connection.' };
+    return {
+      user: null,
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+    };
   }
 }
 
@@ -80,10 +106,11 @@ export async function signUpStudent(
       }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.success) {
-      return { user: null, error: data.error || 'Registration failed' };
+      const err = sanitizeClientError(data.error, 'Registration failed. Please try again.');
+      return { user: null, error: err };
     }
 
     const student: StudentUser = {
@@ -98,12 +125,15 @@ export async function signUpStudent(
     return { user: student, error: null, requiresEmailVerification: false };
   } catch (err: any) {
     console.error('signUpStudent error:', err);
-    return { user: null, error: err?.message || 'Sign up failed. Please check your connection.' };
+    return {
+      user: null,
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+    };
   }
 }
 
 /**
- * Sign in with Google (MongoDB integrated)
+ * Sign in with Google (OAuth initiation or verified profile payload)
  */
 export async function signInWithGoogle(googleProfile?: {
   email: string;
@@ -111,23 +141,27 @@ export async function signInWithGoogle(googleProfile?: {
   avatarUrl?: string;
 }): Promise<{ error: string | null }> {
   try {
+    // 1. If called without a profile, initiate Google OAuth redirect in browser
     if (!googleProfile) {
-      // If triggered directly without profile, prompt or notify
-      return {
-        error:
-          'Please enter your Google email or sign in with your credentials. Google Sign-In is connected to MongoDB.',
-      };
+      if (typeof window !== 'undefined') {
+        window.location.href = '/api/auth/google';
+        return { error: null };
+      }
+      return { error: 'Google sign-in requires an active browser session.' };
     }
 
+    // 2. If called with profile payload (e.g. Google One-Tap or native client)
     const res = await fetch('/api/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(googleProfile),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) {
-      return { error: data.error || 'Google sign-in failed' };
+      return {
+        error: sanitizeClientError(data.error, 'Google sign-in could not be completed.'),
+      };
     }
 
     const student: StudentUser = {
@@ -141,7 +175,9 @@ export async function signInWithGoogle(googleProfile?: {
     saveSession(data.token, student);
     return { error: null };
   } catch (err: any) {
-    return { error: err?.message || 'Google sign-in failed' };
+    return {
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+    };
   }
 }
 
@@ -156,14 +192,20 @@ export async function resetStudentPassword(email: string): Promise<{ error: stri
       body: JSON.stringify({ email: email.trim() }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) {
-      return { error: data.error || 'Failed to request reset', success: false };
+      return {
+        error: sanitizeClientError(data.error, 'Failed to request password reset'),
+        success: false,
+      };
     }
 
     return { error: null, success: true };
   } catch (err: any) {
-    return { error: err?.message || 'Failed to send recovery code', success: false };
+    return {
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+      success: false,
+    };
   }
 }
 
@@ -172,19 +214,44 @@ export async function resetStudentPassword(email: string): Promise<{ error: stri
  */
 export async function verifyPasswordResetOtp(
   email: string,
-  token: string
+  otp: string
 ): Promise<{ error: string | null; success: boolean }> {
-  // In MongoDB flow, simple verification succeeds to allow setting new password
-  if (!token || token.trim().length < 4) {
-    return { error: 'Please enter a valid verification code', success: false };
+  if (!otp || otp.trim().length !== 6) {
+    return { error: 'Please enter all 6 digits of your verification code.', success: false };
   }
-  return { error: null, success: true };
+
+  try {
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), otp: otp.trim() }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      return {
+        error: sanitizeClientError(data.error, 'Invalid or expired verification code'),
+        success: false,
+      };
+    }
+
+    return { error: null, success: true };
+  } catch (err: any) {
+    return {
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+      success: false,
+    };
+  }
 }
 
 /**
  * Update student password (when logged in or from reset screen)
  */
-export async function updateStudentPassword(newPassword: string, email?: string): Promise<{ error: string | null; success: boolean }> {
+export async function updateStudentPassword(
+  newPassword: string,
+  email?: string,
+  otp?: string
+): Promise<{ error: string | null; success: boolean }> {
   try {
     const authToken = await getCurrentSessionToken();
 
@@ -199,31 +266,40 @@ export async function updateStudentPassword(newPassword: string, email?: string)
         body: JSON.stringify({ newPassword }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        return { error: data.error || 'Failed to update password', success: false };
+        return {
+          error: sanitizeClientError(data.error, 'Failed to update password'),
+          success: false,
+        };
       }
       return { error: null, success: true };
     }
 
-    // Not logged in: use reset-password endpoint with email
+    // Not logged in: use reset-password endpoint with email & OTP
     if (email) {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), newPassword }),
+        body: JSON.stringify({ email: email.trim(), newPassword, otp }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        return { error: data.error || 'Failed to reset password', success: false };
+        return {
+          error: sanitizeClientError(data.error, 'Failed to reset password'),
+          success: false,
+        };
       }
       return { error: null, success: true };
     }
 
     return { error: 'Could not verify session to update password', success: false };
   } catch (err: any) {
-    return { error: err?.message || 'Failed to update password', success: false };
+    return {
+      error: sanitizeClientError(err, "We couldn't connect to the service. Please try again shortly."),
+      success: false,
+    };
   }
 }
 
@@ -271,52 +347,63 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function getConnectedProviders(): Promise<string[]> {
   const user = await getCurrentStudent();
   if (!user) return [];
-  return ['email', 'mongodb'];
+  return ['email', 'google', 'mongodb'];
 }
 
 /**
- * Get current authenticated student user
+ * Get current authenticated student user with background verification
  */
 export async function getCurrentStudent(): Promise<StudentUser | null> {
   if (typeof window === 'undefined') return null;
 
+  const token = localStorage.getItem(TOKEN_KEY);
   const cached = localStorage.getItem(USER_KEY);
+
+  let cachedUser: StudentUser | null = null;
   if (cached) {
     try {
-      const parsed = JSON.parse(cached);
-      parsed.isAdmin = isUserAdmin(parsed.email);
-      return parsed;
-    } catch {
-      // Ignore JSON parse error
-    }
-  }
-
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return null;
-
-  try {
-    const res = await fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.authenticated && data.user) {
-        const student: StudentUser = {
-          id: data.user.id,
-          email: data.user.email,
-          fullName: data.user.fullName,
-          avatarUrl: data.user.avatarUrl || '',
-          isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
-        };
-        localStorage.setItem(USER_KEY, JSON.stringify(student));
-        return student;
+      cachedUser = JSON.parse(cached);
+      if (cachedUser) {
+        cachedUser.isAdmin = isUserAdmin(cachedUser.email);
       }
+    } catch {
+      // Ignore parse failure
     }
-  } catch {
-    // Return null if network failure
   }
 
-  return null;
+  // If no token exists, user is definitely signed out
+  if (!token) {
+    if (cached) clearSession();
+    return null;
+  }
+
+  // Asynchronously verify session in background
+  fetch('/api/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(async (res) => {
+      if (res.status === 401) {
+        // Token has expired or been revoked
+        clearSession();
+      } else if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.authenticated && data?.user) {
+          const freshUser: StudentUser = {
+            id: data.user.id,
+            email: data.user.email,
+            fullName: data.user.fullName,
+            avatarUrl: data.user.avatarUrl || '',
+            isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+          };
+          localStorage.setItem(USER_KEY, JSON.stringify(freshUser));
+        }
+      }
+    })
+    .catch(() => {
+      // Ignore background network failure; rely on cached user
+    });
+
+  return cachedUser;
 }
 
 /**
@@ -327,7 +414,6 @@ export function onAuthStateChange(callback: (user: StudentUser | null) => void) 
     return () => {};
   }
 
-  // Initial check
   getCurrentStudent().then(callback);
 
   const handler = (e: Event) => {

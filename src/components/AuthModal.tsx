@@ -44,6 +44,28 @@ interface AuthModalProps {
   initialMode?: 'signin' | 'signup' | 'forgot' | 'new_password';
 }
 
+function sanitizeUiError(err: any): string {
+  if (!err) return "We couldn't connect to the service. Please try again shortly.";
+  const raw = typeof err === 'string' ? err : err?.message || '';
+  const lower = raw.toLowerCase();
+
+  if (
+    lower.includes('connect econnrefused') ||
+    lower.includes('127.0.0.1:27017') ||
+    lower.includes('localhost:27017') ||
+    lower.includes('serverselectionerror') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('ssl alert') ||
+    lower.includes('whitelist') ||
+    lower.includes('etimedout')
+  ) {
+    return "We couldn't connect to the service. Please try again shortly.";
+  }
+
+  return raw;
+}
+
 export function AuthModal({
   isOpen,
   onClose,
@@ -73,6 +95,7 @@ export function AuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
 
@@ -83,6 +106,7 @@ export function AuthModal({
     if (isOpen) {
       setMode(getStartingMode());
       setError(null);
+      setFieldErrors({});
       setSuccessMsg(null);
       setVerificationNotice(null);
     }
@@ -101,19 +125,21 @@ export function AuthModal({
 
   // Handle Google OAuth sign in
   const handleGoogleSignIn = async () => {
+    if (isLoading || isGoogleLoading) return;
     setError(null);
+    setFieldErrors({});
     setSuccessMsg(null);
     setIsGoogleLoading(true);
 
     try {
       const { error: err } = await signInWithGoogle();
       if (err) {
-        setError(err);
+        setError(sanitizeUiError(err));
         setIsGoogleLoading(false);
       }
-      // On success, the browser will redirect to Google's consent screen
+      // On success, browser redirects to Google OAuth
     } catch (err: any) {
-      setError(err?.message || 'Google sign-in could not be completed. Please try again.');
+      setError(sanitizeUiError(err));
       setIsGoogleLoading(false);
     }
   };
@@ -151,38 +177,54 @@ export function AuthModal({
 
   // Resend OTP handler
   const handleResendOtp = async () => {
-    if (resendCooldown > 0 || !email.trim()) return;
+    if (resendCooldown > 0 || !email.trim() || isLoading) return;
     setError(null);
+    setFieldErrors({});
     setIsLoading(true);
 
     try {
       const { success, error: err } = await resetStudentPassword(email.trim());
       if (err) {
-        setError(err);
+        setError(sanitizeUiError(err));
       } else if (success) {
         setResendCooldown(60);
         setOtpAttempts(0);
         setSuccessMsg('A new 6-digit code has been sent to your email.');
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to resend code.');
+      setError(sanitizeUiError(err));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const validateEmailFormat = (val: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
   // Form submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || isGoogleLoading) return; // Prevent duplicate submission
+
     setError(null);
+    setFieldErrors({});
     setSuccessMsg(null);
+
+    const newFieldErrors: Record<string, string> = {};
 
     // ==========================================
     // 1. FORGOT STEP 1: REQUEST OTP VIA EMAIL
     // ==========================================
     if (mode === 'forgot_email') {
       if (!email.trim()) {
-        setError('Please enter your email address.');
+        newFieldErrors.email = 'Please enter your email address.';
+      } else if (!validateEmailFormat(email)) {
+        newFieldErrors.email = 'Please enter a valid email address.';
+      }
+
+      if (Object.keys(newFieldErrors).length > 0) {
+        setFieldErrors(newFieldErrors);
         return;
       }
 
@@ -190,7 +232,7 @@ export function AuthModal({
       try {
         const { error: err } = await resetStudentPassword(email.trim());
         if (err) {
-          setError(err);
+          setError(sanitizeUiError(err));
         } else {
           setResendCooldown(60);
           setOtpAttempts(0);
@@ -199,7 +241,7 @@ export function AuthModal({
           setSuccessMsg("If an account exists for this email, we've sent a 6-digit verification code.");
         }
       } catch (err: any) {
-        setError(err?.message || 'Failed to send recovery code.');
+        setError(sanitizeUiError(err));
       } finally {
         setIsLoading(false);
       }
@@ -226,7 +268,7 @@ export function AuthModal({
         const { success, error: err } = await verifyPasswordResetOtp(email.trim(), otp);
         if (err) {
           setOtpAttempts((prev) => prev + 1);
-          setError(err);
+          setError(sanitizeUiError(err));
         } else if (success) {
           setPassword('');
           setConfirmPassword('');
@@ -235,7 +277,7 @@ export function AuthModal({
         }
       } catch (err: any) {
         setOtpAttempts((prev) => prev + 1);
-        setError(err?.message || 'Verification failed. Please try again.');
+        setError(sanitizeUiError(err));
       } finally {
         setIsLoading(false);
       }
@@ -247,30 +289,31 @@ export function AuthModal({
     // ==========================================
     if (mode === 'forgot_new_password') {
       if (!password.trim()) {
-        setError('Please enter a new password.');
-        return;
-      }
-
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters long.');
-        return;
+        newFieldErrors.password = 'Please enter a new password.';
+      } else if (password.length < 6) {
+        newFieldErrors.password = 'Password must be at least 6 characters long.';
       }
 
       if (password !== confirmPassword) {
-        setError('Passwords do not match. Please re-enter.');
+        newFieldErrors.confirmPassword = 'Passwords do not match. Please re-enter.';
+      }
+
+      if (Object.keys(newFieldErrors).length > 0) {
+        setFieldErrors(newFieldErrors);
         return;
       }
 
       setIsLoading(true);
       try {
-        const { success, error: err } = await updateStudentPassword(password, email.trim());
+        const otp = otpDigits.join('');
+        const { success, error: err } = await updateStudentPassword(password, email.trim(), otp);
         if (err) {
-          setError(err);
+          setError(sanitizeUiError(err));
         } else if (success) {
           setMode('forgot_success');
         }
       } catch (err: any) {
-        setError(err?.message || 'Failed to update password.');
+        setError(sanitizeUiError(err));
       } finally {
         setIsLoading(false);
       }
@@ -281,26 +324,29 @@ export function AuthModal({
     // 4. SIGN IN OR SIGN UP
     // ==========================================
     if (!email.trim()) {
-      setError('Please enter your email address.');
-      return;
+      newFieldErrors.email = 'Please enter your email address.';
+    } else if (!validateEmailFormat(email)) {
+      newFieldErrors.email = 'Please enter a valid email address.';
     }
 
     if (!password.trim()) {
-      setError('Please enter your password.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
+      newFieldErrors.password = 'Please enter your password.';
+    } else if (password.length < 6) {
+      newFieldErrors.password = 'Password must be at least 6 characters long.';
     }
 
     if (mode === 'signup') {
       if (password !== confirmPassword) {
-        setError('Passwords do not match. Please verify your confirmation password.');
-        return;
+        newFieldErrors.confirmPassword = 'Passwords do not match.';
       }
+    }
 
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      return;
+    }
+
+    if (mode === 'signup') {
       setIsLoading(true);
       try {
         const { user, error: err, requiresEmailVerification } = await signUpStudent(
@@ -310,7 +356,7 @@ export function AuthModal({
         );
 
         if (err) {
-          setError(err);
+          setError(sanitizeUiError(err));
         } else if (requiresEmailVerification) {
           setVerificationNotice(
             `Account created successfully! We've sent a confirmation email to ${email.trim()}. Please verify your email before signing in.`
@@ -325,7 +371,7 @@ export function AuthModal({
           setMode('signin');
         }
       } catch (err: any) {
-        setError(err?.message || 'Sign up failed.');
+        setError(sanitizeUiError(err));
       } finally {
         setIsLoading(false);
       }
@@ -334,14 +380,14 @@ export function AuthModal({
       try {
         const { user, error: err } = await signInStudent(email.trim(), password);
         if (err) {
-          setError(err);
+          setError(sanitizeUiError(err));
         } else if (user) {
           setSuccessMsg('Welcome back, student!');
           onAuthSuccess(user);
           setTimeout(() => onClose(), 800);
         }
       } catch (err: any) {
-        setError(err?.message || 'Authentication error. Please try again.');
+        setError(sanitizeUiError(err));
       } finally {
         setIsLoading(false);
       }
@@ -412,9 +458,11 @@ export function AuthModal({
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
             <button
               type="button"
+              disabled={isLoading || isGoogleLoading}
               onClick={() => {
                 setMode('signin');
                 setError(null);
+                setFieldErrors({});
                 setSuccessMsg(null);
                 setVerificationNotice(null);
               }}
@@ -429,9 +477,11 @@ export function AuthModal({
 
             <button
               type="button"
+              disabled={isLoading || isGoogleLoading}
               onClick={() => {
                 setMode('signup');
                 setError(null);
+                setFieldErrors({});
                 setSuccessMsg(null);
                 setVerificationNotice(null);
               }}
@@ -447,9 +497,11 @@ export function AuthModal({
         ) : mode !== 'forgot_success' ? (
           <button
             type="button"
+            disabled={isLoading || isGoogleLoading}
             onClick={() => {
               setMode('signin');
               setError(null);
+              setFieldErrors({});
               setSuccessMsg(null);
             }}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -568,6 +620,7 @@ export function AuthModal({
                 setPassword('');
                 setConfirmPassword('');
                 setError(null);
+                setFieldErrors({});
                 setSuccessMsg(null);
               }}
               className="w-full py-3 px-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md transition hover:scale-[1.01]"
@@ -577,7 +630,7 @@ export function AuthModal({
           </div>
         ) : (
           /* Main Auth Form */
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Full Name (Sign Up only) */}
             {mode === 'signup' && (
               <div className="space-y-1.5">
@@ -591,7 +644,8 @@ export function AuthModal({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Alex Johnson"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={isLoading || isGoogleLoading}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -609,11 +663,24 @@ export function AuthModal({
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) {
+                        setFieldErrors((prev) => ({ ...prev, email: '' }));
+                      }
+                    }}
                     placeholder="student@university.edu"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={isLoading || isGoogleLoading}
+                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border ${
+                      fieldErrors.email
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500'
+                    } rounded-xl text-sm focus:outline-none focus:ring-2 disabled:opacity-60`}
                   />
                 </div>
+                {fieldErrors.email && (
+                  <p className="text-[11px] text-red-500 font-medium pl-1">{fieldErrors.email}</p>
+                )}
               </div>
             )}
 
@@ -647,7 +714,8 @@ export function AuthModal({
                       value={digit}
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      className="w-11 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-bold font-mono bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                      disabled={isLoading}
+                      className="w-11 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-bold font-mono bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
                       placeholder="•"
                       autoFocus={idx === 0}
                     />
@@ -668,7 +736,7 @@ export function AuthModal({
                       type="button"
                       onClick={handleResendOtp}
                       disabled={isLoading}
-                      className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+                      className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 disabled:opacity-60"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>Resend code</span>
@@ -688,9 +756,11 @@ export function AuthModal({
                   {mode === 'signin' && (
                     <button
                       type="button"
+                      disabled={isLoading || isGoogleLoading}
                       onClick={() => {
                         setMode('forgot_email');
                         setError(null);
+                        setFieldErrors({});
                         setSuccessMsg(null);
                       }}
                       className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
@@ -706,9 +776,19 @@ export function AuthModal({
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) {
+                        setFieldErrors((prev) => ({ ...prev, password: '' }));
+                      }
+                    }}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={isLoading || isGoogleLoading}
+                    className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border ${
+                      fieldErrors.password
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500'
+                    } rounded-xl text-sm focus:outline-none focus:ring-2 disabled:opacity-60`}
                   />
                   <button
                     type="button"
@@ -718,6 +798,9 @@ export function AuthModal({
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p className="text-[11px] text-red-500 font-medium pl-1">{fieldErrors.password}</p>
+                )}
               </div>
             )}
 
@@ -733,9 +816,19 @@ export function AuthModal({
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (fieldErrors.confirmPassword) {
+                        setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                      }
+                    }}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={isLoading || isGoogleLoading}
+                    className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/60 border ${
+                      fieldErrors.confirmPassword
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500'
+                    } rounded-xl text-sm focus:outline-none focus:ring-2 disabled:opacity-60`}
                   />
                   <button
                     type="button"
@@ -745,6 +838,11 @@ export function AuthModal({
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <p className="text-[11px] text-red-500 font-medium pl-1">
+                    {fieldErrors.confirmPassword}
+                  </p>
+                )}
               </div>
             )}
 
@@ -752,7 +850,7 @@ export function AuthModal({
             <button
               type="submit"
               disabled={isLoading || isGoogleLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-60 cursor-pointer"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -784,9 +882,11 @@ export function AuthModal({
                 Already have an account?{' '}
                 <button
                   type="button"
+                  disabled={isLoading || isGoogleLoading}
                   onClick={() => {
                     setMode('signin');
                     setError(null);
+                    setFieldErrors({});
                     setSuccessMsg(null);
                     setVerificationNotice(null);
                   }}
@@ -800,9 +900,11 @@ export function AuthModal({
                 Don't have an account?{' '}
                 <button
                   type="button"
+                  disabled={isLoading || isGoogleLoading}
                   onClick={() => {
                     setMode('signup');
                     setError(null);
+                    setFieldErrors({});
                     setSuccessMsg(null);
                     setVerificationNotice(null);
                   }}

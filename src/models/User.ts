@@ -8,6 +8,8 @@ export interface IUser extends Document {
   avatarUrl?: string;
   isAdmin: boolean;
   provider: 'credentials' | 'google';
+  resetPasswordOtp?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -44,6 +46,14 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['credentials', 'google'],
       default: 'credentials',
+    },
+    resetPasswordOtp: {
+      type: String,
+      default: undefined,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: undefined,
     },
   },
   {
