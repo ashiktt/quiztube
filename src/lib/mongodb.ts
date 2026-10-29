@@ -37,7 +37,7 @@ export function getDatabaseErrorMessage(error: any): string {
   
   // IP whitelist or network access failure on MongoDB Atlas
   if (
-    msg.includes('ip that isn\'t whitelisted') ||
+    msg.includes("ip that isn't whitelisted") ||
     msg.includes('tlsv1 alert internal error') ||
     msg.includes('ssl alert number 80') ||
     msg.includes('serverselectionerror') ||
@@ -73,8 +73,21 @@ if (!cached) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
-  if (cached!.conn && mongoose.connection.readyState === 1) {
-    return cached!.conn;
+  // 1. If connection is already open and active, reuse it immediately (serverless warm start)
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
+  }
+
+  // 2. If connection is in process of connecting, wait for the existing promise
+  if (mongoose.connection.readyState === 2 && cached!.promise) {
+    await cached!.promise;
+    return mongoose;
+  }
+
+  // 3. If disconnected (0) or disconnecting (3), clear stale cached promise
+  if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 3) {
+    cached!.promise = null;
+    cached!.conn = null;
   }
 
   if (!cached!.promise) {
@@ -84,8 +97,11 @@ export async function connectDB(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 30000,
+      tls: true,
+      ssl: true,
     };
 
     cached!.promise = mongoose
@@ -95,6 +111,8 @@ export async function connectDB(): Promise<typeof mongoose> {
         return mongooseInstance;
       })
       .catch((err) => {
+        cached!.promise = null;
+        cached!.conn = null;
         const errorMsg = String(err?.message || '');
         if (
           errorMsg.includes('SSL alert number 80') ||
@@ -103,7 +121,7 @@ export async function connectDB(): Promise<typeof mongoose> {
         ) {
           console.error(
             `[MongoDB Error] Atlas TLS/Firewall connection rejected for ${sanitized}. ` +
-            `Ensure your current public IP address or 0.0.0.0/0 is whitelisted in MongoDB Atlas Network Access: ` +
+            `Ensure 0.0.0.0/0 is whitelisted in MongoDB Atlas Network Access (required for Vercel): ` +
             `https://cloud.mongodb.com/`
           );
         } else {
