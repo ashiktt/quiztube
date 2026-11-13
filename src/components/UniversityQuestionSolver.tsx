@@ -33,10 +33,21 @@ import { SolvedQuestionItem, UniversityExamRequest, UniversitySolvedExam, UserUs
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { exportUniversityExamPdf } from '@/lib/examPdfExport';
 import { MermaidRenderer } from '@/components/MermaidRenderer';
+import { SafeMarkdown } from '@/components/tutor/SafeMarkdown';
 import { getAuthHeaders } from '@/lib/auth';
 import { saveSolvedExam } from '@/lib/storage';
 
 const SAMPLE_EXAMS = [
+  {
+    title: 'Database Systems: Distributed DBMS (DDBMS)',
+    subject: 'Distributed Database Systems (CS304)',
+    level: 'Undergraduate / B.Tech / BSC',
+    text: `Q1. Define Distributed Database Management System (DDBMS). Name one advantage of using a DDBMS related to data duplication. [5 Marks]
+
+Q2. What is the Two-Phase Commit (2PC) protocol in distributed databases? Explain the Prepare and Commit phases with a visual flowchart. [8 Marks]
+
+Q3. Compare Data Replication vs. Data Fragmentation (Horizontal and Vertical) in DDBMS. Discuss transparency, query performance, and fault tolerance with an architectural diagram. [10 Marks]`,
+  },
   {
     title: 'Computer Science: DSA & Algorithms',
     subject: 'Data Structures & Algorithms (CS201)',
@@ -356,6 +367,21 @@ export function UniversityQuestionSolver({
       ...prev,
       [idx]: !prev[idx],
     }));
+  };
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!solvedExam) return;
+    try {
+      setIsExportingPdf(true);
+      await exportUniversityExamPdf(solvedExam);
+    } catch (err: any) {
+      console.error('Failed to export PDF:', err);
+      setErrorMessage(err?.message || 'Could not generate PDF booklet. Please try again.');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const getMarkBadgeStyle = (marks: number) => {
@@ -706,11 +732,12 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
 
               <button
                 type="button"
-                onClick={() => exportUniversityExamPdf(solvedExam)}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl transition shadow-md shadow-indigo-500/20"
+                onClick={handleExportPdf}
+                disabled={isExportingPdf}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl transition shadow-md shadow-indigo-500/20 disabled:opacity-60"
               >
-                <FileDown className="w-4 h-4" />
-                <span>Download as PDF</span>
+                <FileDown className={`w-4 h-4 ${isExportingPdf ? 'animate-bounce' : ''}`} />
+                <span>{isExportingPdf ? 'Rendering PDF...' : 'Download as PDF'}</span>
               </button>
             </div>
           </div>
@@ -808,8 +835,8 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                           Structured Model Solution ({sol.marksAllocated} Marks Depth)
                         </span>
 
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 space-y-3 leading-relaxed whitespace-pre-wrap font-sans text-xs sm:text-sm">
-                          {sol.detailedAnswer}
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <SafeMarkdown content={sol.detailedAnswer} />
                         </div>
                       </div>
 
@@ -886,11 +913,12 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
 
             <button
               type="button"
-              onClick={() => exportUniversityExamPdf(solvedExam)}
-              className="px-6 py-3 bg-white text-indigo-700 hover:bg-slate-100 font-bold text-sm rounded-xl shadow-md transition shrink-0 active:scale-95 flex items-center gap-2"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              className="px-6 py-3 bg-white text-indigo-700 hover:bg-slate-100 font-bold text-sm rounded-xl shadow-md transition shrink-0 active:scale-95 flex items-center gap-2 disabled:opacity-60"
             >
-              <FileDown className="w-4 h-4" />
-              <span>Download PDF Booklet</span>
+              <FileDown className={`w-4 h-4 ${isExportingPdf ? 'animate-bounce' : ''}`} />
+              <span>{isExportingPdf ? 'Generating PDF Booklet...' : 'Download PDF Booklet'}</span>
             </button>
           </div>
         </div>

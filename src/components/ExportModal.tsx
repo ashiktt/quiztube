@@ -27,11 +27,19 @@ interface ExportModalProps {
 
 export function ExportModal({ isOpen, onClose, studySet }: ExportModalProps) {
   const [copiedJson, setCopiedJson] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleExportPdf = () => {
-    exportQuizToPdf(studySet);
+  const handleExportPdf = async () => {
+    try {
+      setIsExportingPdf(true);
+      await exportQuizToPdf(studySet);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleExportAnki = () => {
@@ -80,7 +88,8 @@ export function ExportModal({ isOpen, onClose, studySet }: ExportModalProps) {
           <button
             type="button"
             onClick={handleExportPdf}
-            className="w-full p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl flex items-center justify-between text-left transition group"
+            disabled={isExportingPdf}
+            className="w-full p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl flex items-center justify-between text-left transition group disabled:opacity-60"
           >
             <div className="flex items-center gap-3.5">
               <div className="p-2.5 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 rounded-xl">
@@ -88,14 +97,14 @@ export function ExportModal({ isOpen, onClose, studySet }: ExportModalProps) {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                  Printable Assessment (PDF)
+                  {isExportingPdf ? 'Generating PDF Booklet...' : 'Printable Assessment (PDF)'}
                 </h4>
                 <p className="text-xs text-slate-500">
-                  Complete student test sheet with separated answer key on the last page
+                  Complete student test sheet with visual flowcharts and answer key
                 </p>
               </div>
             </div>
-            <Download className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition" />
+            <Download className={`w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition ${isExportingPdf ? 'animate-bounce' : ''}`} />
           </button>
 
           {/* Anki Option */}

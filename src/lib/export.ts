@@ -1,14 +1,15 @@
 import { jsPDF } from 'jspdf';
 import { LectureStudySet } from '@/types';
+import { renderMermaidToPngDataUrl } from './diagramToImage';
 
 /**
  * Generates and downloads a student-friendly printable PDF quiz with:
  * - Cover / Header info with video banner
- * - Visual Cheatsheet summary with Core Formulas & Comparison Matrix
+ * - Visual Cheatsheet summary with Core Formulas, Flowcharts & Comparison Matrix
  * - Clean Question test sheet with option checkboxes
  * - Separated Answer Key & Explanations on the final page
  */
-export function exportQuizToPdf(studySet: LectureStudySet): void {
+export async function exportQuizToPdf(studySet: LectureStudySet): Promise<void> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -16,12 +17,24 @@ export function exportQuizToPdf(studySet: LectureStudySet): void {
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
+  const bottomMargin = 16;
   let yPos = 20;
 
+  // Pre-render cheatsheet flowchart if available
+  let renderedFlowchart = null;
+  if (studySet.cheatsheet?.flowchart?.mermaidCode) {
+    try {
+      renderedFlowchart = await renderMermaidToPngDataUrl(studySet.cheatsheet.flowchart.mermaidCode);
+    } catch (e) {
+      console.warn('Cheatsheet flowchart render error:', e);
+    }
+  }
+
   const checkPageBreak = (neededHeight: number) => {
-    if (yPos + neededHeight > 275) {
+    if (yPos + neededHeight > pageHeight - bottomMargin) {
       doc.addPage();
       yPos = 20;
     }
@@ -57,13 +70,14 @@ export function exportQuizToPdf(studySet: LectureStudySet): void {
 
   // SECTION: CHEATSHEET & FORMULAS (if available)
   if (studySet.cheatsheet?.coreFormulas && studySet.cheatsheet.coreFormulas.length > 0) {
+    checkPageBreak(30);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(79, 70, 229); // Indigo
     doc.text('HIGH-YIELD CHEATSHEET & FORMULAS', margin, yPos);
     yPos += 7;
 
-    studySet.cheatsheet.coreFormulas.forEach((item, fIdx) => {
+    studySet.cheatsheet.coreFormulas.forEach((item) => {
       checkPageBreak(25);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
@@ -86,6 +100,44 @@ export function exportQuizToPdf(studySet: LectureStudySet): void {
     });
 
     yPos += 4;
+  }
+
+  // Visual Architecture Flowchart (if available)
+  if (renderedFlowchart && renderedFlowchart.dataUrl) {
+    const maxW = contentWidth - 4;
+    const maxH = 90;
+    let dWidth = Math.min(maxW, Math.max(70, 75 * renderedFlowchart.aspectRatio));
+    let dHeight = dWidth / renderedFlowchart.aspectRatio;
+
+    if (dHeight > maxH) {
+      dHeight = maxH;
+      dWidth = dHeight * renderedFlowchart.aspectRatio;
+    }
+
+    checkPageBreak(dHeight + 16);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(79, 70, 229);
+    doc.text('VISUAL SYSTEM ARCHITECTURE & FLOWCHART', margin, yPos);
+    yPos += 5.5;
+
+    const dX = margin + (contentWidth - dWidth) / 2;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(dX - 2, yPos, dWidth + 4, dHeight + 4, 1.5, 1.5, 'FD');
+
+    doc.addImage(renderedFlowchart.dataUrl, 'PNG', dX, yPos + 2, dWidth, dHeight);
+    yPos += dHeight + 7;
+
+    if (studySet.cheatsheet?.flowchart?.title) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Figure: ${studySet.cheatsheet.flowchart.title}`, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 5;
+    }
   }
 
   // Questions Section
@@ -168,11 +220,26 @@ export function exportQuizToPdf(studySet: LectureStudySet): void {
     yPos += expLines.length * 4 + 5;
   });
 
+  // Page Numbering Footer
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      `Saberio AI  •  Page ${i} of ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 8,
+      { align: 'center' }
+    );
+  }
+
   // Download PDF
   const safeFilename = (studySet.videoTitle || 'Lecture_Quiz')
     .replace(/[^a-zA-Z0-9_-]/g, '_')
     .substring(0, 35);
-  doc.save(`${safeFilename}_StudySet.pdf`);
+  doc.save(`Saberio_AI_${safeFilename}_StudySet.pdf`);
 }
 
 /**
