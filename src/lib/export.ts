@@ -220,18 +220,35 @@ export async function exportQuizToPdf(studySet: LectureStudySet): Promise<void> 
     yPos += expLines.length * 4 + 5;
   });
 
-  // Page Numbering Footer
+  // Page Numbering Footer & Running Header
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+
+    // Running header on pages after the first
+    if (i > 1) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184); // Slate 400
+      const topicStr = (studySet.videoTitle || 'STUDY SET').toUpperCase();
+      const cleanTopic = topicStr.length > 45 ? `${topicStr.slice(0, 42)}...` : topicStr;
+      doc.text(cleanTopic, margin, 12);
+      doc.text('SABERIO AI  •  STUDY GUIDE', pageWidth - margin, 12, { align: 'right' });
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.15);
+      doc.line(margin, 14, pageWidth - margin, 14);
+    }
+
+    // Running footer on all pages
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
+    doc.text('Saberio AI', margin, pageHeight - 10);
     doc.text(
-      `Saberio AI  •  Page ${i} of ${totalPages}`,
-      pageWidth / 2,
-      pageHeight - 8,
-      { align: 'center' }
+      `Page ${i} of ${totalPages}`,
+      pageWidth - margin,
+      pageHeight - 10,
+      { align: 'right' }
     );
   }
 

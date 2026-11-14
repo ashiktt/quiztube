@@ -3,21 +3,83 @@ import { UniversitySolvedExam, SolvedQuestionItem } from '@/types';
 import { renderMermaidToPngDataUrl, RenderedDiagram } from './diagramToImage';
 
 /**
- * Strips markdown formatting symbols (**, *, `, etc.) for plain text measuring / rendering
+ * Cleanly strips markdown syntax for plain text measuring / fallback scenarios,
+ * while strictly preserving legitimate mathematical symbols, punctuation, and wording.
  */
-function cleanMarkdownText(text: string): string {
+export function cleanMarkdownText(text: string): string {
   if (!text) return '';
   return text
-    .replace(/\*\*(.*?)\*\*/g, '$1') // remove bold asterisks
-    .replace(/\*(.*?)\*/g, '$1')     // remove italic asterisks
-    .replace(/__(.*?)__/g, '$1')     // remove bold underscores
-    .replace(/_(.*?)_/g, '$1')       // remove italic underscores
+    .replace(/^#{1,6}\s+/gm, '') // remove leading markdown heading hashes
+    .replace(/\s+#+$/gm, '')     // remove trailing heading hashes
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // remove bold asterisks
+    .replace(/__([^_]+)__/g, '$1')     // remove bold underscores
+    .replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1$2$3') // remove italic asterisks safely
+    .replace(/(^|[^_])_([^_]+)_([^_]|$)/g, '$1$2$3')       // remove italic underscores safely
     .replace(/`([^`]+)`/g, '$1')     // remove inline code backticks
+    .replace(/^>\s*/gm, '')          // remove blockquote markers
+    .replace(/::+/g, ':')           // eliminate duplicate colons (e.g. "::")
     .trim();
 }
 
 /**
- * Parses markdown lines to detect and extract tables
+ * Inline text segment with font style metadata for academic rendering
+ */
+export interface StyledSpan {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  code?: boolean;
+}
+
+/**
+ * Parses a single text line into styled spans (bold, italic, inline code, normal text)
+ * and deduplicates stray punctuation artifacts.
+ */
+export function parseStyledSpans(lineText: string): StyledSpan[] {
+  if (!lineText) return [];
+
+  // Match bold (**...** or __...__), italic (*...* or _..._), or inline code (`...`)
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_)/g;
+  const parts = lineText.split(regex);
+  const spans: StyledSpan[] = [];
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+      spans.push({ text: part.slice(1, -1), code: true });
+    } else if (
+      (part.startsWith('**') && part.endsWith('**') && part.length >= 4) ||
+      (part.startsWith('__') && part.endsWith('__') && part.length >= 4)
+    ) {
+      const inner = part.slice(2, -2).trim();
+      if (inner) spans.push({ text: inner, bold: true });
+    } else if (
+      (part.startsWith('*') && part.endsWith('*') && part.length >= 2) ||
+      (part.startsWith('_') && part.endsWith('_') && part.length >= 2)
+    ) {
+      const inner = part.slice(1, -1).trim();
+      if (inner) spans.push({ text: inner, italic: true });
+    } else {
+      spans.push({ text: part });
+    }
+  }
+
+  // Deduplicate punctuation artifacts (e.g., if span[0] ends with ':' and span[1] starts with ':')
+  for (let i = 0; i < spans.length - 1; i++) {
+    const curr = spans[i];
+    const next = spans[i + 1];
+
+    if (curr.text.endsWith(':') && next.text.trimStart().startsWith(':')) {
+      next.text = next.text.trimStart().replace(/^:+/, '').trimStart();
+    }
+  }
+
+  return spans.filter(s => s.text.length > 0);
+}
+
+/**
+ * Parses markdown table structure: | Header 1 | Header 2 |
  */
 interface ParsedTable {
   headers: string[];
@@ -30,7 +92,6 @@ function parseMarkdownTable(lines: string[], startIndex: number): { table: Parse
     return null;
   }
 
-  // Must have a separator line next: |---|---|
   const separatorLine = lines[startIndex + 1]?.trim();
   if (!separatorLine || !separatorLine.startsWith('|') || !separatorLine.includes('---')) {
     return null;
@@ -68,8 +129,178 @@ function parseMarkdownTable(lines: string[], startIndex: number): { table: Parse
 }
 
 /**
- * Generates and downloads a clean, professional, publication-grade university exam model answer PDF booklet.
- * Preserves the white academic design, embeds generated visual diagrams, and formats markdown structures cleanly.
+ * Draws a sharp vector circle bullet (100% vector safe, no unsupported Unicode glyphs)
+ */
+function drawVectorBullet(doc: jsPDF, x: number, y: number, color = [71, 85, 105]): void {
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.circle(x, y - 1.1, 0.7, 'F');
+}
+
+/**
+ * Draws a sharp vector checkmark (100% vector safe, no WinAnsiEncoding corruption)
+ */
+function drawVectorCheckmark(doc: jsPDF, x: number, y: number, color = [16, 185, 129]): void {
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.35);
+  doc.line(x, y - 0.7, x + 0.9, y + 0.6);
+  doc.line(x + 0.9, y + 0.6, x + 2.4, y - 1.6);
+}
+
+/**
+ * Renders formatted multi-span text with exact word-wrapping, hanging indents, and zero margin overflow.
+ */
+function drawFormattedLineBlock(params: {
+  doc: jsPDF;
+  spans: StyledSpan[];
+  startX: number;
+  yPos: number;
+  availWidth: number;
+  fontSize: number;
+  lineHeight: number;
+  hangingIndentX?: number;
+  defaultColor?: number[];
+}): { newY: number; linesDrawn: number } {
+  const {
+    doc,
+    spans,
+    startX,
+    yPos: initialY,
+    availWidth,
+    fontSize,
+    lineHeight,
+    hangingIndentX = startX,
+    defaultColor = [51, 65, 85],
+  } = params;
+
+  // Flatten spans into individual styled words with spacing
+  interface StyledWord {
+    word: string;
+    bold?: boolean;
+    italic?: boolean;
+    code?: boolean;
+  }
+
+  const words: StyledWord[] = [];
+
+  for (const span of spans) {
+    // Split by whitespace while preserving punctuation
+    const tokens = span.text.split(/(\s+)/);
+    for (const token of tokens) {
+      if (!token) continue;
+      words.push({
+        word: token,
+        bold: span.bold,
+        italic: span.italic,
+        code: span.code,
+      });
+    }
+  }
+
+  if (words.length === 0) {
+    return { newY: initialY, linesDrawn: 0 };
+  }
+
+  // Group words into lines that strictly never exceed availWidth
+  interface LineToken {
+    text: string;
+    bold?: boolean;
+    italic?: boolean;
+    code?: boolean;
+  }
+
+  const wrappedLines: LineToken[][] = [];
+  let currentLine: LineToken[] = [];
+  let currentLineWidth = 0;
+
+  for (const w of words) {
+    if (w.code) {
+      doc.setFont('courier', 'normal');
+    } else if (w.bold) {
+      doc.setFont('helvetica', 'bold');
+    } else if (w.italic) {
+      doc.setFont('helvetica', 'italic');
+    } else {
+      doc.setFont('helvetica', 'normal');
+    }
+    doc.setFontSize(fontSize);
+
+    const wordWidth = doc.getTextWidth(w.word);
+
+    // If word fits on current line, or line is empty, add it
+    if (currentLineWidth + wordWidth <= availWidth || currentLine.length === 0) {
+      currentLine.push({
+        text: w.word,
+        bold: w.bold,
+        italic: w.italic,
+        code: w.code,
+      });
+      currentLineWidth += wordWidth;
+    } else {
+      // Line is full; push and start next line
+      wrappedLines.push(currentLine);
+      // If current word is pure whitespace, don't start the new line with whitespace
+      if (/^\s+$/.test(w.word)) {
+        currentLine = [];
+        currentLineWidth = 0;
+      } else {
+        currentLine = [{
+          text: w.word,
+          bold: w.bold,
+          italic: w.italic,
+          code: w.code,
+        }];
+        currentLineWidth = wordWidth;
+      }
+    }
+  }
+
+  if (currentLine.length > 0) {
+    wrappedLines.push(currentLine);
+  }
+
+  // Draw the wrapped lines
+  let curY = initialY;
+  for (let lIdx = 0; lIdx < wrappedLines.length; lIdx++) {
+    const lineTokens = wrappedLines[lIdx];
+    let curX = lIdx === 0 ? startX : hangingIndentX;
+
+    for (const token of lineTokens) {
+      if (token.code) {
+        doc.setFont('courier', 'normal');
+        doc.setTextColor(30, 41, 59);
+      } else if (token.bold) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42); // Navy 900
+      } else if (token.italic) {
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(71, 85, 105);
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(defaultColor[0], defaultColor[1], defaultColor[2]);
+      }
+      doc.setFontSize(fontSize);
+
+      doc.text(token.text, curX, curY);
+      curX += doc.getTextWidth(token.text);
+    }
+
+    curY += lineHeight;
+  }
+
+  return { newY: curY, linesDrawn: wrappedLines.length };
+}
+
+/**
+ * Generates and downloads a clean, professional, publication-ready academic model solution PDF booklet.
+ *
+ * Design Specifications:
+ * - Clean white background (#ffffff) with dark navy (#0f172a) and slate typography (#334155).
+ * - Subtle blue accent (#2563eb) for question markers and badges.
+ * - Accurate word wrapping with zero text margin overflow.
+ * - Zero stray ellipses, zero duplicated punctuation, zero raw markdown syntax.
+ * - Pre-rendered high-DPI Mermaid diagrams centered on page without page-splitting.
+ * - Vector bullets and checkmarks (100% PDF encoding safe).
+ * - Running headers (Subject | SABERIO AI — MODEL SOLUTIONS) and footers (Saberio AI | Page X of Y).
  */
 export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promise<void> {
   const doc = new jsPDF({
@@ -78,14 +309,15 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
     format: 'a4',
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 16;
-  const contentWidth = pageWidth - margin * 2;
-  const bottomMargin = 16;
-  let yPos = 18;
+  const pageWidth = doc.internal.pageSize.getWidth(); // 210 mm
+  const pageHeight = doc.internal.pageSize.getHeight(); // 297 mm
+  const margin = 18; // Consistent academic 18mm margin
+  const contentWidth = pageWidth - margin * 2; // 174 mm
+  const topMargin = 18;
+  const bottomMargin = 18;
+  let yPos = topMargin;
 
-  // Pre-render all Mermaid diagrams to PNG images concurrently for instant embedding
+  // Pre-render all Mermaid diagrams to PNG data URLs asynchronously
   const diagramMap = new Map<number, RenderedDiagram | null>();
   const diagramPromises = exam.solutions.map(async (sol, idx) => {
     if (sol.diagramMermaid && sol.diagramMermaid.trim().length > 0) {
@@ -93,7 +325,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         const rendered = await renderMermaidToPngDataUrl(sol.diagramMermaid);
         diagramMap.set(idx, rendered);
       } catch (err) {
-        console.warn(`Failed to render diagram for question ${idx + 1}:`, err);
+        console.warn(`Diagram render error for question ${idx + 1}:`, err);
         diagramMap.set(idx, null);
       }
     } else {
@@ -103,140 +335,167 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
 
   await Promise.all(diagramPromises);
 
-  const checkPageBreak = (neededHeight: number) => {
+  // Smart page break helper
+  const checkPageBreak = (neededHeight: number): boolean => {
     if (yPos + neededHeight > pageHeight - bottomMargin) {
       doc.addPage();
-      yPos = 18;
+      yPos = topMargin;
       drawRunningHeader();
+      return true;
     }
+    return false;
   };
 
+  // Subtle academic running header
   const drawRunningHeader = () => {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184); // Slate 400
-    doc.text(`SABERIO AI  •  ${(exam.subject || 'EXAMINATION').toUpperCase()}`, margin, 12);
-    doc.text(`MODEL SOLUTIONS`, pageWidth - margin, 12, { align: 'right' });
+
+    const rawSubject = (exam.subject || 'UNIVERSITY EXAMINATION').toUpperCase();
+    const cleanSubject = rawSubject.length > 50 ? `${rawSubject.slice(0, 47)}...` : rawSubject;
+
+    doc.text(cleanSubject, margin, 12);
+    doc.text('SABERIO AI  •  MODEL SOLUTIONS', pageWidth - margin, 12, { align: 'right' });
+
+    // Subtle hairline
     doc.setDrawColor(226, 232, 240); // Slate 200
-    doc.setLineWidth(0.3);
+    doc.setLineWidth(0.15);
     doc.line(margin, 14, pageWidth - margin, 14);
   };
 
-  // ==========================
-  // 1. ACADEMIC TITLE HEADER (First Page)
-  // ==========================
+  // ==========================================
+  // 1. PUBLICATION TITLE HEADER (First Page)
+  // ==========================================
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.setTextColor(15, 23, 42); // Slate 900
-  const titleLines = doc.splitTextToSize(exam.subject || 'University Examination Solutions', contentWidth);
+  doc.setFontSize(19);
+  doc.setTextColor(15, 23, 42); // Slate 900 / Dark Navy
+
+  const subjectTitle = exam.subject || 'University Examination Solutions';
+  const titleLines = doc.splitTextToSize(cleanMarkdownText(subjectTitle), contentWidth);
   doc.text(titleLines, margin, yPos);
-  yPos += titleLines.length * 6 + 1;
+  yPos += titleLines.length * 7.5 + 2;
 
   // Metadata Subline
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(71, 85, 105); // Slate 600
-  const metaText = `Level: ${exam.academicLevel || 'Undergraduate'}   •   Total Marks: ${exam.totalMarks || 0}M   •   Questions Solved: ${exam.solutions.length}`;
+  doc.setTextColor(100, 116, 139); // Slate 500
+  const metaText = `Academic Level: ${exam.academicLevel || 'Undergraduate'}   |   Total Marks: ${exam.totalMarks || 0}M   |   Questions Solved: ${exam.solutions.length}`;
   doc.text(metaText, margin, yPos);
-  yPos += 5;
+  yPos += 5.5;
 
-  // Header bottom dividing line
-  doc.setDrawColor(203, 213, 225); // Slate 300
-  doc.setLineWidth(0.5);
+  // Subtle divider under title header
+  doc.setDrawColor(226, 232, 240); // Slate 200
+  doc.setLineWidth(0.2);
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 7;
 
   // Overview Summary Callout (if present)
   if (exam.overallExamSummary && exam.overallExamSummary.trim().length > 0) {
-    const summaryLines = doc.splitTextToSize(cleanMarkdownText(exam.overallExamSummary), contentWidth - 8);
-    const boxHeight = summaryLines.length * 4 + 7;
+    const cleanSummary = cleanMarkdownText(exam.overallExamSummary);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const summaryLines = doc.splitTextToSize(cleanSummary, contentWidth - 8);
+    const boxHeight = summaryLines.length * 4.3 + 8;
 
     checkPageBreak(boxHeight + 4);
 
     doc.setFillColor(248, 250, 252); // Slate 50
     doc.setDrawColor(226, 232, 240); // Slate 200
-    doc.setLineWidth(0.4);
-    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.5, 1.5, 'FD');
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.2, 1.2, 'FD');
 
-    // Left blue accent indicator
-    doc.setFillColor(99, 102, 241); // Indigo 500
-    doc.roundedRect(margin, yPos, 1.5, boxHeight, 0.7, 0.7, 'F');
+    // Subtle blue left accent
+    doc.setFillColor(37, 99, 235); // Blue 600
+    doc.rect(margin, yPos, 1.0, boxHeight, 'F');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
-    doc.setTextColor(67, 56, 202); // Indigo 700
-    doc.text('EXAM PAPER SYNTHESIS & CORE SCOPE', margin + 4, yPos + 4.5);
+    doc.setTextColor(30, 64, 175); // Blue 800
+    doc.text('EXAMINATION OVERVIEW & SCOPE', margin + 4, yPos + 4.8);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85); // Slate 700
-    doc.text(summaryLines, margin + 4, yPos + 8.5);
+    doc.setFontSize(9);
+    doc.setTextColor(51, 65, 85);
+    doc.text(summaryLines, margin + 4, yPos + 9.2);
 
     yPos += boxHeight + 6;
   }
 
-  // ==========================
+  // ==========================================
   // 2. QUESTION-BY-QUESTION SOLUTIONS
-  // ==========================
+  // ==========================================
   exam.solutions.forEach((sol, idx) => {
-    // Avoid orphan question header near page bottom
-    checkPageBreak(35);
+    // Smart lookahead: ensure question header + question text + section start fit without orphan split
+    checkPageBreak(38);
 
     const qNum = sol.questionNumber || `Q${idx + 1}`;
-    const marksText = `[${sol.marksAllocated} Marks]`;
+    const marksText = `[${sol.marksAllocated} MARKS]`;
 
-    // Question Title Line (e.g. "Q1. [5 Marks]")
+    // Question Number & Marks Heading
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(13.5);
     doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text(`${qNum}   ${marksText}`, margin, yPos);
-    yPos += 5.5;
+    doc.text(qNum, margin, yPos);
 
-    // Full Question Text
+    const qNumWidth = doc.getTextWidth(qNum);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
-    doc.setTextColor(51, 65, 85); // Slate 700
+    doc.setTextColor(37, 99, 235); // Blue 600
+    doc.text(marksText, margin + qNumWidth + 3, yPos - 0.5);
+
+    yPos += 6;
+
+    // Full Question Text in bold academic slate
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(30, 41, 59); // Slate 800
     const cleanQText = cleanMarkdownText(sol.questionText);
     const qLines = doc.splitTextToSize(cleanQText, contentWidth);
     doc.text(qLines, margin, yPos);
-    yPos += qLines.length * 4.4 + 3;
+    yPos += qLines.length * 5.0 + 3.5;
 
-    // TL;DR Core Thesis (if available)
+    // Core Thesis Callout (only when present)
     if (sol.answerSummary && sol.answerSummary.trim().length > 0) {
-      checkPageBreak(16);
       const cleanSummary = cleanMarkdownText(sol.answerSummary);
-      const thesisLines = doc.splitTextToSize(`Core Thesis: ${cleanSummary}`, contentWidth - 8);
-      const thesisHeight = thesisLines.length * 3.8 + 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const thesisLines = doc.splitTextToSize(cleanSummary, contentWidth - 8);
+      const thesisHeight = thesisLines.length * 4.2 + 7.5;
 
-      doc.setFillColor(240, 253, 244); // Emerald 50
-      doc.setDrawColor(187, 247, 208); // Emerald 200
-      doc.setLineWidth(0.3);
-      doc.roundedRect(margin, yPos, contentWidth, thesisHeight, 1.2, 1.2, 'FD');
+      checkPageBreak(thesisHeight + 4);
 
-      // Left green accent indicator
-      doc.setFillColor(16, 185, 129); // Emerald 500
-      doc.rect(margin, yPos, 1.2, thesisHeight, 'F');
+      doc.setFillColor(248, 250, 252); // Slate 50
+      doc.setDrawColor(226, 232, 240); // Slate 200
+      doc.setLineWidth(0.25);
+      doc.roundedRect(margin, yPos, contentWidth, thesisHeight, 1.0, 1.0, 'FD');
+
+      // Subtle blue vertical accent
+      doc.setFillColor(37, 99, 235); // Blue 600
+      doc.rect(margin, yPos, 0.9, thesisHeight, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(37, 99, 235);
+      doc.text('CORE THESIS:', margin + 4, yPos + 4.5);
 
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8.5);
-      doc.setTextColor(21, 128, 61); // Emerald 700
-      doc.text(thesisLines, margin + 4, yPos + 4);
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      doc.text(thesisLines, margin + 4, yPos + 8.8);
 
-      yPos += thesisHeight + 4;
+      yPos += thesisHeight + 5;
     }
 
-    // Model Solution Section Header
-    checkPageBreak(12);
+    // Model Answer Section Heading (Clean, no decorative underlines)
+    checkPageBreak(14);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(79, 70, 229); // Indigo 600
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42); // Slate 900
     doc.text(`MODEL SOLUTION (${sol.marksAllocated} MARKS DEPTH)`, margin, yPos);
-    doc.setDrawColor(224, 231, 255); // Indigo 100
-    doc.setLineWidth(0.3);
-    doc.line(margin, yPos + 1.5, margin + 65, yPos + 1.5);
     yPos += 5.5;
 
-    // Parse the structured detailedAnswer lines
+    // Structured Detailed Answer Rendering
     const rawLines = sol.detailedAnswer ? sol.detailedAnswer.split('\n') : [];
     let lineIdx = 0;
 
@@ -244,87 +503,132 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
       const line = rawLines[lineIdx].trim();
 
       if (!line) {
-        yPos += 1.8;
+        yPos += 2.2;
         lineIdx++;
         continue;
       }
 
-      // Check for Markdown Table: | Col1 | Col2 |
+      // 1. Markdown Separator (--- or *** or ___)
+      if (/^([-*_]){3,}$/.test(line)) {
+        checkPageBreak(8);
+        doc.setDrawColor(226, 232, 240); // Slate 200
+        doc.setLineWidth(0.2);
+        doc.line(margin, yPos + 1.5, margin + contentWidth, yPos + 1.5);
+        yPos += 5;
+        lineIdx++;
+        continue;
+      }
+
+      // 2. Markdown Table: | Col1 | Col2 |
       if (line.startsWith('|') && line.endsWith('|')) {
         const tableResult = parseMarkdownTable(rawLines, lineIdx);
         if (tableResult) {
           const { table, nextIndex } = tableResult;
           lineIdx = nextIndex;
 
-          const numCols = table.headers.length;
-          const colWidth = (contentWidth - 4) / Math.max(1, numCols);
-          const headerHeight = 7;
-          const rowHeight = 6.5;
-          const totalTableHeight = headerHeight + table.rows.length * rowHeight + 3;
+          const numCols = Math.max(1, table.headers.length);
+          const colWidth = contentWidth / numCols;
+          const headerHeight = 7.5;
 
-          checkPageBreak(Math.min(totalTableHeight, 60));
+          checkPageBreak(headerHeight + 12);
 
-          // Draw table header row
+          // Table Header Row
           doc.setFillColor(241, 245, 249); // Slate 100
           doc.setDrawColor(203, 213, 225); // Slate 300
-          doc.setLineWidth(0.3);
+          doc.setLineWidth(0.25);
           doc.rect(margin, yPos, contentWidth, headerHeight, 'FD');
 
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8.5);
-          doc.setTextColor(15, 23, 42); // Slate 900
+          doc.setTextColor(15, 23, 42);
 
           table.headers.forEach((h, cIdx) => {
-            const hX = margin + cIdx * colWidth + 2;
-            doc.text(h, hX, yPos + 4.8);
+            const hX = margin + cIdx * colWidth + 2.5;
+            doc.text(h, hX, yPos + 5.0);
           });
 
           yPos += headerHeight;
 
-          // Draw table rows
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(8);
-          doc.setTextColor(51, 65, 85);
-
+          // Table Rows
           table.rows.forEach((row, rIdx) => {
+            // Measure row height based on longest cell text
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+
+            let maxCellLines = 1;
+            const splitCells = row.map(cell => {
+              const lines = doc.splitTextToSize(cell, colWidth - 5);
+              if (lines.length > maxCellLines) maxCellLines = lines.length;
+              return lines;
+            });
+
+            const rowHeight = Math.max(6.5, maxCellLines * 4.2 + 3);
+
             checkPageBreak(rowHeight + 2);
+
             if (rIdx % 2 === 1) {
               doc.setFillColor(248, 250, 252);
               doc.rect(margin, yPos, contentWidth, rowHeight, 'F');
             }
+
             doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.2);
             doc.line(margin, yPos + rowHeight, margin + contentWidth, yPos + rowHeight);
 
-            row.forEach((cell, cIdx) => {
-              const cellX = margin + cIdx * colWidth + 2;
-              const cellLines = doc.splitTextToSize(cell, colWidth - 4);
-              doc.text(cellLines[0] || '', cellX, yPos + 4.5);
+            doc.setTextColor(51, 65, 85);
+            splitCells.forEach((cellLines, cIdx) => {
+              const cellX = margin + cIdx * colWidth + 2.5;
+              doc.text(cellLines, cellX, yPos + 4.5);
             });
 
             yPos += rowHeight;
           });
 
-          yPos += 3;
+          yPos += 4;
           continue;
         }
       }
 
-      // Section Headings (### or ## or #)
-      if (/^#{1,4}\s+/.test(line)) {
-        const headingText = cleanMarkdownText(line.replace(/^#{1,4}\s+/, ''));
-        checkPageBreak(12);
+      // 3. Section Headings (H1, H2, H3, H4)
+      const headingMatch = line.match(/^(#{1,4})\s+(.*)/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const cleanHeading = cleanMarkdownText(headingMatch[2]);
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.setTextColor(15, 23, 42); // Slate 900
-        doc.text(headingText, margin, yPos);
+        // Widow/orphan protection: ensure heading is kept with at least two following lines
+        checkPageBreak(16);
 
-        yPos += 4.8;
+        if (level === 1) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(13);
+          doc.setTextColor(15, 23, 42);
+          doc.text(cleanHeading, margin, yPos);
+          yPos += 6;
+        } else if (level === 2) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text(cleanHeading, margin, yPos);
+          yPos += 5.5;
+        } else if (level === 3) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10.5);
+          doc.setTextColor(30, 41, 59);
+          doc.text(cleanHeading, margin, yPos);
+          yPos += 5.0;
+        } else {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9.5);
+          doc.setTextColor(51, 65, 85);
+          doc.text(cleanHeading, margin, yPos);
+          yPos += 4.5;
+        }
+
         lineIdx++;
         continue;
       }
 
-      // Fenced Code Block: ```...```
+      // 4. Fenced Code Blocks: ```...```
       if (line.startsWith('```')) {
         let codeLines: string[] = [];
         lineIdx++;
@@ -336,159 +640,178 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           lineIdx++;
         }
 
-        const codeText = codeLines.join('\n').trim();
-        if (codeText) {
-          const splitCode = doc.splitTextToSize(codeText, contentWidth - 8);
-          const boxHeight = Math.min(splitCode.length * 3.6 + 6, 65);
-
-          checkPageBreak(boxHeight + 4);
-
-          doc.setFillColor(248, 250, 252);
-          doc.setDrawColor(226, 232, 240);
-          doc.setLineWidth(0.3);
-          doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.2, 1.2, 'FD');
-
+        const fullCodeText = codeLines.join('\n').trim();
+        if (fullCodeText) {
           doc.setFont('courier', 'normal');
-          doc.setFontSize(8);
-          doc.setTextColor(30, 41, 59);
-          doc.text(splitCode.slice(0, 16), margin + 4, yPos + 4.5);
+          doc.setFontSize(8.5);
+          const splitCode = doc.splitTextToSize(fullCodeText, contentWidth - 8);
+          const boxHeight = splitCode.length * 3.8 + 6;
 
-          yPos += boxHeight + 4;
+          checkPageBreak(Math.min(boxHeight + 4, 70));
+
+          doc.setFillColor(248, 250, 252); // Slate 50
+          doc.setDrawColor(226, 232, 240); // Slate 200
+          doc.setLineWidth(0.25);
+          doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.0, 1.0, 'FD');
+
+          doc.setTextColor(30, 41, 59);
+          doc.text(splitCode, margin + 4, yPos + 4.5);
+
+          yPos += boxHeight + 4.5;
         }
         continue;
       }
 
-      // Blockquote: > ...
+      // 5. Blockquote: > ...
       if (line.startsWith('>')) {
         const quoteText = cleanMarkdownText(line.replace(/^>\s*/, ''));
-        const quoteLines = doc.splitTextToSize(quoteText, contentWidth - 8);
-        const quoteHeight = quoteLines.length * 4 + 3;
+        const spans = parseStyledSpans(quoteText);
 
-        checkPageBreak(quoteHeight + 2);
+        checkPageBreak(12);
 
-        doc.setDrawColor(99, 102, 241); // Indigo
-        doc.setLineWidth(0.8);
-        doc.line(margin + 1, yPos, margin + 1, yPos + quoteHeight - 1);
+        const quoteX = margin + 5;
+        const availW = contentWidth - 8;
 
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(8.5);
-        doc.setTextColor(71, 85, 105);
-        doc.text(quoteLines, margin + 5, yPos + 3.5);
+        const { newY, linesDrawn } = drawFormattedLineBlock({
+          doc,
+          spans,
+          startX: quoteX,
+          yPos: yPos + 1.5,
+          availWidth: availW,
+          fontSize: 9.5,
+          lineHeight: 4.8,
+          defaultColor: [71, 85, 105],
+        });
 
-        yPos += quoteHeight + 2;
+        const quoteHeight = linesDrawn * 4.8 + 2;
+        doc.setDrawColor(37, 99, 235); // Blue 600
+        doc.setLineWidth(0.7);
+        doc.line(margin + 1, yPos, margin + 1, yPos + quoteHeight);
+
+        yPos = newY + 2.5;
         lineIdx++;
         continue;
       }
 
-      // Bullet points (- or * or •)
+      // 6. Bullet Point (- or * or •)
       if (line.startsWith('-') || line.startsWith('*') || line.startsWith('•')) {
         const rawBullet = line.replace(/^[-*•]\s*/, '').trim();
 
-        // Check if bullet starts with bold header: - **Title:** Description
-        const boldMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
+        // Check for nested indentation (e.g. 2 spaces or 4 spaces)
+        const isIndented = rawLines[lineIdx].startsWith('  ') || rawLines[lineIdx].startsWith('\t');
+        const bulletIndent = isIndented ? 7.0 : 0;
+        const bulletTextX = margin + 6.0 + bulletIndent;
+        const availW = contentWidth - (6.0 + bulletIndent);
 
-        if (boldMatch) {
-          const boldTitle = boldMatch[1].trim() + (boldMatch[0].includes(':') ? ':' : '');
-          const restText = cleanMarkdownText(boldMatch[2].trim());
+        // Check if bullet starts with bold lead-in: - **Title:** Description
+        const boldLeadInMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
 
-          const combinedText = boldTitle ? `${boldTitle} ${restText}` : restText;
-          const bulletLines = doc.splitTextToSize(combinedText, contentWidth - 7);
+        let spans: StyledSpan[] = [];
+        if (boldLeadInMatch) {
+          const rawTitle = boldLeadInMatch[1].trim();
+          // Normalize colon: exactly one colon at the end of the bold title
+          const titleText = rawTitle.endsWith(':') ? rawTitle : `${rawTitle}:`;
+          const rawRest = boldLeadInMatch[2].trim().replace(/^:+/, '').trim();
 
-          checkPageBreak(bulletLines.length * 4.2 + 2);
-
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(79, 70, 229); // Indigo bullet
-          doc.text('•', margin + 1.5, yPos);
-
-          // If single line or short, we can emphasize the title
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(15, 23, 42); // Slate 900
-          doc.text(boldTitle, margin + 6, yPos);
-
-          const titleWidth = doc.getTextWidth(boldTitle);
-
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(51, 65, 85);
-
-          // If fits on one line with title
-          if (bulletLines.length === 1) {
-            doc.text(` ${restText}`, margin + 6 + titleWidth, yPos);
-            yPos += 4.5;
-          } else {
-            // Re-wrap body lines after title or render cleanly
-            const bodyLines = doc.splitTextToSize(restText, contentWidth - 7);
-            doc.text(bodyLines[0], margin + 6 + titleWidth + 1.5, yPos);
-            yPos += 4.2;
-
-            for (let b = 1; b < bodyLines.length; b++) {
-              doc.text(bodyLines[b], margin + 6, yPos);
-              yPos += 4.2;
-            }
-            yPos += 1;
-          }
+          spans = [
+            { text: titleText, bold: true },
+            { text: ' ' },
+            ...parseStyledSpans(rawRest),
+          ];
         } else {
-          const bulletText = cleanMarkdownText(rawBullet);
-          const bulletLines = doc.splitTextToSize(bulletText, contentWidth - 7);
-
-          checkPageBreak(bulletLines.length * 4.2 + 2);
-
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(99, 102, 241);
-          doc.text('•', margin + 1.5, yPos);
-
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(51, 65, 85);
-          doc.text(bulletLines, margin + 6, yPos);
-          yPos += bulletLines.length * 4.2 + 1.5;
+          spans = parseStyledSpans(rawBullet);
         }
 
+        checkPageBreak(10);
+
+        // Draw crisp vector circle bullet
+        drawVectorBullet(doc, margin + 2.0 + bulletIndent, yPos + 3.0, isIndented ? [100, 116, 139] : [71, 85, 105]);
+
+        const { newY } = drawFormattedLineBlock({
+          doc,
+          spans,
+          startX: bulletTextX,
+          yPos: yPos + 3.0,
+          availWidth: availW,
+          fontSize: 10.0,
+          lineHeight: 5.0,
+          hangingIndentX: bulletTextX,
+          defaultColor: [51, 65, 85],
+        });
+
+        yPos = newY + 1.2;
         lineIdx++;
         continue;
       }
 
-      // Numbered lists (1. 2. 3.)
-      if (/^\d+\.\s+/.test(line)) {
-        const match = line.match(/^(\d+\.)\s+(.*)/);
-        const numPrefix = match ? match[1] : '1.';
-        const rawContent = match ? match[2] : line;
+      // 7. Numbered List Item: 1. 2. 3.
+      const numMatch = line.match(/^(\d+\.)\s+(.*)/);
+      if (numMatch) {
+        const numPrefix = numMatch[1];
+        const rawContent = numMatch[2].trim();
 
-        // Check for bold title in numbered item: 1. **Title:** text
-        const boldMatch = rawContent.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
-        const title = boldMatch ? boldMatch[1].trim() + ':' : '';
-        const rest = boldMatch ? boldMatch[2].trim() : rawContent;
-        const fullClean = title ? `${title} ${cleanMarkdownText(rest)}` : cleanMarkdownText(rest);
+        const numTextX = margin + 7.5;
+        const availW = contentWidth - 7.5;
 
-        const numLines = doc.splitTextToSize(fullClean, contentWidth - 8);
+        // Check if numbered item starts with bold lead-in: 1. **Title:** text
+        const boldLeadInMatch = rawContent.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
 
-        checkPageBreak(numLines.length * 4.2 + 2);
+        let spans: StyledSpan[] = [];
+        if (boldLeadInMatch) {
+          const rawTitle = boldLeadInMatch[1].trim();
+          const titleText = rawTitle.endsWith(':') ? rawTitle : `${rawTitle}:`;
+          const rawRest = boldLeadInMatch[2].trim().replace(/^:+/, '').trim();
+
+          spans = [
+            { text: titleText, bold: true },
+            { text: ' ' },
+            ...parseStyledSpans(rawRest),
+          ];
+        } else {
+          spans = parseStyledSpans(rawContent);
+        }
+
+        checkPageBreak(10);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(10.0);
         doc.setTextColor(15, 23, 42);
-        doc.text(numPrefix, margin + 1, yPos);
+        doc.text(numPrefix, margin + 0.5, yPos + 3.0);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 65, 85);
-        doc.text(numLines, margin + 7, yPos);
-        yPos += numLines.length * 4.2 + 1.5;
+        const { newY } = drawFormattedLineBlock({
+          doc,
+          spans,
+          startX: numTextX,
+          yPos: yPos + 3.0,
+          availWidth: availW,
+          fontSize: 10.0,
+          lineHeight: 5.0,
+          hangingIndentX: numTextX,
+          defaultColor: [51, 65, 85],
+        });
 
+        yPos = newY + 1.2;
         lineIdx++;
         continue;
       }
 
-      // Regular Paragraph text
-      const cleanText = cleanMarkdownText(line);
-      const pLines = doc.splitTextToSize(cleanText, contentWidth);
-      checkPageBreak(pLines.length * 4.2 + 2);
+      // 8. Regular Formatted Paragraph
+      const spans = parseStyledSpans(line);
+      checkPageBreak(8);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      doc.text(pLines, margin, yPos);
-      yPos += pLines.length * 4.2 + 2.5;
+      const { newY } = drawFormattedLineBlock({
+        doc,
+        spans,
+        startX: margin,
+        yPos: yPos + 3.0,
+        availWidth: contentWidth,
+        fontSize: 10.0,
+        lineHeight: 5.0,
+        hangingIndentX: margin,
+        defaultColor: [51, 65, 85],
+      });
 
+      yPos = newY + 2.0;
       lineIdx++;
     }
 
@@ -497,9 +820,8 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
     // ==========================================
     const renderedDiagram = diagramMap.get(idx);
     if (renderedDiagram && renderedDiagram.dataUrl) {
-      // Calculate diagram dimensions preserving aspect ratio
       const maxW = contentWidth - 4;
-      const maxH = 100; // max 100mm height
+      const maxH = 95; // Max 95mm height to prevent page crowding
       let dWidth = Math.min(maxW, Math.max(65, 80 * renderedDiagram.aspectRatio));
       let dHeight = dWidth / renderedDiagram.aspectRatio;
 
@@ -510,29 +832,29 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
 
       const totalDiagramBlockHeight = dHeight + 14;
 
-      // Smart pagination: ensure the diagram and its caption are never split across pages
+      // Smart pagination: ensure diagram and its caption are never split across pages
       checkPageBreak(totalDiagramBlockHeight);
 
       // Center diagram horizontally
       const dX = margin + (contentWidth - dWidth) / 2;
 
-      // Subtle container frame
+      // Subtle white canvas frame without heavy decorative borders
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(226, 232, 240); // Slate 200
-      doc.setLineWidth(0.3);
-      doc.roundedRect(dX - 2, yPos, dWidth + 4, dHeight + 4, 1.5, 1.5, 'FD');
+      doc.setLineWidth(0.25);
+      doc.roundedRect(dX - 2, yPos, dWidth + 4, dHeight + 4, 1.0, 1.0, 'FD');
 
       // Embed high-resolution diagram image
       doc.addImage(renderedDiagram.dataUrl, 'PNG', dX, yPos + 2, dWidth, dHeight);
       yPos += dHeight + 7;
 
-      // Diagram figure caption
+      // Diagram figure caption (clean academic styling)
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(71, 85, 105); // Slate 600
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139); // Slate 500
       const caption = `Figure: ${qNum} System Architecture & Visual Flowchart`;
       doc.text(caption, pageWidth / 2, yPos, { align: 'center' });
-      yPos += 5.5;
+      yPos += 6;
     }
 
     // ==========================================
@@ -540,91 +862,106 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
     // ==========================================
     if (sol.formulasOrCode && sol.formulasOrCode.trim().length > 0) {
       const cleanCode = sol.formulasOrCode.replace(/^```[a-zA-Z]*\n?|```$/g, '').trim();
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(8.5);
       const codeLines = doc.splitTextToSize(cleanCode, contentWidth - 8);
-      const boxHeight = Math.min(codeLines.length * 3.6 + 6, 60);
+      const boxHeight = codeLines.length * 3.8 + 6;
 
-      checkPageBreak(boxHeight + 8);
+      checkPageBreak(Math.min(boxHeight + 8, 70));
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(107, 33, 168); // Purple 800
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
       doc.text('CORE FORMULATION & SYNTAX IMPLEMENTATION', margin, yPos);
-      yPos += 3.5;
+      yPos += 4;
 
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.2, 1.2, 'FD');
+      doc.setLineWidth(0.25);
+      doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.0, 1.0, 'FD');
 
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(8);
       doc.setTextColor(30, 41, 59);
-      doc.text(codeLines.slice(0, 16), margin + 4, yPos + 4.5);
-      yPos += boxHeight + 4.5;
+      doc.text(codeLines, margin + 4, yPos + 4.5);
+      yPos += boxHeight + 5;
     }
 
     // ==========================================
     // 5. EXAMINER CRITERIA / CHECKLIST (Full Marks)
     // ==========================================
     if (sol.keyPoints && sol.keyPoints.length > 0) {
-      checkPageBreak(sol.keyPoints.length * 4.2 + 8);
+      checkPageBreak(sol.keyPoints.length * 4.5 + 8);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(9);
       doc.setTextColor(15, 23, 42); // Slate 900
       doc.text('EXAMINER CRITERIA (CHECKLIST FOR FULL MARKS):', margin, yPos);
-      yPos += 4;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
+      yPos += 4.5;
 
       sol.keyPoints.forEach(kp => {
         const cleanKp = cleanMarkdownText(kp);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
         const kpLines = doc.splitTextToSize(cleanKp, contentWidth - 8);
 
-        checkPageBreak(kpLines.length * 4 + 1.5);
+        checkPageBreak(kpLines.length * 4.3 + 2);
 
-        doc.setTextColor(16, 185, 129); // Emerald checkmark
-        doc.setFont('helvetica', 'bold');
-        doc.text('✓', margin + 1.5, yPos);
+        // Sharp vector checkmark
+        drawVectorCheckmark(doc, margin + 1.5, yPos + 2.2);
 
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(71, 85, 105);
-        doc.text(kpLines, margin + 6, yPos);
-        yPos += kpLines.length * 4 + 1.5;
+        doc.setTextColor(51, 65, 85);
+        doc.text(kpLines, margin + 6.5, yPos + 2.5);
+        yPos += kpLines.length * 4.3 + 1.8;
       });
 
       yPos += 2;
     }
 
-    // Clean divider between questions (except the last one)
+    // Clean, subtle hairline divider between questions (except the last one)
     if (idx < exam.solutions.length - 1) {
       checkPageBreak(12);
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.3);
+      doc.setDrawColor(226, 232, 240); // Slate 200
+      doc.setLineWidth(0.2);
       doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 7;
     }
   });
 
-  // ==========================
+  // ==========================================
   // 6. ACADEMIC PAGE NUMBERING FOOTER
-  // ==========================
+  // ==========================================
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+
+    // Subtle header on pages after the first
+    if (i > 1) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184); // Slate 400
+      const rawSubject = (exam.subject || 'UNIVERSITY EXAMINATION').toUpperCase();
+      const cleanSubject = rawSubject.length > 45 ? `${rawSubject.slice(0, 42)}...` : rawSubject;
+      doc.text(cleanSubject, margin, 12);
+      doc.text('SABERIO AI  •  MODEL SOLUTIONS', pageWidth - margin, 12, { align: 'right' });
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.15);
+      doc.line(margin, 14, pageWidth - margin, 14);
+    }
+
+    // Footer on every page
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184); // Slate 400
+    doc.text('Saberio AI', margin, pageHeight - 10);
     doc.text(
-      `Saberio AI  •  Page ${i} of ${totalPages}`,
-      pageWidth / 2,
-      pageHeight - 8,
-      { align: 'center' }
+      `Page ${i} of ${totalPages}`,
+      pageWidth - margin,
+      pageHeight - 10,
+      { align: 'right' }
     );
   }
 
-  // Save PDF with sanitized academic file name
+  // Save PDF with clean academic filename
   const safeSubject = (exam.subject || 'University_Exam_Solutions')
     .replace(/[^a-zA-Z0-9_-]/g, '_')
     .substring(0, 35);

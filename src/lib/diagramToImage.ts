@@ -11,6 +11,7 @@ export interface RenderedDiagram {
  * Initializes Mermaid configuration for export rendering with crisp, high-contrast academic colors
  */
 function initializeMermaidForPdf(): void {
+  if (typeof window === 'undefined') return;
   try {
     mermaid.initialize({
       startOnLoad: false,
