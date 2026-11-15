@@ -14,7 +14,7 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
   const blocks = content.split(/\n{2,}/);
 
   return (
-    <div className={`space-y-3.5 leading-relaxed text-slate-800 dark:text-slate-200 ${className}`}>
+    <div className={`space-y-4 leading-relaxed text-slate-800 dark:text-slate-200 ${className}`}>
       {blocks.map((block, idx) => {
         const trimmed = block.trim();
         if (!trimmed) return null;
@@ -25,13 +25,13 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
           const lang = lines[0].replace(/^```/, '').trim() || 'code';
           const code = lines.slice(1, -1).join('\n');
           return (
-            <div key={idx} className="my-2.5 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100 text-xs font-mono shadow-xs">
+            <div key={idx} className="my-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100 text-xs sm:text-sm font-mono shadow-xs max-w-full">
               {lang && (
-                <div className="px-3 py-1 bg-slate-800/80 text-slate-400 text-[10px] font-semibold border-b border-slate-700/50 uppercase tracking-wider">
+                <div className="px-3.5 py-1.5 bg-slate-800/80 text-slate-400 text-[10px] sm:text-xs font-semibold border-b border-slate-700/50 uppercase tracking-wider">
                   {lang}
                 </div>
               )}
-              <pre className="p-3.5 overflow-x-auto">
+              <pre className="p-3.5 sm:p-4 overflow-x-auto leading-relaxed">
                 <code>{code}</code>
               </pre>
             </div>
@@ -49,12 +49,12 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
             const rows = lines.slice(2).map(parseCells);
 
             return (
-              <div key={idx} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-                <table className="w-full text-left text-xs sm:text-sm border-collapse">
+              <div key={idx} className="my-3.5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs max-w-full">
+                <table className="min-w-full text-left text-xs sm:text-sm border-collapse">
                   <thead>
                     <tr className="bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold">
                       {headers.map((h, hIdx) => (
-                        <th key={hIdx} className="px-3.5 py-2.5 font-semibold">
+                        <th key={hIdx} className="px-3 sm:px-4 py-2.5 font-semibold whitespace-nowrap">
                           {renderInlineTokens(h)}
                         </th>
                       ))}
@@ -64,7 +64,7 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
                     {rows.map((row, rIdx) => (
                       <tr key={rIdx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                         {row.map((cell, cIdx) => (
-                          <td key={cIdx} className="px-3.5 py-2 text-slate-700 dark:text-slate-300">
+                          <td key={cIdx} className="px-3 sm:px-4 py-2 text-slate-700 dark:text-slate-300 break-words">
                             {renderInlineTokens(cell)}
                           </td>
                         ))}
@@ -85,20 +85,20 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
 
           if (level === 1) {
             return (
-              <h2 key={idx} className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white pt-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+              <h2 key={idx} className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white pt-2 border-b border-slate-100 dark:border-slate-800 pb-1.5 break-words">
                 {renderInlineTokens(text)}
               </h2>
             );
           }
           if (level === 2) {
             return (
-              <h3 key={idx} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white pt-1.5">
+              <h3 key={idx} className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pt-2 break-words">
                 {renderInlineTokens(text)}
               </h3>
             );
           }
           return (
-            <h4 key={idx} className="text-xs sm:text-sm font-bold text-indigo-700 dark:text-indigo-300 pt-1">
+            <h4 key={idx} className="text-sm sm:text-base font-bold text-indigo-700 dark:text-indigo-300 pt-1.5 break-words">
               {renderInlineTokens(text)}
             </h4>
           );
@@ -108,7 +108,7 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
         if (/^>\s*/.test(trimmed)) {
           const text = trimmed.replace(/^>\s*/gm, '');
           return (
-            <blockquote key={idx} className="border-l-4 border-indigo-500 pl-3.5 py-1.5 text-slate-700 dark:text-slate-300 italic bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-lg my-2 text-xs sm:text-sm">
+            <blockquote key={idx} className="border-l-4 border-indigo-500 pl-3.5 sm:pl-4 py-2 text-slate-700 dark:text-slate-300 italic bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-xl my-2.5 text-[15px] sm:text-base leading-relaxed break-words">
               {renderInlineTokens(text)}
             </blockquote>
           );
@@ -119,9 +119,9 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
           const items = trimmed.split('\n').filter(l => /^[-*+]\s+/.test(l.trim()));
           if (items.length > 0) {
             return (
-              <ul key={idx} className="space-y-1.5 list-disc list-inside text-xs sm:text-sm pl-1">
+              <ul key={idx} className="space-y-2 list-disc list-outside ml-5 text-[15px] sm:text-base">
                 {items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <li key={itemIdx} className="text-slate-700 dark:text-slate-300 leading-relaxed pl-1 break-words">
                     {renderInlineTokens(item.replace(/^[-*+]\s+/, ''))}
                   </li>
                 ))}
@@ -135,9 +135,9 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
           const items = trimmed.split('\n').filter(l => /^\d+\.\s+/.test(l.trim()));
           if (items.length > 0) {
             return (
-              <ol key={idx} className="space-y-1.5 list-decimal list-inside text-xs sm:text-sm pl-1">
+              <ol key={idx} className="space-y-2 list-decimal list-outside ml-5 text-[15px] sm:text-base">
                 {items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <li key={itemIdx} className="text-slate-700 dark:text-slate-300 leading-relaxed pl-1 break-words">
                     {renderInlineTokens(item.replace(/^\d+\.\s+/, ''))}
                   </li>
                 ))}
@@ -148,7 +148,7 @@ export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
 
         // Standard Paragraph
         return (
-          <p key={idx} className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <p key={idx} className="text-[15px] sm:text-base leading-relaxed text-slate-700 dark:text-slate-300 break-words">
             {renderInlineTokens(trimmed)}
           </p>
         );

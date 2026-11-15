@@ -82,6 +82,17 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Lock body scroll when mobile navigation drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   const handleNavClick = (mode: 'youtube' | 'examSolver' | 'tutor' | 'copilot') => {
     if (onSwitchMode) onSwitchMode(mode);
     if (mode === 'youtube') onNewQuiz();
@@ -105,33 +116,33 @@ export function Navbar({
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* ========================================================= */}
-          {/* LEFT: QuizTube Branding */}
+          {/* LEFT: Saberio AI Branding */}
           {/* ========================================================= */}
           <button
             onClick={() => handleNavClick('youtube')}
-            className="flex items-center gap-3 group text-left focus:outline-none shrink-0"
+            className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none shrink min-w-0"
           >
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-slate-200/50 dark:border-slate-800/50">
               <img
                 src="/icon.png"
                 alt="Saberio AI"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 font-extrabold text-base sm:text-xl text-slate-900 dark:text-white tracking-tight truncate">
                 <span>Saberio AI</span>
                 {SUBSCRIPTION_ENABLED && isPro && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm">
+                  <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm shrink-0">
                     <Crown className="w-2.5 h-2.5 fill-current" />
                     PRO
                   </span>
                 )}
               </div>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+              <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight truncate hidden xs:block">
                 AI-powered learning
               </p>
             </div>
@@ -361,10 +372,10 @@ export function Navbar({
           />
 
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-5 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-250">
+          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-4 sm:p-5 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-250 pt-safe pb-safe overflow-y-auto">
             <div>
               {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-800/50">
                     <img
@@ -381,18 +392,19 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+                  aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Main Navigation Links */}
-              <div className="py-4 space-y-1">
+              <div className="py-3 sm:py-4 space-y-1.5">
                 <button
                   type="button"
                   onClick={() => handleNavClick('youtube')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                  className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'youtube'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -405,7 +417,7 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={() => handleNavClick('examSolver')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                  className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'examSolver'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -418,7 +430,7 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={() => handleNavClick('tutor')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                  className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'tutor'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -431,7 +443,7 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={() => handleNavClick('copilot')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                  className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'copilot'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -449,7 +461,7 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={handleLibraryClick}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition"
+                  className="w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-3">
                     <FolderOpen className="w-4 h-4 text-indigo-500 shrink-0" />
@@ -469,7 +481,7 @@ export function Navbar({
                       setMobileMenuOpen(false);
                       onOpenApkModal();
                     }}
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition"
+                    className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition active:scale-[0.98]"
                   >
                     <Download className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span>Download Android App</span>
@@ -482,11 +494,11 @@ export function Navbar({
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
               {currentUser ? (
                 <>
-                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
-                    <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                  <div className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                    <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                       {currentUser.fullName || 'Student'}
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                       {currentUser.email}
                     </p>
                   </div>
@@ -498,7 +510,7 @@ export function Navbar({
                       if (onOpenAccountModal) onOpenAccountModal();
                       else onOpenAuthModal();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98] transition"
                   >
                     <User className="w-4 h-4 text-slate-400" />
                     <span>Profile & Account</span>
@@ -512,13 +524,12 @@ export function Navbar({
                         setMobileMenuOpen(false);
                         onOpenApiKeyModal();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98] transition"
                     >
                       <Key className="w-4 h-4 text-amber-500" />
                       <span>Gemini API Key</span>
                     </button>
                   )}
-
 
                   <button
                     type="button"
@@ -526,7 +537,7 @@ export function Navbar({
                       setMobileMenuOpen(false);
                       onSignOut();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
+                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition active:scale-[0.98]"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -539,7 +550,7 @@ export function Navbar({
                     setMobileMenuOpen(false);
                     onOpenAuthModal();
                   }}
-                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login / Register</span>

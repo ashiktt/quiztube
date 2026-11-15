@@ -402,13 +402,13 @@ export function AuthModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md p-5 sm:p-8 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl space-y-5 sm:space-y-6 text-slate-800 dark:text-slate-100 max-h-[92vh] overflow-y-auto pb-safe">
+      <div className="relative w-full max-w-md p-4 sm:p-8 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl space-y-4 sm:space-y-6 text-slate-800 dark:text-slate-100 max-h-[90dvh] overflow-y-auto pb-safe">
         {/* Mobile Drag Indicator */}
         <div className="sm:hidden w-12 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -555,7 +555,7 @@ export function AuthModal({
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-100 font-semibold text-xs sm:text-sm rounded-xl shadow-sm hover:shadow transition active:scale-[0.99] disabled:opacity-60"
+              className="w-full min-h-[44px] flex items-center justify-center gap-3 py-2.5 px-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-100 font-semibold text-xs sm:text-sm rounded-xl shadow-sm hover:shadow transition active:scale-[0.99] disabled:opacity-60"
             >
               {isGoogleLoading ? (
                 <>
@@ -701,7 +701,7 @@ export function AuthModal({
                 </div>
 
                 {/* 6 Individual Digit Boxes */}
-                <div className="flex items-center justify-between gap-2 sm:gap-2.5">
+                <div className="flex items-center justify-between gap-1 xs:gap-1.5 sm:gap-2.5 max-w-full">
                   {otpDigits.map((digit, idx) => (
                     <input
                       key={idx}
@@ -715,7 +715,7 @@ export function AuthModal({
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                       disabled={isLoading}
-                      className="w-11 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-bold font-mono bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
+                      className="w-9 h-11 xs:w-10 xs:h-12 sm:w-12 sm:h-13 text-center text-base xs:text-lg sm:text-xl font-bold font-mono bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
                       placeholder="•"
                       autoFocus={idx === 0}
                     />
@@ -850,7 +850,7 @@ export function AuthModal({
             <button
               type="submit"
               disabled={isLoading || isGoogleLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-60 cursor-pointer"
+              className="w-full min-h-[44px] flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-60 cursor-pointer"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

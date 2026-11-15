@@ -58,7 +58,7 @@ export function ExportModal({ isOpen, onClose, studySet }: ExportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg p-5 sm:p-6 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl space-y-5 sm:space-y-6 text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto pb-safe">
+      <div className="relative w-full max-w-lg p-4 sm:p-6 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl space-y-4 sm:space-y-6 text-slate-800 dark:text-slate-100 max-h-[90dvh] overflow-y-auto pb-safe">
         {/* Mobile Drag Indicator */}
         <div className="sm:hidden w-12 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
 

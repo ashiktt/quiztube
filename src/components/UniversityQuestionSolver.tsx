@@ -496,7 +496,7 @@ export function UniversityQuestionSolver({
           {/* Main Solver Form */}
           <form
             onSubmit={handleSolve}
-            className="p-4 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-xl space-y-5 sm:space-y-6"
+            className="p-3.5 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-xl space-y-4 sm:space-y-6"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Subject */}
@@ -510,7 +510,7 @@ export function UniversityQuestionSolver({
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder="e.g. Operating Systems (CS302) or Engineering Physics"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium min-h-[44px]"
                 />
               </div>
 
@@ -522,7 +522,7 @@ export function UniversityQuestionSolver({
                 <select
                   value={academicLevel}
                   onChange={e => setAcademicLevel(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium min-h-[44px]"
                 >
                   <option value="Undergraduate / B.Tech / BSC / BA">Undergraduate (B.Tech / BSC / BA / B.Com)</option>
                   <option value="Masters / MS / M.Tech / MBA">Postgraduate / Masters (MS / M.Tech / MBA)</option>
@@ -534,12 +534,12 @@ export function UniversityQuestionSolver({
 
             {/* Multimodal PDF / Image Upload Section */}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex flex-wrap items-center justify-between gap-1">
                 <span className="flex items-center gap-1.5">
-                  <FileUp className="w-4 h-4 text-indigo-500" />
-                  <span>Upload Question Paper (PDF or Photo/Image)</span>
+                  <FileUp className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span>Upload Question Paper (PDF or Image)</span>
                 </span>
-                <span className="text-[11px] text-slate-400 font-normal">PDF, PNG, JPG, WEBP (Max 15MB)</span>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 font-normal">PDF, PNG, JPG, WEBP (Max 15MB)</span>
               </label>
 
               <input
@@ -556,44 +556,44 @@ export function UniversityQuestionSolver({
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                  className={`p-4 sm:p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 min-h-[120px] ${
                     isDragging
                       ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 scale-[1.01]'
                       : 'border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-600 bg-slate-50/50 dark:bg-slate-800/30'
                   }`}
                 >
-                  <div className="p-3 bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 rounded-2xl">
-                    <Upload className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 rounded-2xl shrink-0">
+                    <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                      Click to upload or drag & drop Question Paper
+                      Tap to select file, or drag & drop (optional)
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Upload exam paper photo, scanned pages, or official university PDF
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Exam paper photo, scanned pages, or official university PDF
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div className="p-3 sm:p-4 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     {uploadedFile.previewUrl ? (
                       <img
                         src={uploadedFile.previewUrl}
                         alt="Preview"
-                        className="w-12 h-12 object-cover rounded-xl border border-indigo-200 dark:border-indigo-800 shrink-0"
+                        className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-xl border border-indigo-200 dark:border-indigo-800 shrink-0"
                       />
                     ) : (
-                      <div className="p-3 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-xl shrink-0">
-                        <File className="w-6 h-6" />
+                      <div className="p-2.5 sm:p-3 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-xl shrink-0">
+                        <File className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                     )}
 
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200 truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200 truncate break-all">
                         {uploadedFile.file.name}
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
                         {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB • {uploadedFile.mimeType.includes('pdf') ? 'PDF Document' : 'Image Photo'}
                       </p>
                     </div>
@@ -602,8 +602,9 @@ export function UniversityQuestionSolver({
                   <button
                     type="button"
                     onClick={handleRemoveFile}
-                    className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition shrink-0"
+                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition shrink-0"
                     title="Remove attached file"
+                    aria-label="Remove attached file"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -613,22 +614,22 @@ export function UniversityQuestionSolver({
 
             {/* Questions Textarea */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-indigo-500" />
+                  <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
                   <span>
-                    {uploadedFile ? 'Additional Notes / Specific Questions (Optional)' : 'Or Paste Exam Questions & Marks'}
+                    {uploadedFile ? 'Additional Notes / Questions (Optional)' : 'Or Paste Exam Questions & Marks'}
                   </span>
                 </label>
                 {!uploadedFile && (
-                  <span className="text-[11px] text-slate-400">
-                    e.g. <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[2 Marks]</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">(5M)</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[10]</code>
+                  <span className="text-[10px] sm:text-[11px] text-slate-400">
+                    e.g. <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">[2 Marks]</code>, <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-[10px]">(5M)</code>
                   </span>
                 )}
               </div>
 
               <textarea
-                rows={uploadedFile ? 4 : 8}
+                rows={uploadedFile ? 3 : 6}
                 value={questionsText}
                 onChange={e => setQuestionsText(e.target.value)}
                 placeholder={
@@ -642,17 +643,17 @@ Q2. Explain the working of Semaphore synchronization with wait() and signal(). [
 
 Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, and real OS examples. [10 Marks]`
                 }
-                className="w-full p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
+                className="w-full p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
               />
             </div>
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-3 text-xs sm:text-sm text-red-700 dark:text-red-300 animate-in fade-in">
+              <div className="p-3.5 sm:p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-3 text-xs sm:text-sm text-red-700 dark:text-red-300 animate-in fade-in">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <p className="font-bold">Unable to process question paper</p>
-                  <p>{errorMessage}</p>
+                  <p className="break-words">{errorMessage}</p>
                 </div>
               </div>
             )}
@@ -661,26 +662,26 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 text-base font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.99] rounded-2xl shadow-lg shadow-indigo-500/20 transition disabled:opacity-60"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 py-3.5 sm:py-4 px-4 sm:px-6 text-sm sm:text-base font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.99] rounded-2xl shadow-lg shadow-indigo-500/20 transition disabled:opacity-60"
             >
               {isLoading ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>
+                <div className="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                  <span className="truncate">
                     {uploadedFile
-                      ? 'AI Examiner is Reading File & Solving Question Paper...'
+                      ? 'AI Examiner is Solving Question Paper...'
                       : 'Senior AI Examiner is Generating Model Answers...'}
                   </span>
                 </div>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
-                  <span>
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-pulse shrink-0" />
+                  <span className="truncate">
                     {uploadedFile
                       ? 'Solve Uploaded Question Paper & Generate PDF'
                       : 'Generate Mark-Scaled Model Solutions & PDF'}
                   </span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                 </>
               )}
             </button>
@@ -690,22 +691,22 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
         /* Solved Exam Model Solutions View */
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Top Control Banner */}
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1.5 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setSolvedExam(null)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 mr-2"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 mr-2 min-h-[36px] py-1"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Solve Another Exam Paper</span>
                 </button>
 
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded-md border border-indigo-200 dark:border-indigo-800">
+                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0">
                   {solvedExam.academicLevel}
                 </span>
 
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-md border border-emerald-200 dark:border-emerald-800">
+                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-md border border-emerald-200 dark:border-emerald-800 shrink-0">
                   {solvedExam.totalMarks} Total Marks
                 </span>
 
@@ -714,17 +715,17 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                 </span>
               </div>
 
-              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight break-words">
                 {solvedExam.subject} — Model Solutions
               </h1>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-col xs:flex-row sm:flex-wrap items-stretch xs:items-center gap-2 w-full md:w-auto shrink-0">
               <button
                 type="button"
                 onClick={handleCopyAll}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition shadow-sm"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition shadow-sm w-full xs:w-auto"
               >
                 {copiedAll ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                 <span>{copiedAll ? 'Copied All!' : 'Copy Markdown'}</span>
@@ -734,7 +735,7 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                 type="button"
                 onClick={handleExportPdf}
                 disabled={isExportingPdf}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl transition shadow-md shadow-indigo-500/20 disabled:opacity-60"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl transition shadow-md shadow-indigo-500/20 disabled:opacity-60 w-full xs:w-auto"
               >
                 <FileDown className={`w-4 h-4 ${isExportingPdf ? 'animate-bounce' : ''}`} />
                 <span>{isExportingPdf ? 'Rendering PDF...' : 'Download as PDF'}</span>
@@ -746,17 +747,17 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
           {solvedExam.overallExamSummary && (
             <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-pink-50/40 dark:from-indigo-950/40 dark:via-purple-950/20 dark:to-pink-950/10 border border-indigo-200/70 dark:border-indigo-800/60 rounded-3xl space-y-1.5">
               <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
-                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <span>Paper Topical Synthesis & Scope</span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-words">
                 {solvedExam.overallExamSummary}
               </p>
             </div>
           )}
 
           {/* Solutions Accordion List */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {solvedExam.solutions.map((sol, idx) => {
               const isExpanded = expandedSolutions[idx] !== false;
               const badgeStyle = getMarkBadgeStyle(sol.marksAllocated);
@@ -769,35 +770,35 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                   {/* Question Card Header */}
                   <div
                     onClick={() => toggleExpand(idx)}
-                    className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
+                    className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 sm:gap-4 cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
                   >
                     <div className="space-y-2 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2.5 py-0.5 text-xs font-extrabold rounded-lg border uppercase tracking-wider ${badgeStyle}`}>
+                        <span className={`px-2.5 py-0.5 text-xs font-extrabold rounded-lg border uppercase tracking-wider shrink-0 ${badgeStyle}`}>
                           {sol.questionNumber || `Q${idx + 1}`} • {sol.marksAllocated} MARKS
                         </span>
 
                         {sol.estimatedWordCount && (
-                          <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                          <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1 shrink-0">
+                            <Clock className="w-3 h-3 shrink-0" />
                             <span>~{sol.estimatedWordCount} words</span>
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                      <h3 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug break-words">
                         {sol.questionText}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
                           handleCopySingleAnswer(sol, idx);
                         }}
-                        className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition"
+                        className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition"
                         title="Copy this solution"
                       >
                         {copiedQuestionId === `${idx}` ? (
@@ -807,7 +808,7 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                         )}
                       </button>
 
-                      <div className="p-1.5 text-slate-400">
+                      <div className="p-1 sm:p-1.5 text-slate-400">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </div>
                     </div>
@@ -815,15 +816,15 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
 
                   {/* Expanded Solution Content */}
                   {isExpanded && (
-                    <div className="p-5 sm:p-8 space-y-6 bg-slate-50/30 dark:bg-slate-900/40">
+                    <div className="p-4 sm:p-8 space-y-5 sm:space-y-6 bg-slate-50/30 dark:bg-slate-900/40">
                       {/* TL;DR Answer Thesis */}
                       {sol.answerSummary && (
-                        <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl space-y-1">
+                        <div className="p-3.5 sm:p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl space-y-1">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             <span>Core Thesis / Quick Summary</span>
                           </span>
-                          <p className="text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-200 italic">
+                          <p className="text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-200 italic break-words">
                             {sol.answerSummary}
                           </p>
                         </div>
@@ -844,7 +845,7 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                       {sol.diagramMermaid && (
                         <div className="space-y-2 pt-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                            <Cpu className="w-4 h-4" />
+                            <Cpu className="w-4 h-4 shrink-0" />
                             <span>Visual System Flowchart & Architecture</span>
                           </span>
                           <MermaidRenderer
@@ -903,9 +904,9 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
           </div>
 
           {/* Bottom Download Bar */}
-          <div className="p-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 sm:p-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="space-y-1 text-center sm:text-left">
-              <h3 className="font-extrabold text-lg">Download Complete Model Answer Paper</h3>
+              <h3 className="font-extrabold text-base sm:text-lg">Download Complete Model Answer Paper</h3>
               <p className="text-xs text-white/80">
                 Formatted as a professional university-style assessment booklet with student headers.
               </p>
@@ -915,9 +916,9 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
               type="button"
               onClick={handleExportPdf}
               disabled={isExportingPdf}
-              className="px-6 py-3 bg-white text-indigo-700 hover:bg-slate-100 font-bold text-sm rounded-xl shadow-md transition shrink-0 active:scale-95 flex items-center gap-2 disabled:opacity-60"
+              className="px-6 py-3.5 min-h-[48px] bg-white text-indigo-700 hover:bg-slate-100 font-bold text-sm rounded-xl shadow-md transition shrink-0 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 w-full sm:w-auto"
             >
-              <FileDown className={`w-4 h-4 ${isExportingPdf ? 'animate-bounce' : ''}`} />
+              <FileDown className={`w-4 h-4 shrink-0 ${isExportingPdf ? 'animate-bounce' : ''}`} />
               <span>{isExportingPdf ? 'Generating PDF Booklet...' : 'Download PDF Booklet'}</span>
             </button>
           </div>

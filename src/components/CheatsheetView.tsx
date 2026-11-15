@@ -97,12 +97,12 @@ export function CheatsheetView({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {onAskTutor && (
             <button
               type="button"
               onClick={handleAskTutorAboutCheatsheet}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 rounded-xl transition shadow-xs"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 rounded-xl transition shadow-xs flex-1 xs:flex-initial"
             >
               <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span>Ask AI Tutor</span>
@@ -112,17 +112,17 @@ export function CheatsheetView({
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition shadow-sm flex-1 xs:flex-initial"
           >
             <Printer className="w-4 h-4" />
-            <span>Print 1-Page Cheatsheet</span>
+            <span>Print Cheatsheet</span>
           </button>
 
           {onOpenExport && (
             <button
               type="button"
               onClick={onOpenExport}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-500/20"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 min-h-[40px] text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-500/20 w-full sm:w-auto"
             >
               <FileDown className="w-4 h-4" />
               <span>Export PDF / Notes</span>
