@@ -447,6 +447,20 @@ async function runAllTests() {
     }
   })();
 
+  // Test 24: Unreadable raw LaTeX symbols are sanitized into 100% readable academic text
+  runTest('24. LaTeX symbols and dollar notation are converted to readable words and characters', () => {
+    const rawGrammarText =
+      'A formal grammar $G$ is represented as: $G = (V, \\Sigma, R, S)$, where $S \\in V$ and $\\Sigma = \\{0, 1\\}$.';
+    const cleaned = cleanMarkdownText(rawGrammarText);
+    assert.strictEqual(cleaned.includes('$'), false, 'Should strip raw dollar signs');
+    assert.strictEqual(cleaned.includes('\\Sigma'), false, 'Should convert \\Sigma');
+    assert.strictEqual(cleaned.includes('\\in'), false, 'Should convert \\in');
+    assert.strictEqual(cleaned.includes('\\{'), false, 'Should unescape braces');
+    assert.ok(cleaned.includes('G = (V, Sigma, R, S)'));
+    assert.ok(cleaned.includes('S in V'));
+    assert.ok(cleaned.includes('Sigma = {0, 1}'));
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

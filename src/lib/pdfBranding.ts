@@ -37,11 +37,87 @@ export function resetPdfTypographyState(doc: jsPDF): void {
 }
 
 /**
- * Cleanly strips markdown characters while preserving technical text, colons, and mathematical symbols
+ * Converts raw LaTeX expressions and mathematical symbols into clean, 100% readable text
+ * suitable for PDF generation with standard fonts (no unreadable symbols, no raw LaTeX codes).
+ */
+export function sanitizeLatexAndSymbols(text: string): string {
+  if (!text) return '';
+
+  return text
+    // 1. Common Greek Letters (Convert to clean, readable standard names)
+    .replace(/\\Sigma\b/g, 'Sigma')
+    .replace(/\\sigma\b/g, 'sigma')
+    .replace(/\\Lambda\b/g, 'Lambda')
+    .replace(/\\lambda\b/g, 'lambda')
+    .replace(/\\Delta\b/g, 'Delta')
+    .replace(/\\delta\b/g, 'delta')
+    .replace(/\\Theta\b/g, 'Theta')
+    .replace(/\\theta\b/g, 'theta')
+    .replace(/\\Alpha\b/g, 'Alpha')
+    .replace(/\\alpha\b/g, 'alpha')
+    .replace(/\\Beta\b/g, 'Beta')
+    .replace(/\\beta\b/g, 'beta')
+    .replace(/\\Gamma\b/g, 'Gamma')
+    .replace(/\\gamma\b/g, 'gamma')
+    .replace(/\\Omega\b/g, 'Omega')
+    .replace(/\\omega\b/g, 'omega')
+    .replace(/\\pi\b/g, 'pi')
+    .replace(/\\epsilon\b/g, 'epsilon')
+    .replace(/\\phi\b/g, 'phi')
+    .replace(/\\Phi\b/g, 'Phi')
+    .replace(/\\mu\b/g, 'mu')
+
+    // 2. Set Theory & Logic Symbols
+    .replace(/\\in\b/g, ' in ')
+    .replace(/\\notin\b/g, ' not in ')
+    .replace(/\\subset(eq)?\b/g, ' subset of ')
+    .replace(/\\supset(eq)?\b/g, ' superset of ')
+    .replace(/\\cup\b/g, ' union ')
+    .replace(/\\cap\b/g, ' intersection ')
+    .replace(/\\emptyset\b/g, '{}')
+    .replace(/\\forall\b/g, 'for all ')
+    .replace(/\\exists\b/g, 'there exists ')
+
+    // 3. Mathematical Operations & Relations
+    .replace(/\\rightarrow\b|\\to\b/g, ' -> ')
+    .replace(/\\leftarrow\b/g, ' <- ')
+    .replace(/\\Rightarrow\b|\\implies\b/g, ' => ')
+    .replace(/\\le\b|\\leq\b/g, ' <= ')
+    .replace(/\\ge\b|\\geq\b/g, ' >= ')
+    .replace(/\\ne\b|\\neq\b/g, ' != ')
+    .replace(/\\approx\b/g, ' ~= ')
+    .replace(/\\times\b/g, ' * ')
+    .replace(/\\cdot\b/g, ' . ')
+    .replace(/\\pm\b/g, ' +/- ')
+    .replace(/\\infty\b/g, 'infinity')
+
+    // 4. Escaped Brackets & Delimiters
+    .replace(/\\\{/g, '{')
+    .replace(/\\\}/g, '}')
+    .replace(/\\\[/g, '[')
+    .replace(/\\\]/g, ']')
+    .replace(/\\mid\b/g, ' | ')
+
+    // 5. Common LaTeX formatting tags: \text{...}, \mathbf{...}, \mathit{...}
+    .replace(/\\(?:text|mathbf|mathit|mathrm|mathcal)\{([^}]+)\}/g, '$1')
+
+    // 6. Strip enclosing LaTeX math dollar signs ($...$ and $$...$$)
+    .replace(/\$\$([^$]+)\$\$/g, '$1')
+    .replace(/\$([^$]+)\$/g, '$1')
+    .replace(/\\\$/g, '$') // preserve explicitly escaped dollar if any
+
+    // 7. Cleanup extra spaces
+    .replace(/\s{2,}/g, ' ');
+}
+
+/**
+ * Cleanly strips markdown characters and sanitizes unreadable LaTeX symbols,
+ * preserving clean, readable academic notation, punctuation, and wording.
  */
 export function cleanMarkdownText(text: string): string {
   if (!text) return '';
-  return text
+  const sanitized = sanitizeLatexAndSymbols(text);
+  return sanitized
     .replace(/^#{1,6}\s+/gm, '') // remove heading hashes
     .replace(/\s+#+$/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1') // remove bold asterisks
