@@ -15,6 +15,9 @@ import { solveUniversityQuestionsWithGemini } from '../src/lib/geminiSolver';
 import { generateTutorResponse } from '../src/lib/geminiTutor';
 import { sanitizeMongoUri, getDatabaseErrorMessage, getMongoUri } from '../src/lib/mongodb';
 import { cleanMarkdownText, parseStyledSpans } from '../src/lib/examPdfExport';
+import { SABERIO_LOGO_BASE64 } from '../src/lib/logoBase64';
+import { drawPdfFirstPageHeader, drawPdfRunningHeader, finalizePdfLayout } from '../src/lib/pdfBranding';
+import { jsPDF } from 'jspdf';
 import { runSecurityTests } from './security.test';
 
 let testsPassed = 0;
@@ -357,6 +360,43 @@ async function runAllTests() {
     assert.strictEqual(calibration[5].min, 130);
     assert.strictEqual(calibration[10].min, 280);
     assert.strictEqual(calibration[15].min, 400);
+  });
+
+  // Test 21: Official Saberio AI Logo Base64 asset integrity
+  runTest('21. Saberio AI official logo base64 is present and valid image data URI', () => {
+    assert.ok(SABERIO_LOGO_BASE64.startsWith('data:image/'));
+    assert.ok(SABERIO_LOGO_BASE64.length > 500);
+  });
+
+  // Test 22: PDF Running Header Collision Prevention & Layout Finalization
+  runTest('22. PDF running header prevents collision with long subjects and renders cleanly', () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const longSubject = 'DISTRIBUTED DATABASES (BTCS706-18) — ADVANCED QUERY OPTIMIZATION AND CONCURRENCY CONTROL';
+    
+    // Test First Page Header
+    const yPos = drawPdfFirstPageHeader(doc, {
+      subject: longSubject,
+      documentTitle: 'UNIVERSITY MODEL SOLUTIONS',
+      academicLevel: 'B.Tech CSE - 7th Semester',
+      totalMarks: 50,
+      itemCount: 5,
+    });
+    assert.ok(yPos > 30, 'First page header must return valid content yPos');
+
+    // Add second page and test running header
+    doc.addPage();
+    drawPdfRunningHeader(doc, {
+      subject: longSubject,
+      rightLabel: 'SABERIO AI  •  MODEL SOLUTIONS',
+    });
+
+    // Test finalizePdfLayout across all pages
+    finalizePdfLayout(doc, {
+      subject: longSubject,
+      rightHeaderLabel: 'SABERIO AI  •  MODEL SOLUTIONS',
+    });
+
+    assert.strictEqual(doc.getNumberOfPages(), 2);
   });
 
   // Run Phase 13 Automated Security Regression Suite

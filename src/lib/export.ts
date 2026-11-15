@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { LectureStudySet } from '@/types';
 import { renderMermaidToPngDataUrl } from './diagramToImage';
+import { drawPdfFirstPageHeader, finalizePdfLayout } from './pdfBranding';
 
 /**
  * Generates and downloads a student-friendly printable PDF quiz with:
@@ -40,32 +41,25 @@ export async function exportQuizToPdf(studySet: LectureStudySet): Promise<void> 
     }
   };
 
-  // Header Title
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(30, 41, 59);
-  doc.text('LECTURE STUDY SET & ASSESSMENT', margin, yPos);
-  yPos += 8;
-
-  // Lecture Details
-  doc.setFontSize(12);
-  doc.setTextColor(71, 85, 105);
-  const titleLines = doc.splitTextToSize(`Topic: ${studySet.videoTitle}`, contentWidth);
-  doc.text(titleLines, margin, yPos);
-  yPos += titleLines.length * 5 + 3;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  doc.text(`Source: ${studySet.channelTitle} | Questions: ${studySet.questions.length} | Difficulty: ${studySet.difficulty.toUpperCase()}`, margin, yPos);
-  yPos += 6;
+  // Official Saberio AI Branded Header
+  yPos = drawPdfFirstPageHeader(doc, {
+    subject: studySet.videoTitle || 'Lecture Study Set & Assessment',
+    documentTitle: 'LECTURE STUDY SET & ASSESSMENT',
+    academicLevel: `Source: ${studySet.channelTitle || 'YouTube Lecture'}`,
+    itemCount: studySet.questions.length,
+    itemCountLabel: 'Questions',
+    margin,
+    pageWidth,
+  });
 
   // Student Info Box
-  doc.setDrawColor(203, 213, 225);
+  doc.setDrawColor(226, 232, 240);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'FD');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
   doc.setTextColor(71, 85, 105);
-  doc.text('Student Name: _______________________    Date: ____________    Score: _______ / ' + studySet.questions.length, margin + 4, yPos + 8);
+  doc.text('Student Name: _______________________    Date: ____________    Score: _______ / ' + studySet.questions.length, margin + 4, yPos + 7.5);
   yPos += 18;
 
   // SECTION: CHEATSHEET & FORMULAS (if available)
@@ -220,37 +214,12 @@ export async function exportQuizToPdf(studySet: LectureStudySet): Promise<void> 
     yPos += expLines.length * 4 + 5;
   });
 
-  // Page Numbering Footer & Running Header
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-
-    // Running header on pages after the first
-    if (i > 1) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184); // Slate 400
-      const topicStr = (studySet.videoTitle || 'STUDY SET').toUpperCase();
-      const cleanTopic = topicStr.length > 45 ? `${topicStr.slice(0, 42)}...` : topicStr;
-      doc.text(cleanTopic, margin, 12);
-      doc.text('SABERIO AI  •  STUDY GUIDE', pageWidth - margin, 12, { align: 'right' });
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.15);
-      doc.line(margin, 14, pageWidth - margin, 14);
-    }
-
-    // Running footer on all pages
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(148, 163, 184);
-    doc.text('Saberio AI', margin, pageHeight - 10);
-    doc.text(
-      `Page ${i} of ${totalPages}`,
-      pageWidth - margin,
-      pageHeight - 10,
-      { align: 'right' }
-    );
-  }
+  // Multi-page running headers & academic footers with guaranteed non-overlapping layout
+  finalizePdfLayout(doc, {
+    subject: studySet.videoTitle || 'Lecture Study Set',
+    rightHeaderLabel: 'SABERIO AI  •  STUDY GUIDE',
+    margin,
+  });
 
   // Download PDF
   const safeFilename = (studySet.videoTitle || 'Lecture_Quiz')
