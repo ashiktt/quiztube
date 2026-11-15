@@ -348,18 +348,18 @@ async function runAllTests() {
   // Test 20: University Exam Mark Calibration targets
   runTest('20. University exam mark calibration targets match academic standards', () => {
     const calibration = {
-      2: { min: 40, max: 60 },
-      3: { min: 60, max: 90 },
-      5: { min: 130, max: 180 },
-      8: { min: 200, max: 280 },
-      10: { min: 280, max: 380 },
-      15: { min: 400, max: 550 },
+      2: { min: 45, max: 65 },
+      3: { min: 70, max: 105 },
+      5: { min: 160, max: 210 },
+      8: { min: 220, max: 300 },
+      10: { min: 340, max: 440 },
+      15: { min: 420, max: 580 },
     };
 
-    assert.strictEqual(calibration[2].min, 40);
-    assert.strictEqual(calibration[5].min, 130);
-    assert.strictEqual(calibration[10].min, 280);
-    assert.strictEqual(calibration[15].min, 400);
+    assert.strictEqual(calibration[2].min, 45);
+    assert.strictEqual(calibration[5].min, 160);
+    assert.strictEqual(calibration[10].min, 340);
+    assert.strictEqual(calibration[15].min, 420);
   });
 
   // Test 21: Official Saberio AI Logo Base64 asset integrity
