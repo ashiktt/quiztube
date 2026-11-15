@@ -18,6 +18,7 @@ export function cleanMarkdownText(text: string): string {
     .replace(/`([^`]+)`/g, '$1')     // remove inline code backticks
     .replace(/^>\s*/gm, '')          // remove blockquote markers
     .replace(/::+/g, ':')           // eliminate duplicate colons (e.g. "::")
+    .replace(/\.{4,}/g, '...')      // normalize runaway dots
     .trim();
 }
 
@@ -79,6 +80,39 @@ export function parseStyledSpans(lineText: string): StyledSpan[] {
 }
 
 /**
+ * Checks whether a line represents raw Mermaid diagram code or technical labels that must not be printed.
+ */
+function isMermaidOrTechnicalCode(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+
+  // Mermaid diagram declaration keywords
+  if (/^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitGraph)\b/i.test(trimmed)) {
+    return true;
+  }
+
+  // Raw diagram connector / node syntax
+  if (/^([A-Za-z0-9_]+\[.+\]|-->|==>|-\.->|subgraph\b|end$)/.test(trimmed)) {
+    return true;
+  }
+
+  // Labels that should never appear as standalone text
+  const lower = trimmed.toLowerCase();
+  if (
+    lower === 'flowchart td' ||
+    lower === 'flowchart lr' ||
+    lower === 'graph td' ||
+    lower === 'graph lr' ||
+    lower.startsWith('model solution (') ||
+    lower.startsWith('examiner criteria')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Parses markdown table structure: | Header 1 | Header 2 |
  */
 interface ParsedTable {
@@ -129,21 +163,11 @@ function parseMarkdownTable(lines: string[], startIndex: number): { table: Parse
 }
 
 /**
- * Draws a sharp vector circle bullet (100% vector safe, no unsupported Unicode glyphs)
+ * Draws a crisp vector circle bullet for list items
  */
 function drawVectorBullet(doc: jsPDF, x: number, y: number, color = [71, 85, 105]): void {
   doc.setFillColor(color[0], color[1], color[2]);
   doc.circle(x, y - 1.1, 0.7, 'F');
-}
-
-/**
- * Draws a sharp vector checkmark (100% vector safe, no WinAnsiEncoding corruption)
- */
-function drawVectorCheckmark(doc: jsPDF, x: number, y: number, color = [16, 185, 129]): void {
-  doc.setDrawColor(color[0], color[1], color[2]);
-  doc.setLineWidth(0.35);
-  doc.line(x, y - 0.7, x + 0.9, y + 0.6);
-  doc.line(x + 0.9, y + 0.6, x + 2.4, y - 1.6);
 }
 
 /**
@@ -169,10 +193,9 @@ function drawFormattedLineBlock(params: {
     fontSize,
     lineHeight,
     hangingIndentX = startX,
-    defaultColor = [51, 65, 85],
+    defaultColor = [30, 41, 59], // Slate 800 for high-contrast academic readability
   } = params;
 
-  // Flatten spans into individual styled words with spacing
   interface StyledWord {
     word: string;
     bold?: boolean;
@@ -183,7 +206,6 @@ function drawFormattedLineBlock(params: {
   const words: StyledWord[] = [];
 
   for (const span of spans) {
-    // Split by whitespace while preserving punctuation
     const tokens = span.text.split(/(\s+)/);
     for (const token of tokens) {
       if (!token) continue;
@@ -200,7 +222,6 @@ function drawFormattedLineBlock(params: {
     return { newY: initialY, linesDrawn: 0 };
   }
 
-  // Group words into lines that strictly never exceed availWidth
   interface LineToken {
     text: string;
     bold?: boolean;
@@ -226,7 +247,6 @@ function drawFormattedLineBlock(params: {
 
     const wordWidth = doc.getTextWidth(w.word);
 
-    // If word fits on current line, or line is empty, add it
     if (currentLineWidth + wordWidth <= availWidth || currentLine.length === 0) {
       currentLine.push({
         text: w.word,
@@ -236,9 +256,7 @@ function drawFormattedLineBlock(params: {
       });
       currentLineWidth += wordWidth;
     } else {
-      // Line is full; push and start next line
       wrappedLines.push(currentLine);
-      // If current word is pure whitespace, don't start the new line with whitespace
       if (/^\s+$/.test(w.word)) {
         currentLine = [];
         currentLineWidth = 0;
@@ -258,11 +276,10 @@ function drawFormattedLineBlock(params: {
     wrappedLines.push(currentLine);
   }
 
-  // Draw the wrapped lines
   let curY = initialY;
-  for (let lIdx = 0; lIdx < wrappedLines.length; lIdx++) {
-    const lineTokens = wrappedLines[lIdx];
-    let curX = lIdx === 0 ? startX : hangingIndentX;
+
+  wrappedLines.forEach((lineTokens, lineIdx) => {
+    let curX = lineIdx === 0 ? startX : hangingIndentX;
 
     for (const token of lineTokens) {
       if (token.code) {
@@ -270,10 +287,10 @@ function drawFormattedLineBlock(params: {
         doc.setTextColor(30, 41, 59);
       } else if (token.bold) {
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(15, 23, 42); // Navy 900
+        doc.setTextColor(15, 23, 42); // Slate 900 for bold emphasis
       } else if (token.italic) {
         doc.setFont('helvetica', 'italic');
-        doc.setTextColor(71, 85, 105);
+        doc.setTextColor(51, 65, 85);
       } else {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -285,22 +302,56 @@ function drawFormattedLineBlock(params: {
     }
 
     curY += lineHeight;
+  });
+
+  return { newY: curY - lineHeight, linesDrawn: wrappedLines.length };
+}
+
+/**
+ * Checks whether a line represents a formal academic section heading.
+ * Matches:
+ * - "### 1. Definition" or "## 1. Definition" or "# 1. Definition"
+ * - "1. Definition" or "2. Importance of ..."
+ * - "**1. Definition**"
+ */
+function isSectionHeading(line: string): { isHeading: boolean; headingText: string; level: number } {
+  const trimmed = line.trim();
+
+  // 1. Markdown heading hashes
+  const hashMatch = trimmed.match(/^(#{1,4})\s+(.*)/);
+  if (hashMatch) {
+    const rawHeading = hashMatch[2].trim();
+    // Ignore stray flowchart or technical headers
+    if (isMermaidOrTechnicalCode(rawHeading)) {
+      return { isHeading: false, headingText: '', level: 0 };
+    }
+    return { isHeading: true, headingText: cleanMarkdownText(rawHeading), level: hashMatch[1].length };
   }
 
-  return { newY: curY, linesDrawn: wrappedLines.length };
+  // 2. Bold section title e.g. "**1. Definition**" or "**1. Definition:**"
+  const boldMatch = trimmed.match(/^\*\*(\d+\.\s+[^:]+):?\*\*$/);
+  if (boldMatch) {
+    return { isHeading: true, headingText: boldMatch[1].trim(), level: 2 };
+  }
+
+  // 3. Numbered section title e.g. "1. Definition" or "2. Importance of Distributed Object Management"
+  // (Criteria: starts with digit followed by dot and space, shorter than 80 chars, no terminal period/semicolon)
+  const numSecMatch = trimmed.match(/^(\d+\.\s+[A-Za-z][^.\n]{2,75})$/);
+  if (numSecMatch && !trimmed.includes(':') && !trimmed.endsWith('.')) {
+    return { isHeading: true, headingText: numSecMatch[1].trim(), level: 2 };
+  }
+
+  return { isHeading: false, headingText: '', level: 0 };
 }
 
 /**
  * Generates and downloads a clean, professional, publication-ready academic model solution PDF booklet.
- *
- * Design Specifications:
- * - Clean white background (#ffffff) with dark navy (#0f172a) and slate typography (#334155).
- * - Subtle blue accent (#2563eb) for question markers and badges.
- * - Accurate word wrapping with zero text margin overflow.
- * - Zero stray ellipses, zero duplicated punctuation, zero raw markdown syntax.
- * - Pre-rendered high-DPI Mermaid diagrams centered on page without page-splitting.
- * - Vector bullets and checkmarks (100% PDF encoding safe).
- * - Running headers (Subject | SABERIO AI — MODEL SOLUTIONS) and footers (Saberio AI | Page X of Y).
+ * Follows official university examination answer standards:
+ * - Zero unnecessary headers ("MODEL SOLUTION (X MARKS)", "FLOWCHART TD", "EXAMINER CRITERIA")
+ * - Answers begin immediately under the Question Title
+ * - 6-section academic structure with bold terminology and numbered points
+ * - High-DPI Mermaid diagrams rendered with smart pagination and captions
+ * - Crisp typography, comfortable line spacing, and smart orphan prevention
  */
 export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promise<void> {
   const doc = new jsPDF({
@@ -368,10 +419,10 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
   // 1. PUBLICATION TITLE HEADER (First Page)
   // ==========================================
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(19);
-  doc.setTextColor(15, 23, 42); // Slate 900 / Dark Navy
+  doc.setFontSize(18);
+  doc.setTextColor(15, 23, 42); // Dark Navy / Slate 900
 
-  const subjectTitle = exam.subject || 'University Examination Solutions';
+  const subjectTitle = exam.subject || 'University Examination — Model Solutions';
   const titleLines = doc.splitTextToSize(cleanMarkdownText(subjectTitle), contentWidth);
   doc.text(titleLines, margin, yPos);
   yPos += titleLines.length * 7.5 + 2;
@@ -380,7 +431,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139); // Slate 500
-  const metaText = `Academic Level: ${exam.academicLevel || 'Undergraduate'}   |   Total Marks: ${exam.totalMarks || 0}M   |   Questions Solved: ${exam.solutions.length}`;
+  const metaText = `Academic Level: ${exam.academicLevel || 'Undergraduate'}   |   Total Marks: ${exam.totalMarks || 0} Marks   |   Questions Solved: ${exam.solutions.length}`;
   doc.text(metaText, margin, yPos);
   yPos += 5.5;
 
@@ -390,122 +441,108 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 7;
 
-  // Overview Summary Callout (if present)
-  if (exam.overallExamSummary && exam.overallExamSummary.trim().length > 0) {
-    const cleanSummary = cleanMarkdownText(exam.overallExamSummary);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    const summaryLines = doc.splitTextToSize(cleanSummary, contentWidth - 8);
-    const boxHeight = summaryLines.length * 4.3 + 8;
-
-    checkPageBreak(boxHeight + 4);
-
-    doc.setFillColor(248, 250, 252); // Slate 50
-    doc.setDrawColor(226, 232, 240); // Slate 200
-    doc.setLineWidth(0.3);
-    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.2, 1.2, 'FD');
-
-    // Subtle blue left accent
-    doc.setFillColor(37, 99, 235); // Blue 600
-    doc.rect(margin, yPos, 1.0, boxHeight, 'F');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(30, 64, 175); // Blue 800
-    doc.text('EXAMINATION OVERVIEW & SCOPE', margin + 4, yPos + 4.8);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(51, 65, 85);
-    doc.text(summaryLines, margin + 4, yPos + 9.2);
-
-    yPos += boxHeight + 6;
-  }
-
   // ==========================================
   // 2. QUESTION-BY-QUESTION SOLUTIONS
   // ==========================================
   exam.solutions.forEach((sol, idx) => {
-    // Smart lookahead: ensure question header + question text + section start fit without orphan split
+    // Smart lookahead: ensure question header + first section fit without orphan split
     checkPageBreak(38);
 
     const qNum = sol.questionNumber || `Q${idx + 1}`;
-    const marksText = `[${sol.marksAllocated} MARKS]`;
-
-    // Question Number & Marks Heading
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13.5);
-    doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text(qNum, margin, yPos);
-
-    const qNumWidth = doc.getTextWidth(qNum);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(37, 99, 235); // Blue 600
-    doc.text(marksText, margin + qNumWidth + 3, yPos - 0.5);
-
-    yPos += 6;
-
-    // Full Question Text in bold academic slate
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(30, 41, 59); // Slate 800
     const cleanQText = cleanMarkdownText(sol.questionText);
-    const qLines = doc.splitTextToSize(cleanQText, contentWidth);
-    doc.text(qLines, margin, yPos);
-    yPos += qLines.length * 5.0 + 3.5;
+    const marksSuffix = sol.marksAllocated ? ` (${sol.marksAllocated} Marks)` : '';
 
-    // Core Thesis Callout (only when present)
-    if (sol.answerSummary && sol.answerSummary.trim().length > 0) {
-      const cleanSummary = cleanMarkdownText(sol.answerSummary);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      const thesisLines = doc.splitTextToSize(cleanSummary, contentWidth - 8);
-      const thesisHeight = thesisLines.length * 4.2 + 7.5;
-
-      checkPageBreak(thesisHeight + 4);
-
-      doc.setFillColor(248, 250, 252); // Slate 50
-      doc.setDrawColor(226, 232, 240); // Slate 200
-      doc.setLineWidth(0.25);
-      doc.roundedRect(margin, yPos, contentWidth, thesisHeight, 1.0, 1.0, 'FD');
-
-      // Subtle blue vertical accent
-      doc.setFillColor(37, 99, 235); // Blue 600
-      doc.rect(margin, yPos, 0.9, thesisHeight, 'F');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(37, 99, 235);
-      doc.text('CORE THESIS:', margin + 4, yPos + 4.5);
-
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      doc.text(thesisLines, margin + 4, yPos + 8.8);
-
-      yPos += thesisHeight + 5;
-    }
-
-    // Model Answer Section Heading (Clean, no decorative underlines)
-    checkPageBreak(14);
+    // ==========================================
+    // QUESTION TITLE (Prominent, 15.5 pt Bold)
+    // Starts directly with the question title
+    // ==========================================
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text(`MODEL SOLUTION (${sol.marksAllocated} MARKS DEPTH)`, margin, yPos);
-    yPos += 5.5;
+    doc.setFontSize(15.5);
+    doc.setTextColor(15, 23, 42); // Dark Navy
+
+    const fullQuestionHeading = `${qNum}. ${cleanQText}${marksSuffix}`;
+    const qHeadingLines = doc.splitTextToSize(fullQuestionHeading, contentWidth);
+    doc.text(qHeadingLines, margin, yPos);
+    yPos += qHeadingLines.length * 6.2 + 4.5;
 
     // Structured Detailed Answer Rendering
     const rawLines = sol.detailedAnswer ? sol.detailedAnswer.split('\n') : [];
     let lineIdx = 0;
+    let diagramDrawn = false;
+    const renderedDiagram = diagramMap.get(idx);
+
+    // Helper to render diagram cleanly
+    const drawDiagramBlock = () => {
+      if (diagramDrawn || !renderedDiagram || !renderedDiagram.dataUrl) return;
+
+      const maxW = contentWidth - 4;
+      const maxH = 90; // Max 90mm height to prevent page crowding
+      let dWidth = Math.min(maxW, Math.max(70, 85 * renderedDiagram.aspectRatio));
+      let dHeight = dWidth / renderedDiagram.aspectRatio;
+
+      if (dHeight > maxH) {
+        dHeight = maxH;
+        dWidth = dHeight * renderedDiagram.aspectRatio;
+      }
+
+      const totalDiagramBlockHeight = dHeight + 14;
+
+      // Smart pagination: ensure diagram and caption are never split across pages
+      checkPageBreak(totalDiagramBlockHeight);
+
+      // Center diagram horizontally
+      const dX = margin + (contentWidth - dWidth) / 2;
+
+      // Solid white background with subtle border
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(226, 232, 240); // Slate 200
+      doc.setLineWidth(0.25);
+      doc.roundedRect(dX - 2, yPos, dWidth + 4, dHeight + 4, 1.0, 1.0, 'FD');
+
+      // Embed high-resolution diagram image
+      doc.addImage(renderedDiagram.dataUrl, 'PNG', dX, yPos + 2, dWidth, dHeight);
+      yPos += dHeight + 6;
+
+      // Clean, small, professional caption
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139); // Slate 500
+      const caption = `Figure: ${qNum} Architecture & Technical Workflow`;
+      doc.text(caption, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 6.5;
+
+      diagramDrawn = true;
+    };
 
     while (lineIdx < rawLines.length) {
       const line = rawLines[lineIdx].trim();
 
       if (!line) {
-        yPos += 2.2;
+        yPos += 2.0;
         lineIdx++;
         continue;
+      }
+
+      // Skip any stray Mermaid code or technical labels that might have appeared in detailedAnswer
+      if (isMermaidOrTechnicalCode(line)) {
+        lineIdx++;
+        continue;
+      }
+
+      // Check if we should insert the diagram before Advantages or Conclusion sections
+      const headingCheck = isSectionHeading(line);
+      if (headingCheck.isHeading && !diagramDrawn && renderedDiagram) {
+        const hLower = headingCheck.headingText.toLowerCase();
+        if (
+          hLower.includes('advantage') ||
+          hLower.includes('conclusion') ||
+          hLower.includes('trade-off') ||
+          hLower.includes('comparison') ||
+          hLower.startsWith('5.') ||
+          hLower.startsWith('6.')
+        ) {
+          drawDiagramBlock();
+        }
       }
 
       // 1. Markdown Separator (--- or *** or ___)
@@ -551,7 +588,6 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
 
           // Table Rows
           table.rows.forEach((row, rIdx) => {
-            // Measure row height based on longest cell text
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
 
@@ -589,40 +625,18 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         }
       }
 
-      // 3. Section Headings (H1, H2, H3, H4)
-      const headingMatch = line.match(/^(#{1,4})\s+(.*)/);
-      if (headingMatch) {
-        const level = headingMatch[1].length;
-        const cleanHeading = cleanMarkdownText(headingMatch[2]);
+      // 3. Section Headings (e.g. "1. Definition", "### 2. Importance of...", "3. Examples...")
+      if (headingCheck.isHeading) {
+        const cleanHeading = headingCheck.headingText;
 
         // Widow/orphan protection: ensure heading is kept with at least two following lines
-        checkPageBreak(16);
+        checkPageBreak(22);
 
-        if (level === 1) {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(13);
-          doc.setTextColor(15, 23, 42);
-          doc.text(cleanHeading, margin, yPos);
-          yPos += 6;
-        } else if (level === 2) {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(11.5);
-          doc.setTextColor(15, 23, 42);
-          doc.text(cleanHeading, margin, yPos);
-          yPos += 5.5;
-        } else if (level === 3) {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(10.5);
-          doc.setTextColor(30, 41, 59);
-          doc.text(cleanHeading, margin, yPos);
-          yPos += 5.0;
-        } else {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(9.5);
-          doc.setTextColor(51, 65, 85);
-          doc.text(cleanHeading, margin, yPos);
-          yPos += 4.5;
-        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12.5);
+        doc.setTextColor(15, 23, 42); // Dark Navy / Slate 900
+        doc.text(cleanHeading, margin, yPos);
+        yPos += 5.5;
 
         lineIdx++;
         continue;
@@ -640,8 +654,9 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           lineIdx++;
         }
 
+        // If fenced block is mermaid diagram, skip printing as raw code!
         const fullCodeText = codeLines.join('\n').trim();
-        if (fullCodeText) {
+        if (fullCodeText && !isMermaidOrTechnicalCode(fullCodeText)) {
           doc.setFont('courier', 'normal');
           doc.setFontSize(8.5);
           const splitCode = doc.splitTextToSize(fullCodeText, contentWidth - 8);
@@ -678,12 +693,12 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           startX: quoteX,
           yPos: yPos + 1.5,
           availWidth: availW,
-          fontSize: 9.5,
-          lineHeight: 4.8,
+          fontSize: 10.0,
+          lineHeight: 5.0,
           defaultColor: [71, 85, 105],
         });
 
-        const quoteHeight = linesDrawn * 4.8 + 2;
+        const quoteHeight = linesDrawn * 5.0 + 2;
         doc.setDrawColor(37, 99, 235); // Blue 600
         doc.setLineWidth(0.7);
         doc.line(margin + 1, yPos, margin + 1, yPos + quoteHeight);
@@ -697,19 +712,16 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
       if (line.startsWith('-') || line.startsWith('*') || line.startsWith('•')) {
         const rawBullet = line.replace(/^[-*•]\s*/, '').trim();
 
-        // Check for nested indentation (e.g. 2 spaces or 4 spaces)
         const isIndented = rawLines[lineIdx].startsWith('  ') || rawLines[lineIdx].startsWith('\t');
         const bulletIndent = isIndented ? 7.0 : 0;
         const bulletTextX = margin + 6.0 + bulletIndent;
         const availW = contentWidth - (6.0 + bulletIndent);
 
-        // Check if bullet starts with bold lead-in: - **Title:** Description
         const boldLeadInMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
 
         let spans: StyledSpan[] = [];
         if (boldLeadInMatch) {
           const rawTitle = boldLeadInMatch[1].trim();
-          // Normalize colon: exactly one colon at the end of the bold title
           const titleText = rawTitle.endsWith(':') ? rawTitle : `${rawTitle}:`;
           const rawRest = boldLeadInMatch[2].trim().replace(/^:+/, '').trim();
 
@@ -724,7 +736,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
 
         checkPageBreak(10);
 
-        // Draw crisp vector circle bullet
+        // Vector circle bullet
         drawVectorBullet(doc, margin + 2.0 + bulletIndent, yPos + 3.0, isIndented ? [100, 116, 139] : [71, 85, 105]);
 
         const { newY } = drawFormattedLineBlock({
@@ -733,13 +745,13 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           startX: bulletTextX,
           yPos: yPos + 3.0,
           availWidth: availW,
-          fontSize: 10.0,
-          lineHeight: 5.0,
+          fontSize: 10.5,
+          lineHeight: 5.2,
           hangingIndentX: bulletTextX,
-          defaultColor: [51, 65, 85],
+          defaultColor: [30, 41, 59],
         });
 
-        yPos = newY + 1.2;
+        yPos = newY + 1.8;
         lineIdx++;
         continue;
       }
@@ -753,7 +765,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         const numTextX = margin + 7.5;
         const availW = contentWidth - 7.5;
 
-        // Check if numbered item starts with bold lead-in: 1. **Title:** text
+        // Check for bold lead-in: 1. **Data Sharing:** Explanation
         const boldLeadInMatch = rawContent.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
 
         let spans: StyledSpan[] = [];
@@ -774,8 +786,8 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         checkPageBreak(10);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10.0);
-        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(10.5);
+        doc.setTextColor(15, 23, 42); // Dark Navy
         doc.text(numPrefix, margin + 0.5, yPos + 3.0);
 
         const { newY } = drawFormattedLineBlock({
@@ -784,13 +796,13 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           startX: numTextX,
           yPos: yPos + 3.0,
           availWidth: availW,
-          fontSize: 10.0,
-          lineHeight: 5.0,
+          fontSize: 10.5,
+          lineHeight: 5.2,
           hangingIndentX: numTextX,
-          defaultColor: [51, 65, 85],
+          defaultColor: [30, 41, 59],
         });
 
-        yPos = newY + 1.2;
+        yPos = newY + 2.0;
         lineIdx++;
         continue;
       }
@@ -805,61 +817,22 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         startX: margin,
         yPos: yPos + 3.0,
         availWidth: contentWidth,
-        fontSize: 10.0,
-        lineHeight: 5.0,
+        fontSize: 10.5,
+        lineHeight: 5.2,
         hangingIndentX: margin,
-        defaultColor: [51, 65, 85],
+        defaultColor: [30, 41, 59],
       });
 
-      yPos = newY + 2.0;
+      yPos = newY + 2.5;
       lineIdx++;
     }
 
-    // ==========================================
-    // 3. VISUAL ARCHITECTURE / FLOWCHART DIAGRAM
-    // ==========================================
-    const renderedDiagram = diagramMap.get(idx);
-    if (renderedDiagram && renderedDiagram.dataUrl) {
-      const maxW = contentWidth - 4;
-      const maxH = 95; // Max 95mm height to prevent page crowding
-      let dWidth = Math.min(maxW, Math.max(65, 80 * renderedDiagram.aspectRatio));
-      let dHeight = dWidth / renderedDiagram.aspectRatio;
-
-      if (dHeight > maxH) {
-        dHeight = maxH;
-        dWidth = dHeight * renderedDiagram.aspectRatio;
-      }
-
-      const totalDiagramBlockHeight = dHeight + 14;
-
-      // Smart pagination: ensure diagram and its caption are never split across pages
-      checkPageBreak(totalDiagramBlockHeight);
-
-      // Center diagram horizontally
-      const dX = margin + (contentWidth - dWidth) / 2;
-
-      // Subtle white canvas frame without heavy decorative borders
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(226, 232, 240); // Slate 200
-      doc.setLineWidth(0.25);
-      doc.roundedRect(dX - 2, yPos, dWidth + 4, dHeight + 4, 1.0, 1.0, 'FD');
-
-      // Embed high-resolution diagram image
-      doc.addImage(renderedDiagram.dataUrl, 'PNG', dX, yPos + 2, dWidth, dHeight);
-      yPos += dHeight + 7;
-
-      // Diagram figure caption (clean academic styling)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(100, 116, 139); // Slate 500
-      const caption = `Figure: ${qNum} System Architecture & Visual Flowchart`;
-      doc.text(caption, pageWidth / 2, yPos, { align: 'center' });
-      yPos += 6;
+    // If diagram was not drawn inline yet, draw it after detailed answer
+    if (!diagramDrawn && renderedDiagram) {
+      drawDiagramBlock();
     }
 
-    // ==========================================
-    // 4. FORMULAS OR CODE SNIPPET (if present)
-    // ==========================================
+    // Formulas or Code Snippet (if present in sol.formulasOrCode)
     if (sol.formulasOrCode && sol.formulasOrCode.trim().length > 0) {
       const cleanCode = sol.formulasOrCode.replace(/^```[a-zA-Z]*\n?|```$/g, '').trim();
       doc.setFont('courier', 'normal');
@@ -870,9 +843,9 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
       checkPageBreak(Math.min(boxHeight + 8, 70));
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(9.5);
       doc.setTextColor(30, 41, 59);
-      doc.text('CORE FORMULATION & SYNTAX IMPLEMENTATION', margin, yPos);
+      doc.text('Mathematical Formulation & Code Implementation', margin, yPos);
       yPos += 4;
 
       doc.setFillColor(248, 250, 252);
@@ -885,39 +858,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
       yPos += boxHeight + 5;
     }
 
-    // ==========================================
-    // 5. EXAMINER CRITERIA / CHECKLIST (Full Marks)
-    // ==========================================
-    if (sol.keyPoints && sol.keyPoints.length > 0) {
-      checkPageBreak(sol.keyPoints.length * 4.5 + 8);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(15, 23, 42); // Slate 900
-      doc.text('EXAMINER CRITERIA (CHECKLIST FOR FULL MARKS):', margin, yPos);
-      yPos += 4.5;
-
-      sol.keyPoints.forEach(kp => {
-        const cleanKp = cleanMarkdownText(kp);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        const kpLines = doc.splitTextToSize(cleanKp, contentWidth - 8);
-
-        checkPageBreak(kpLines.length * 4.3 + 2);
-
-        // Sharp vector checkmark
-        drawVectorCheckmark(doc, margin + 1.5, yPos + 2.2);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 65, 85);
-        doc.text(kpLines, margin + 6.5, yPos + 2.5);
-        yPos += kpLines.length * 4.3 + 1.8;
-      });
-
-      yPos += 2;
-    }
-
-    // Clean, subtle hairline divider between questions (except the last one)
+    // Subtle hairline divider between questions (except the last one)
     if (idx < exam.solutions.length - 1) {
       checkPageBreak(12);
       doc.setDrawColor(226, 232, 240); // Slate 200
@@ -928,7 +869,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
   });
 
   // ==========================================
-  // 6. ACADEMIC PAGE NUMBERING FOOTER
+  // 3. ACADEMIC PAGE NUMBERING FOOTER
   // ==========================================
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {

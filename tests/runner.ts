@@ -14,6 +14,7 @@ import { generateStudySetWithGemini } from '../src/lib/gemini';
 import { solveUniversityQuestionsWithGemini } from '../src/lib/geminiSolver';
 import { generateTutorResponse } from '../src/lib/geminiTutor';
 import { sanitizeMongoUri, getDatabaseErrorMessage, getMongoUri } from '../src/lib/mongodb';
+import { cleanMarkdownText, parseStyledSpans } from '../src/lib/examPdfExport';
 import { runSecurityTests } from './security.test';
 
 let testsPassed = 0;
@@ -318,6 +319,44 @@ async function runAllTests() {
     } finally {
       process.env.MONGODB_URI = origUri;
     }
+  });
+
+  // Test 18: cleanMarkdownText strips markdown syntax while preserving technical text
+  runTest('18. cleanMarkdownText removes hashes, bold asterisks, and normalizes colons', () => {
+    const raw = '### 1. **Definition:** Distributed Object Management (DOM) in DDBMS:: is a paradigm...';
+    const cleaned = cleanMarkdownText(raw);
+    assert.strictEqual(cleaned.includes('###'), false);
+    assert.strictEqual(cleaned.includes('**'), false);
+    assert.strictEqual(cleaned.includes('::'), false);
+    assert.ok(cleaned.includes('1. Definition: Distributed Object Management (DOM) in DDBMS: is a paradigm'));
+  });
+
+  // Test 19: parseStyledSpans parses inline bold, code, and regular text
+  runTest('19. parseStyledSpans separates styled bold tokens and code', () => {
+    const rawLine = '1. **Data Sharing:** Allows `objects` to be accessed transparently.';
+    const spans = parseStyledSpans(rawLine);
+    assert.ok(spans.length >= 3);
+    const boldSpan = spans.find(s => s.bold);
+    assert.ok(boldSpan && boldSpan.text.includes('Data Sharing'));
+    const codeSpan = spans.find(s => s.code);
+    assert.ok(codeSpan && codeSpan.text === 'objects');
+  });
+
+  // Test 20: University Exam Mark Calibration targets
+  runTest('20. University exam mark calibration targets match academic standards', () => {
+    const calibration = {
+      2: { min: 40, max: 60 },
+      3: { min: 60, max: 90 },
+      5: { min: 130, max: 180 },
+      8: { min: 200, max: 280 },
+      10: { min: 280, max: 380 },
+      15: { min: 400, max: 550 },
+    };
+
+    assert.strictEqual(calibration[2].min, 40);
+    assert.strictEqual(calibration[5].min, 130);
+    assert.strictEqual(calibration[10].min, 280);
+    assert.strictEqual(calibration[15].min, 400);
   });
 
   // Run Phase 13 Automated Security Regression Suite

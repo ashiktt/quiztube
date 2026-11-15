@@ -834,8 +834,8 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
 
                       {/* Detailed Mark-Scaled Model Answer */}
                       <div className="space-y-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                          Structured Model Solution ({sol.marksAllocated} Marks Depth)
+                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                          Model Solution
                         </span>
 
                         <div className="prose prose-sm dark:prose-invert max-w-none">
