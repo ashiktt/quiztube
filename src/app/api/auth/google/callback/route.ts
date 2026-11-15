@@ -68,6 +68,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${origin}/?auth_error=${errorMsg}`);
     }
 
+    // Ensure email is verified
+    if (profile.verified_email !== true && profile.email_verified !== true) {
+      const errorMsg = encodeURIComponent('Google account email is not verified');
+      return NextResponse.redirect(`${origin}/?auth_error=${errorMsg}`);
+    }
+
     // 3. Persist or update user in MongoDB
     try {
       await connectDB();
@@ -120,9 +126,8 @@ export async function GET(req: NextRequest) {
       isAdmin: studentUser.isAdmin,
     });
 
+    // Clean redirect to /auth/callback WITHOUT token in URL parameters (cookie handles session)
     const redirectUrl = new URL(`${origin}/auth/callback`);
-    redirectUrl.searchParams.set('token', token);
-
     const response = NextResponse.redirect(redirectUrl.toString());
 
     // Set secure HTTP-only cookie
@@ -131,7 +136,7 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 30 * 24 * 60 * 60,
+      maxAge: 7 * 24 * 60 * 60,
     });
 
     return response;

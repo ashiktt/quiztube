@@ -10,6 +10,10 @@ export interface IUser extends Document {
   provider: 'credentials' | 'google';
   resetPasswordOtp?: string;
   resetPasswordExpires?: Date;
+  resetPasswordAttempts?: number;
+  resetPasswordRequestedAt?: Date;
+  resetPasswordToken?: string;
+  resetPasswordTokenExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -52,6 +56,22 @@ const UserSchema = new Schema<IUser>(
       default: undefined,
     },
     resetPasswordExpires: {
+      type: Date,
+      default: undefined,
+    },
+    resetPasswordAttempts: {
+      type: Number,
+      default: 0,
+    },
+    resetPasswordRequestedAt: {
+      type: Date,
+      default: undefined,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: undefined,
+    },
+    resetPasswordTokenExpires: {
       type: Date,
       default: undefined,
     },

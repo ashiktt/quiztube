@@ -1,23 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, isValidId } from '@/lib/mongodb';
 import { StudySet } from '@/models/StudySet';
+import { getAuthenticatedUser } from '@/lib/serverSubscription';
 import { LectureStudySet } from '@/types';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  if (!id) {
-    return NextResponse.json({ error: 'Missing study set id' }, { status: 400 });
-  }
-
   try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Authentication required to view study set' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    if (!id || !isValidId(id)) {
+      return NextResponse.json({ error: 'Valid study set ID is required' }, { status: 400 });
+    }
+
     await connectDB();
     const data = await StudySet.findOne({ id }).lean();
 
     if (!data) {
       return NextResponse.json({ error: 'Study set not found' }, { status: 404 });
+    }
+
+    // Ownership or admin check
+    if (data.userId && data.userId !== authUser.id && !authUser.isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view this study set' },
+        { status: 403 }
+      );
     }
 
     const studySet: LectureStudySet = {
@@ -43,6 +60,6 @@ export async function GET(
     return NextResponse.json({ studySet });
   } catch (err: any) {
     console.error('API /api/study-sets/[id] error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to retrieve study set' }, { status: 500 });
   }
 }

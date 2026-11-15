@@ -14,6 +14,7 @@ import { generateStudySetWithGemini } from '../src/lib/gemini';
 import { solveUniversityQuestionsWithGemini } from '../src/lib/geminiSolver';
 import { generateTutorResponse } from '../src/lib/geminiTutor';
 import { sanitizeMongoUri, getDatabaseErrorMessage, getMongoUri } from '../src/lib/mongodb';
+import { runSecurityTests } from './security.test';
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -319,8 +320,13 @@ async function runAllTests() {
     }
   });
 
+  // Run Phase 13 Automated Security Regression Suite
+  const secResults = await runSecurityTests();
+  testsPassed += secResults.passed;
+  testsFailed += secResults.failed;
+
   console.log('\n--------------------------------------------------');
-  console.log(`Results: ${testsPassed} passed, ${testsFailed} failed.`);
+  console.log(`Overall Test Suite Results: ${testsPassed} passed, ${testsFailed} failed.`);
   console.log('--------------------------------------------------\n');
 
   if (testsFailed > 0) {

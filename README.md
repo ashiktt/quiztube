@@ -54,7 +54,8 @@ Built with ❤️ by [Ashikur](https://personal-portfolio-blue-eight-9p8guawbf5.
 
 ### 1. Clone or Open the Project
 ```bash
-cd C:\Users\akm00\.gemini\antigravity\scratch\youtube-lecture-quiz
+git clone https://github.com/ashiktt/quiztube.git
+cd quiztube
 ```
 
 ### 2. Install Dependencies

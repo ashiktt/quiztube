@@ -4,9 +4,17 @@ import { User } from '@/models/User';
 import { signToken } from '@/lib/jwt';
 import bcrypt from 'bcryptjs';
 import { isUserAdmin } from '@/config/admin';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    // Rate limit: 10 login attempts per 15 minutes per IP
+    const rateLimit = await enforceRateLimit(`login_ip:${ip}`, 10, 15 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfter);
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object') {
       return NextResponse.json(
@@ -38,6 +46,12 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Please enter a valid email address' },
         { status: 400 }
       );
+    }
+
+    // Also rate limit per email account (10 attempts / 15 minutes)
+    const emailRateLimit = await enforceRateLimit(`login_account:${normalizedEmail}`, 10, 15 * 60 * 1000);
+    if (!emailRateLimit.allowed) {
+      return rateLimitResponse(emailRateLimit.retryAfter);
     }
 
     try {
@@ -108,7 +122,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return response;

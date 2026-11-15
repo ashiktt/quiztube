@@ -20,7 +20,6 @@ import {
 import { StudentUser } from '@/types';
 import { YoutubeIcon } from '@/components/Icons';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
-import { isUserAdmin } from '@/config/admin';
 
 interface NavbarProps {
   onOpenApiKeyModal: () => void;
@@ -118,7 +117,7 @@ export function Navbar({
     : 'U';
 
   const displayName = currentUser?.fullName || currentUser?.email?.split('@')[0] || 'Account';
-  const isAdmin = Boolean(currentUser?.isAdmin || isUserAdmin(currentUser?.email));
+  const isAdmin = Boolean(currentUser?.isAdmin);
 
   return (
     <>

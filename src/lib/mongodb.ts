@@ -10,6 +10,28 @@ export function sanitizeMongoUri(rawUri?: string): string {
 }
 
 /**
+ * Checks and sanitizes user input to prevent NoSQL query operator injection.
+ * Disallows objects containing MongoDB operators ($gt, $ne, $where, etc.).
+ * Returns a clean string or throws/returns null.
+ */
+export function sanitizeQueryInput(input: unknown): string {
+  if (typeof input !== 'string') {
+    return '';
+  }
+  // Trim and strip null bytes
+  return input.replace(/\0/g, '').trim();
+}
+
+/**
+ * Validates whether an identifier matches safe alphanumeric/hyphen/underscore formatting.
+ * Rejects MongoDB query objects and operator payloads.
+ */
+export function isValidId(id: unknown): boolean {
+  if (typeof id !== 'string') return false;
+  return /^[a-zA-Z0-9_\-\.]{1,128}$/.test(id);
+}
+
+/**
  * Returns the configured MongoDB URI.
  * Throws a clean, descriptive error if MONGODB_URI is not set.
  * Does NOT fallback to an unintended local database (e.g., localhost:27017).

@@ -4,9 +4,17 @@ import { User } from '@/models/User';
 import { signToken } from '@/lib/jwt';
 import bcrypt from 'bcryptjs';
 import { isUserAdmin } from '@/config/admin';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    // Rate limit: 5 account creations per hour per IP
+    const rateLimit = await enforceRateLimit(`register_ip:${ip}`, 5, 60 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfter);
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object') {
       return NextResponse.json(
@@ -31,9 +39,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { success: false, error: 'Password must be at least 6 characters long' },
+        { success: false, error: 'Password must be at least 8 characters long for security' },
         { status: 400 }
       );
     }
@@ -66,7 +74,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Work factor 12 for strong password hashing
+    const hashedPassword = await bcrypt.hash(password, 12);
     const sanitizedName =
       typeof fullName === 'string' && fullName.trim().length > 0
         ? fullName.trim().slice(0, 80)
@@ -103,13 +112,13 @@ export async function POST(req: NextRequest) {
       message: 'Account created successfully',
     });
 
-    // Set secure HTTP-only cookie
+    // Set secure HTTP-only cookie with 7 days validity
     response.cookies.set('saberio_auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return response;

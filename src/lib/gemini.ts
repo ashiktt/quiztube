@@ -192,41 +192,41 @@ const FALLBACK_MODELS = [
 ];
 
 /**
- * Extracts a clean user-friendly error message from Gemini API errors
+ * Validates the cryptographic format of a Google Gemini API Key
+ */
+export function isValidGeminiApiKey(key: unknown): boolean {
+  if (typeof key !== 'string') return false;
+  return /^AIzaSy[A-Za-z0-9_-]{33}$/.test(key.trim());
+}
+
+/**
+ * Extracts a clean user-friendly error message from Gemini API errors,
+ * strictly sanitizing server endpoints, project IDs, and sensitive tokens.
  */
 export function formatGeminiErrorMessage(error: any): string {
-  if (!error) return 'An unexpected error occurred.';
-  const msg = typeof error === 'string' ? error : error.message || JSON.stringify(error);
+  if (!error) return 'An unexpected error occurred while communicating with the AI service.';
+  const msg = typeof error === 'string' ? error : error?.message || '';
 
-  try {
-    const parsed = JSON.parse(msg);
-    if (parsed.error?.message) {
-      if (parsed.error.code === 503 || parsed.error.status === 'UNAVAILABLE') {
-        return 'Google Gemini servers are currently experiencing temporary high demand. Please try again in a few moments.';
-      }
-      if (parsed.error.code === 429 || parsed.error.status === 'RESOURCE_EXHAUSTED') {
-        return 'Rate limit exceeded on Gemini API. Please wait a moment or verify your quota in Google AI Studio.';
-      }
-      return parsed.error.message;
-    }
-  } catch {
-    // Not JSON string
-  }
-
-  if (msg.includes('no longer available') || msg.includes('deprecated')) {
-    return 'The requested AI model version is no longer active. Automatically switching to the newest Gemini 3 models.';
-  }
   if (msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE')) {
     return 'Google Gemini servers are currently experiencing temporary high demand. Please try again in a few moments.';
   }
   if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-    return 'Gemini API rate limit reached. Please wait a moment before trying again.';
+    return 'Gemini API rate limit reached. Please wait a moment or verify your quota in Google AI Studio.';
   }
-  if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
-    return 'The provided Gemini API key is invalid. Please check your key in the app settings.';
+  if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid') || msg.includes('PERMISSION_DENIED')) {
+    return 'The provided Gemini API key is invalid or unauthorized. Please verify your API key in settings.';
+  }
+  if (msg.includes('no longer available') || msg.includes('deprecated')) {
+    return 'The requested AI model version is no longer active. Automatically switching to current Gemini models.';
   }
 
-  return msg;
+  // Sanitize internal details: mask keys and strip external URLs
+  const sanitized = msg
+    .replace(/AIzaSy[A-Za-z0-9_-]{33}/g, 'AIzaSy***')
+    .replace(/https?:\/\/[^\s]+/g, '[service endpoint]')
+    .slice(0, 250);
+
+  return sanitized || 'An error occurred while generating the AI response.';
 }
 
 /**

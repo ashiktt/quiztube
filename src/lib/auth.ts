@@ -1,5 +1,4 @@
 import { StudentUser } from '@/types';
-import { isUserAdmin } from '@/config/admin';
 
 const TOKEN_KEY = 'saberio_auth_token';
 const USER_KEY = 'saberio_auth_user';
@@ -73,7 +72,7 @@ export async function signInStudent(
       email: data.user.email,
       fullName: data.user.fullName,
       avatarUrl: data.user.avatarUrl || '',
-      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+      isAdmin: Boolean(data.user.isAdmin),
     };
 
     saveSession(data.token, student);
@@ -118,7 +117,7 @@ export async function signUpStudent(
       email: data.user.email,
       fullName: data.user.fullName,
       avatarUrl: data.user.avatarUrl || '',
-      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+      isAdmin: Boolean(data.user.isAdmin),
     };
 
     saveSession(data.token, student);
@@ -169,7 +168,7 @@ export async function signInWithGoogle(googleProfile?: {
       email: data.user.email,
       fullName: data.user.fullName,
       avatarUrl: data.user.avatarUrl || '',
-      isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+      isAdmin: Boolean(data.user.isAdmin),
     };
 
     saveSession(data.token, student);
@@ -363,9 +362,6 @@ export async function getCurrentStudent(): Promise<StudentUser | null> {
   if (cached) {
     try {
       cachedUser = JSON.parse(cached);
-      if (cachedUser) {
-        cachedUser.isAdmin = isUserAdmin(cachedUser.email);
-      }
     } catch {
       // Ignore parse failure
     }
@@ -393,7 +389,7 @@ export async function getCurrentStudent(): Promise<StudentUser | null> {
             email: data.user.email,
             fullName: data.user.fullName,
             avatarUrl: data.user.avatarUrl || '',
-            isAdmin: data.user.isAdmin || isUserAdmin(data.user.email),
+            isAdmin: Boolean(data.user.isAdmin),
           };
           localStorage.setItem(USER_KEY, JSON.stringify(freshUser));
         }

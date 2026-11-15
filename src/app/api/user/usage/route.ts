@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserUsageSummary, getAuthenticatedUser } from '@/lib/serverSubscription';
+import { isValidId, sanitizeQueryInput } from '@/lib/mongodb';
 
 export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthenticatedUser(req);
     const { searchParams } = new URL(req.url);
-    const userId = authUser?.id || searchParams.get('userId') || undefined;
-    const userEmail = authUser?.email || searchParams.get('email') || searchParams.get('userEmail') || undefined;
 
-    const summary = await getUserUsageSummary(userId, userEmail);
+    let effectiveUserId: string | undefined = authUser?.id;
+    let effectiveEmail: string | undefined = authUser?.email;
+
+    // Only verified administrators may inspect other users' usage summaries
+    if (authUser?.isAdmin) {
+      const queryUserId = searchParams.get('userId');
+      const queryEmail = searchParams.get('email') || searchParams.get('userEmail');
+      if (queryUserId && isValidId(queryUserId)) {
+        effectiveUserId = queryUserId;
+        effectiveEmail = undefined;
+      } else if (queryEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(queryEmail)) {
+        effectiveEmail = sanitizeQueryInput(queryEmail);
+        effectiveUserId = undefined;
+      }
+    }
+
+    const summary = await getUserUsageSummary(effectiveUserId, effectiveEmail);
     return NextResponse.json({
       success: true,
       quizAiUsed: summary.quizAiUsed,

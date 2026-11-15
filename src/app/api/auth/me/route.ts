@@ -60,13 +60,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (newPassword) {
-      if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      if (typeof newPassword !== 'string' || newPassword.length < 8) {
         return NextResponse.json(
-          { error: 'Password must be at least 6 characters long' },
+          { error: 'Password must be at least 8 characters long for security' },
           { status: 400 }
         );
       }
-      user.password = await bcrypt.hash(newPassword, 10);
+      user.password = await bcrypt.hash(newPassword, 12);
     }
 
     if (fullName && typeof fullName === 'string' && fullName.trim()) {

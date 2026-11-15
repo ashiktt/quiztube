@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { StudentUser, UserUsageSummary } from '@/types';
 import { APK_CONFIG } from '@/config/apk';
 import { LegalModalType } from './LegalModals';
-import { isUserAdmin } from '@/config/admin';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import {
   getConnectedProviders,
@@ -43,7 +42,7 @@ export function AccountSubscriptionView({
   onLogout,
   onClose,
 }: AccountSubscriptionViewProps) {
-  const isAdmin = user?.isAdmin || usageSummary?.isAdmin || isUserAdmin(user?.email);
+  const isAdmin = Boolean(user?.isAdmin || usageSummary?.isAdmin);
 
   const [connectedProviders, setConnectedProviders] = useState<string[]>(['email']);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
