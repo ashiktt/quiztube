@@ -465,12 +465,12 @@ export default function Home() {
         ) : !studySet ? (
           /* Landing / Input Screen */
           <div className="space-y-8 animate-hero-fade">
-            {/* Top Feature Switcher Banners Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {/* Top Feature Switcher Banners Grid: Stacked on Mobile, 2-Column on Tablet/Desktop with Full-Width Copilot */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {/* 1. University Solver Banner Card: Purple & Electric Blue Theme */}
               <div
                 onClick={() => setAppMode('examSolver')}
-                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-indigo-500/30 hover:border-indigo-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(99,102,241,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-indigo-500/30 hover:border-indigo-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(99,102,241,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden min-h-[160px]"
               >
                 {/* Subtle internal gradient lighting */}
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-purple-600/5 to-transparent pointer-events-none" />
@@ -497,7 +497,7 @@ export default function Home() {
                     e.stopPropagation();
                     setAppMode('examSolver');
                   }}
-                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
+                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Launch Question Solver</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
@@ -511,7 +511,7 @@ export default function Home() {
                   setActiveTutorConversation(null);
                   setAppMode('tutor');
                 }}
-                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-pink-500/30 hover:border-pink-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(236,72,153,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-pink-500/30 hover:border-pink-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(236,72,153,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden min-h-[160px]"
               >
                 {/* Subtle internal gradient lighting */}
                 <div className="absolute inset-0 bg-gradient-to-br from-pink-600/10 via-fuchsia-600/5 to-transparent pointer-events-none" />
@@ -545,51 +545,53 @@ export default function Home() {
                     setActiveTutorConversation(null);
                     setAppMode('tutor');
                   }}
-                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
+                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-600/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Chat with AI Tutor</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
                 </button>
               </div>
 
-              {/* 3. Student Copilot Banner Card: Teal & Cyan Theme */}
+              {/* 3. Student Copilot Banner Card: Distinctive Teal & Cyan Theme (Full width on md+) */}
               <div
                 onClick={() => setAppMode('copilot')}
-                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-teal-500/30 hover:border-cyan-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(20,184,166,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden sm:col-span-2 lg:col-span-1"
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-teal-500/30 hover:border-cyan-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(20,184,166,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden col-span-1 md:col-span-2"
               >
                 {/* Subtle internal gradient lighting */}
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 via-cyan-600/5 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-600/10 via-emerald-600/5 to-cyan-600/10 pointer-events-none" />
 
-                <div className="flex items-start gap-3.5 text-left relative z-10">
-                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-[0_0_20px_rgba(20,184,166,0.45)] group-hover:scale-105 transition-transform duration-300 shrink-0">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                        Student Copilot
-                      </h4>
-                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full shadow-xs">
-                        AUTOMATION
-                      </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                  <div className="flex items-start gap-3.5 text-left min-w-0">
+                    <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-[0_0_20px_rgba(20,184,166,0.45)] group-hover:scale-105 transition-transform duration-300 shrink-0">
+                      <Bot className="w-5 h-5" />
                     </div>
-                    <p className="text-[11px] sm:text-xs text-teal-200/80 mt-1 leading-relaxed">
-                      Transform college notices, exam schedules, and PDFs into verified events, study checkpoints, and n8n reminders.
-                    </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                          Student Copilot
+                        </h4>
+                        <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full shadow-xs">
+                          AUTOMATION
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-teal-200/80 mt-1 leading-relaxed max-w-2xl">
+                        Transform college notices, exam schedules, and PDFs into verified events, study checkpoints, and n8n reminders.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setAppMode('copilot');
-                  }}
-                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
-                >
-                  <span>Launch Student Copilot</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setAppMode('copilot');
+                    }}
+                    className="relative z-10 w-full sm:w-auto sm:min-w-[200px] min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn shrink-0"
+                  >
+                    <span>Launch Student Copilot</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                  </button>
+                </div>
               </div>
             </div>
 

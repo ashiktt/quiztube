@@ -129,7 +129,7 @@ export function Navbar({
           {/* ========================================================= */}
           <button
             onClick={() => handleNavClick('youtube')}
-            className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none shrink min-w-0"
+            className="flex items-center gap-2 sm:gap-3 group text-left focus:outline-none shrink min-w-0"
           >
             <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-[0_0_18px_rgba(139,92,246,0.35)] ring-1 ring-purple-500/40 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-purple-500/30 bg-purple-950/40">
               <img
@@ -139,8 +139,8 @@ export function Navbar({
               />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 font-extrabold text-base sm:text-xl text-white tracking-tight truncate drop-shadow-[0_2px_8px_rgba(139,92,246,0.3)]">
-                <span>Saberio AI</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 font-extrabold text-sm xs:text-base sm:text-xl text-white tracking-tight truncate drop-shadow-[0_2px_8px_rgba(139,92,246,0.3)]">
+                <span className="truncate">Saberio AI</span>
                 {SUBSCRIPTION_ENABLED && isPro && (
                   <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm shrink-0">
                     <Crown className="w-2.5 h-2.5 fill-current" />
@@ -279,7 +279,7 @@ export function Navbar({
 
                 {/* Dropdown Box */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-[#0c102b]/95 backdrop-blur-2xl border border-indigo-500/30 rounded-2xl shadow-2xl shadow-black/60 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] bg-[#0c102b]/95 backdrop-blur-2xl border border-indigo-500/30 rounded-2xl shadow-2xl shadow-black/60 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
                     <div className="px-3.5 py-2.5 border-b border-indigo-500/20">
                       <p className="font-bold text-white truncate">
                         {currentUser.fullName || 'Student Account'}
@@ -356,7 +356,7 @@ export function Navbar({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.08] focus:outline-none transition"
+              className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.08] focus:outline-none transition active:scale-95"
               aria-label="Open Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

@@ -130,16 +130,16 @@ export function LectureInput({
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-        <div className="text-center space-y-4 animate-hero-fade">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-10 border border-emerald-500/20 bg-[#080D0B]/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="text-center space-y-3 sm:space-y-4 animate-hero-fade">
           {/* Glow Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 bg-emerald-950/50 backdrop-blur-md border border-emerald-500/40 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:border-emerald-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.5)] transition-all duration-300 group cursor-default">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform" />
-            <span>AI-Powered Active Recall for Students</span>
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-emerald-200 bg-emerald-950/50 backdrop-blur-md border border-emerald-500/40 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:border-emerald-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.5)] transition-all duration-300 group cursor-default max-w-full truncate">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform shrink-0" />
+            <span className="truncate">AI-Powered Active Recall for Students</span>
           </div>
 
-          {/* Hero Headline with Midnight Aurora Typography */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+          {/* Hero Headline with Fluid clamp() Typography */}
+          <h1 className="text-[clamp(1.65rem,5.5vw,3rem)] font-extrabold tracking-tight text-white leading-[1.18] px-1">
             Convert YouTube Lectures into{' '}
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(16,185,129,0.35)]">
               Smart
@@ -173,7 +173,7 @@ export function LectureInput({
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed px-1">
             Paste any educational video or lecture notes to instantly generate interactive multiple-choice questions, visual cheatsheets, timestamped video links, and summary sheets.
           </p>
 

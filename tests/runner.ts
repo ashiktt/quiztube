@@ -461,6 +461,21 @@ async function runAllTests() {
     assert.ok(cleaned.includes('Sigma = {0, 1}'));
   });
 
+  // Test 25: Mobile responsive contracts and safe area classes
+  runTest('25. Mobile responsive navigation and safe-area utilities are properly configured', async () => {
+    const fs = await import('fs');
+    const globalsCss = fs.readFileSync('src/app/globals.css', 'utf-8');
+    assert.ok(globalsCss.includes('.pb-safe'), 'globals.css must contain .pb-safe');
+    assert.ok(globalsCss.includes('overflow-x: hidden'), 'globals.css must contain overflow-x: hidden for smooth mobile scroll');
+
+    const layoutTsx = fs.readFileSync('src/app/layout.tsx', 'utf-8');
+    assert.ok(layoutTsx.includes('viewportFit: \'cover\''), 'layout.tsx must configure viewportFit cover');
+    assert.ok(!layoutTsx.includes('userScalable: false'), 'layout.tsx must not restrict mobile user scalability');
+
+    const mobileNavExists = fs.existsSync('src/components/MobileBottomNav.tsx');
+    assert.strictEqual(mobileNavExists, true, 'MobileBottomNav component must exist');
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

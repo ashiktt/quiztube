@@ -851,7 +851,7 @@ export function AITutorView({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 sm:p-3 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition shrink-0 border border-slate-200 dark:border-slate-700"
+              className="p-2.5 sm:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95"
               title="Upload photo / diagram / code screenshot"
             >
               <ImageIcon className="w-5 h-5" />
@@ -861,7 +861,7 @@ export function AITutorView({
             <button
               type="button"
               onClick={toggleRecording}
-              className={`p-2.5 sm:p-3 rounded-2xl transition shrink-0 border ${
+              className={`p-2.5 sm:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl transition shrink-0 border active:scale-95 ${
                 isRecording
                   ? 'bg-red-500 text-white border-red-600 animate-pulse'
                   : 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -872,7 +872,7 @@ export function AITutorView({
             </button>
 
             {/* Textarea Input */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-w-0">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -887,9 +887,9 @@ export function AITutorView({
                 placeholder={
                   context?.type
                     ? `Ask about this ${context.type.replace('_', ' ')}...`
-                    : 'Type your study question, paste code, or ask for guidance (Shift+Enter for newline)...'
+                    : 'Type question, paste code, or ask for guidance...'
                 }
-                className="w-full py-2.5 sm:py-3 px-3.5 sm:px-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-40"
+                className="w-full py-2.5 sm:py-3 px-3.5 sm:px-4 min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-40"
               />
             </div>
 
@@ -898,7 +898,7 @@ export function AITutorView({
               type="button"
               onClick={() => handleSendMessage()}
               disabled={isLoading || (!inputText.trim() && !attachedImage)}
-              className="p-2.5 sm:p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl shadow-md transition shrink-0 active:scale-95"
+              className="p-2.5 sm:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl shadow-md transition shrink-0 active:scale-95"
               title="Send to AI Tutor"
             >
               <Send className="w-5 h-5" />
