@@ -26,11 +26,14 @@ export interface RunningHeaderOptions {
  */
 export function resetPdfTypographyState(doc: jsPDF): void {
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setTextColor(30, 41, 59); // Slate 800
   doc.setDrawColor(226, 232, 240); // Slate 200
   doc.setFillColor(255, 255, 255);
   doc.setLineWidth(0.2);
+  if (typeof (doc as any).setCharSpace === 'function') {
+    (doc as any).setCharSpace(0);
+  }
 }
 
 /**

@@ -14,7 +14,7 @@ import { generateStudySetWithGemini } from '../src/lib/gemini';
 import { solveUniversityQuestionsWithGemini } from '../src/lib/geminiSolver';
 import { generateTutorResponse } from '../src/lib/geminiTutor';
 import { sanitizeMongoUri, getDatabaseErrorMessage, getMongoUri } from '../src/lib/mongodb';
-import { cleanMarkdownText, parseStyledSpans } from '../src/lib/examPdfExport';
+import { cleanMarkdownText, parseStyledSpans, exportUniversityExamPdf } from '../src/lib/examPdfExport';
 import { SABERIO_LOGO_BASE64 } from '../src/lib/logoBase64';
 import { drawPdfFirstPageHeader, drawPdfRunningHeader, finalizePdfLayout } from '../src/lib/pdfBranding';
 import { jsPDF } from 'jspdf';
@@ -398,6 +398,54 @@ async function runAllTests() {
 
     assert.strictEqual(doc.getNumberOfPages(), 2);
   });
+
+  // Test 23: Complete University Exam PDF with multi-line lists exports without overlapping lines
+  await (async () => {
+    try {
+      const mockExam = {
+        subject: 'Distributed Database Systems (BTCS706)',
+        academicLevel: 'B.Tech CSE - 7th Semester',
+        totalMarks: 10,
+        solutions: [
+          {
+            questionNumber: 'Q9',
+            questionText: 'Draw and explain the architecture of Distributed Databases.',
+            marksAllocated: 10,
+            detailedAnswer: [
+              '### 1. Definition',
+              'Distributed database architecture defines the structural organization of software components across a computer network.',
+              '### 2. Core Working Principles / Architecture Layers',
+              '1. Global Conceptual Schema: Provides an integrated, unified view of the entire global database, hiding all distribution details from users.',
+              '2. Fragmentation Schema: Defines how global relations are divided into horizontal, vertical, or hybrid fragments distributed across network sites.',
+              '3. Allocation Schema: Specifies physical storage sites for each data fragment and manages replica placement.',
+              '4. Local Internal Schema: Governs physical data storage, indexing, and access methods at each individual participating site.',
+              '### 5. Key Advantages & Trade-offs',
+              '1. Transparency: Users interact with the system as if it were a single centralized database.',
+              '2. Modular Scalability: New sites and storage nodes can be added easily without altering the global schema.',
+              '3. Design Complexity: Managing distributed catalogs, schema mapping, and network communication overhead introduces significant architectural complexity.',
+            ].join('\n'),
+          },
+        ],
+      };
+
+      await exportUniversityExamPdf(mockExam as any);
+      console.log('  ✓ PASS: 23. Full university exam PDF with multi-line lists renders without overlap');
+      testsPassed++;
+
+      // Clean up any generated test file
+      const fs = await import('fs');
+      const files = fs.readdirSync('.');
+      for (const f of files) {
+        if (f.startsWith('Saberio_AI_Distributed_Database') && f.endsWith('.pdf')) {
+          fs.unlinkSync(f);
+        }
+      }
+    } catch (err: unknown) {
+      console.error('  ✗ FAIL: 23. Full university exam PDF with multi-line lists renders without overlap');
+      if (err instanceof Error) console.error(`    ${err.message}`);
+      testsFailed++;
+    }
+  })();
 
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();

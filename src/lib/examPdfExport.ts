@@ -188,9 +188,10 @@ function renderAcademicListItem(params: {
   startX: number;
   yPos: number;
   contentWidth: number;
-  fontSize: number;
-  lineHeight: number;
-  hangingIndentX: number;
+  fontSize?: number;
+  lineHeight?: number;
+  hangingIndentX?: number;
+  itemSpacing?: number;
   isBullet?: boolean;
 }): { newY: number; linesCount: number } {
   const {
@@ -201,13 +202,15 @@ function renderAcademicListItem(params: {
     startX,
     yPos: initialY,
     contentWidth,
-    fontSize,
-    lineHeight,
-    hangingIndentX,
+    fontSize = 10.5,
+    lineHeight = 5.4,
+    hangingIndentX = startX + 7.5,
+    itemSpacing = 2.8,
     isBullet = false,
   } = params;
 
   let curY = initialY;
+  let linesDrawn = 1;
 
   // 1. Draw bullet symbol or numbered prefix
   if (isBullet) {
@@ -232,7 +235,7 @@ function renderAcademicListItem(params: {
     doc.setFont('helvetica', 'normal');
     const firstLineAvailWidth = availWidth - titleWidth;
 
-    if (firstLineAvailWidth > 20 && bodyText.trim().length > 0) {
+    if (firstLineAvailWidth > 25 && bodyText.trim().length > 0) {
       // Split body text into words to fit first line
       const words = bodyText.trim().split(/\s+/);
       let line1Words: string[] = [];
@@ -252,12 +255,14 @@ function renderAcademicListItem(params: {
 
       // Render bold title
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(fontSize);
       doc.setTextColor(15, 23, 42);
       doc.text(boldTitle, prefixTextX, curY);
 
       // Render first line body text as a SINGLE continuous string
       if (line1Words.length > 0) {
         doc.setFont('helvetica', 'normal');
+        doc.setFontSize(fontSize);
         doc.setTextColor(30, 41, 59); // Slate 800
         doc.text(line1Words.join(' '), prefixTextX + titleWidth, curY);
       }
@@ -269,21 +274,25 @@ function renderAcademicListItem(params: {
         for (let j = 0; j < wrappedLines.length; j++) {
           curY += lineHeight;
           doc.text(wrappedLines[j], prefixTextX, curY);
+          linesDrawn++;
         }
       }
     } else {
       // Bold title occupies entire first line
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(fontSize);
       doc.setTextColor(15, 23, 42);
       doc.text(boldTitle, prefixTextX, curY);
 
       if (bodyText.trim().length > 0) {
         doc.setFont('helvetica', 'normal');
+        doc.setFontSize(fontSize);
         doc.setTextColor(30, 41, 59);
         const wrappedLines = doc.splitTextToSize(bodyText.trim(), availWidth);
         for (let j = 0; j < wrappedLines.length; j++) {
           curY += lineHeight;
           doc.text(wrappedLines[j], prefixTextX, curY);
+          linesDrawn++;
         }
       }
     }
@@ -294,13 +303,18 @@ function renderAcademicListItem(params: {
     doc.setTextColor(30, 41, 59);
     const wrappedLines = doc.splitTextToSize(bodyText.trim(), availWidth);
     wrappedLines.forEach((wLine: string, idx: number) => {
-      doc.text(wLine, prefixTextX, curY + idx * lineHeight);
+      doc.text(wLine, prefixTextX, initialY + idx * lineHeight);
     });
-    curY += (wrappedLines.length - 1) * lineHeight;
+    linesDrawn = Math.max(1, wrappedLines.length);
+    curY = initialY + (linesDrawn - 1) * lineHeight;
   }
 
+  // nextY is the starting baseline for the NEXT item or element:
+  // last line baseline + lineHeight + itemSpacing
+  const nextY = curY + lineHeight + itemSpacing;
+
   resetPdfTypographyState(doc);
-  return { newY: curY, linesCount: Math.round((curY - initialY) / lineHeight) + 1 };
+  return { newY: nextY, linesCount: linesDrawn };
 }
 
 /**
@@ -313,8 +327,9 @@ function renderParagraph(
   startX: number,
   yPos: number,
   availWidth: number,
-  fontSize = 11,
-  lineHeight = 5.2
+  fontSize = 10.5,
+  lineHeight = 5.4,
+  paragraphSpacing = 3.2
 ): { newY: number; linesCount: number } {
   const clean = cleanMarkdownText(text);
   if (!clean) return { newY: yPos, linesCount: 0 };
@@ -326,9 +341,11 @@ function renderParagraph(
   const lines = doc.splitTextToSize(clean, availWidth);
   doc.text(lines, startX, yPos);
 
-  const newY = yPos + (lines.length - 1) * lineHeight;
+  const lastBaseline = yPos + (lines.length - 1) * lineHeight;
+  const nextY = lastBaseline + lineHeight + paragraphSpacing;
+
   resetPdfTypographyState(doc);
-  return { newY, linesCount: lines.length };
+  return { newY: nextY, linesCount: lines.length };
 }
 
 /**
@@ -618,13 +635,13 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         const cleanHeading = headingCheck.headingText;
 
         // Widow/orphan protection: ensure heading is kept with following content
-        checkPageBreak(22);
+        checkPageBreak(25);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
+        doc.setFontSize(12.5);
         doc.setTextColor(15, 23, 42); // Dark Navy / Slate 900
         doc.text(cleanHeading, margin, yPos);
-        yPos += 6.0;
+        yPos += 7.0;
 
         resetPdfTypographyState(doc);
         lineIdx++;
@@ -694,8 +711,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
       if (line.startsWith('-') || line.startsWith('*') || line.startsWith('•')) {
         const rawBullet = line.replace(/^[-*•]\s*/, '').trim();
         const boldMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
-
-        checkPageBreak(10);
+        const colonMatch = !boldMatch ? rawBullet.match(/^([A-Za-z0-9\s/&-]{3,45}):\s+(.*)/) : null;
 
         let boldTitle = '';
         let restText = rawBullet;
@@ -704,7 +720,12 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           const rawT = boldMatch[1].trim();
           boldTitle = rawT.endsWith(':') ? rawT : `${rawT}:`;
           restText = boldMatch[2].trim().replace(/^:+/, '').trim();
+        } else if (colonMatch) {
+          boldTitle = colonMatch[1].trim() + ':';
+          restText = colonMatch[2].trim();
         }
+
+        checkPageBreak(12);
 
         const { newY } = renderAcademicListItem({
           doc,
@@ -714,13 +735,14 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           startX: margin,
           yPos,
           contentWidth,
-          fontSize: 11,
-          lineHeight: 5.3,
+          fontSize: 10.5,
+          lineHeight: 5.4,
           hangingIndentX: margin + 6.0,
+          itemSpacing: 2.8,
           isBullet: true,
         });
 
-        yPos = newY + 2.2;
+        yPos = newY;
         lineIdx++;
         continue;
       }
@@ -731,8 +753,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         const numPrefix = numMatch[1];
         const rawContent = numMatch[2].trim();
         const boldMatch = rawContent.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
-
-        checkPageBreak(10);
+        const colonMatch = !boldMatch ? rawContent.match(/^([A-Za-z0-9\s/&-]{3,45}):\s+(.*)/) : null;
 
         let boldTitle = '';
         let restText = rawContent;
@@ -741,7 +762,12 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           const rawT = boldMatch[1].trim();
           boldTitle = rawT.endsWith(':') ? rawT : `${rawT}:`;
           restText = boldMatch[2].trim().replace(/^:+/, '').trim();
+        } else if (colonMatch) {
+          boldTitle = colonMatch[1].trim() + ':';
+          restText = colonMatch[2].trim();
         }
+
+        checkPageBreak(12);
 
         const { newY } = renderAcademicListItem({
           doc,
@@ -751,21 +777,22 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
           startX: margin,
           yPos,
           contentWidth,
-          fontSize: 11,
-          lineHeight: 5.3,
+          fontSize: 10.5,
+          lineHeight: 5.4,
           hangingIndentX: margin + 7.5,
+          itemSpacing: 2.8,
           isBullet: false,
         });
 
-        yPos = newY + 2.4;
+        yPos = newY;
         lineIdx++;
         continue;
       }
 
       // 8. Regular Formatted Paragraph (Native single-string rendering for 100% natural kerning)
-      checkPageBreak(9);
-      const { newY } = renderParagraph(doc, line, margin, yPos, contentWidth, 11, 5.3);
-      yPos = newY + 3.2;
+      checkPageBreak(12);
+      const { newY } = renderParagraph(doc, line, margin, yPos, contentWidth, 10.5, 5.4, 3.2);
+      yPos = newY;
       lineIdx++;
     }
 
