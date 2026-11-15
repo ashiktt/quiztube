@@ -340,7 +340,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07091B] text-slate-100 selection:bg-purple-500 selection:text-white relative overflow-hidden transition-colors">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#07091B] text-slate-100 selection:bg-purple-500 selection:text-white relative overflow-x-clip transition-colors">
       {/* ========================================================= */}
       {/* MIDNIGHT AURORA AMBIENT BACKGROUND GLOWS & CURTAINS      */}
       {/* ========================================================= */}
@@ -483,7 +483,7 @@ export default function Home() {
                     e.stopPropagation();
                     setAppMode('examSolver');
                   }}
-                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
+                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Launch Question Solver</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
@@ -531,7 +531,7 @@ export default function Home() {
                     setActiveTutorConversation(null);
                     setAppMode('tutor');
                   }}
-                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
+                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Chat with AI Tutor</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
@@ -571,7 +571,7 @@ export default function Home() {
                     e.stopPropagation();
                     setAppMode('copilot');
                   }}
-                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
+                  className="relative z-10 w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Launch Student Copilot</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />

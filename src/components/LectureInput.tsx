@@ -339,9 +339,9 @@ export function LectureInput({
           )}
 
           {/* Quick Config Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {/* Number of Questions */}
-            <div className="space-y-1.5 col-span-1">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-300">
                 Questions
               </label>
@@ -349,7 +349,7 @@ export function LectureInput({
                 value={numQuestions}
                 onChange={e => setNumQuestions(Number(e.target.value))}
                 disabled={isLoading}
-                className="w-full px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
+                className="w-full min-h-[44px] px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
               >
                 <option value={5} className="bg-[#0c102b] text-white">5 Questions</option>
                 <option value={10} className="bg-[#0c102b] text-white">10 Questions</option>
@@ -359,7 +359,7 @@ export function LectureInput({
             </div>
 
             {/* Difficulty */}
-            <div className="space-y-1.5 col-span-1">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-300">
                 Difficulty
               </label>
@@ -367,7 +367,7 @@ export function LectureInput({
                 value={difficulty}
                 onChange={e => setDifficulty(e.target.value as DifficultyLevel)}
                 disabled={isLoading}
-                className="w-full px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
+                className="w-full min-h-[44px] px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
               >
                 <option value="easy" className="bg-[#0c102b] text-white">Easy (Foundations)</option>
                 <option value="medium" className="bg-[#0c102b] text-white">Medium (Standard)</option>
@@ -377,7 +377,7 @@ export function LectureInput({
             </div>
 
             {/* Question Style */}
-            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-300">
                 Format
               </label>
@@ -385,7 +385,7 @@ export function LectureInput({
                 value={questionType}
                 onChange={e => setQuestionType(e.target.value as QuestionType)}
                 disabled={isLoading}
-                className="w-full px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
+                className="w-full min-h-[44px] px-3 py-2.5 bg-[#080c24]/90 border border-purple-500/30 text-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"
               >
                 <option value="mcq" className="bg-[#0c102b] text-white">MCQ (Multiple Choice)</option>
                 <option value="flashcards" className="bg-[#0c102b] text-white">Flashcards</option>

@@ -18,16 +18,23 @@ export function MermaidRenderer({ code, title, className = '' }: MermaidRenderer
   const [showRaw, setShowRaw] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Lock body scroll when fullscreen modal is open
+  // Lock body scroll when fullscreen modal is open, safely restore on close/unmount
   useEffect(() => {
     if (isFullscreen) {
-      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
-        document.body.style.overflow = originalOverflow;
+        document.body.style.overflow = '';
       };
+    } else {
+      document.body.style.overflow = '';
     }
   }, [isFullscreen]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

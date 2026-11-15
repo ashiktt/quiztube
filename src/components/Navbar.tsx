@@ -82,16 +82,23 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Lock body scroll when mobile navigation drawer is open
+  // Lock body scroll when mobile navigation drawer is open, safely restore on close/unmount
   useEffect(() => {
     if (mobileMenuOpen) {
-      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
-        document.body.style.overflow = originalOverflow;
+        document.body.style.overflow = '';
       };
+    } else {
+      document.body.style.overflow = '';
     }
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   const handleNavClick = (mode: 'youtube' | 'examSolver' | 'tutor' | 'copilot') => {
     if (onSwitchMode) onSwitchMode(mode);
