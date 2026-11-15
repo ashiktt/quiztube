@@ -56,6 +56,7 @@ import { ApkDownloadSection } from '@/components/ApkDownloadSection';
 import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
 import { LegalModals, LegalModalType } from '@/components/LegalModals';
 import { Footer } from '@/components/Footer';
+import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import {
   getSavedStudySets,
@@ -342,9 +343,18 @@ export default function Home() {
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#080D0B] text-[#F8FAFC] selection:bg-emerald-500 selection:text-white relative overflow-x-clip transition-colors">
       {/* ========================================================= */}
-      {/* FUTURISTIC AI WORKSPACE & AMBIENT EMERALD GLOWS          */}
+      {/* MAIN WEBSITE BACKGROUND - ANIMATE UI GLYPH BACKGROUND     */}
       {/* ========================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        {/* Full-Page Official Animate UI Glyph Background */}
+        <GlyphBackground
+          className="absolute inset-0 z-0 pointer-events-none opacity-55"
+          fontSize={10}
+          interactive={true}
+          glowColor="#10B981"
+          shapeColor="#34D399"
+        />
+
         {/* Emerald Ambient Glow */}
         <div className="absolute top-[-8%] left-[20%] w-[500px] sm:w-[750px] h-[500px] sm:h-[750px] rounded-full bg-gradient-to-br from-emerald-600/18 via-teal-600/10 to-transparent blur-[140px]" />
 

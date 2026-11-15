@@ -252,9 +252,9 @@ function createRenderer(gl: WebGLRenderingContext) {
   };
   gl.uniform1i(uniforms.atlas, 0);
   gl.uniform1f(uniforms.count, CHARACTERS.length);
-  gl.uniform1f(uniforms.rest, 0);
-  gl.uniform1f(uniforms.haze, 0.1);
-  gl.uniform1f(uniforms.hoverInk, 0.3);
+  gl.uniform1f(uniforms.rest, 0.02);
+  gl.uniform1f(uniforms.haze, 0.16);
+  gl.uniform1f(uniforms.hoverInk, 0.45);
 
   return {
     atlas(image: HTMLCanvasElement) {
@@ -306,7 +306,7 @@ function GlyphBackgroundContent({
   const inView = useInView(containerRef);
   const pageVisible = usePageVisible();
   const reduce = useShouldReduceMotion();
-  const playing = inView && pageVisible && !reduce;
+  const playing = (inView ?? true) && pageVisible && !reduce;
 
   const wavesRef = React.useRef<Wave[]>([]);
   const trailRef = React.useRef<{ x: number; y: number; t: number }[]>([]);
@@ -460,8 +460,16 @@ function GlyphBackgroundContent({
       draw(timeRef.current);
     });
     observer.observe(container);
+
+    const handleWindowResize = () => {
+      resize();
+      draw(timeRef.current);
+    };
+    window.addEventListener('resize', handleWindowResize, { passive: true });
+
     return () => {
       observer.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
       drawRef.current = () => {};
       resizeRef.current = () => {};
     };

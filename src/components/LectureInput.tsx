@@ -20,7 +20,6 @@ import { YoutubeIcon } from '@/components/Icons';
 import { DifficultyLevel, QuestionType, QuizGenerationRequest, UserUsageSummary } from '@/types';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { extractVideoId } from '@/lib/youtube';
-import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 interface LectureInputProps {
   onGenerate: (request: QuizGenerationRequest) => Promise<void>;
@@ -131,15 +130,8 @@ export function LectureInput({
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-        <GlyphBackground
-          className="absolute inset-0 z-0 pointer-events-none opacity-45"
-          fontSize={10}
-          interactive={true}
-          glowColor="#10B981"
-          shapeColor="#34D399"
-        />
-        <div className="relative z-10 text-center space-y-4 animate-hero-fade">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="text-center space-y-4 animate-hero-fade">
           {/* Glow Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 bg-emerald-950/50 backdrop-blur-md border border-emerald-500/40 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:border-emerald-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.5)] transition-all duration-300 group cursor-default">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform" />
@@ -207,17 +199,9 @@ export function LectureInput({
       </div>
 
       {/* Main Input Card - Futuristic AI Workspace Container */}
-      <div className="relative overflow-hidden bg-[#0c102b]/85 backdrop-blur-2xl border border-emerald-500/25 rounded-[24px] p-4 sm:p-8 shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)] space-y-5 sm:space-y-6 transition-all duration-300">
-        <GlyphBackground
-          className="absolute inset-0 z-0 pointer-events-none opacity-30"
-          fontSize={10}
-          interactive={true}
-          glowColor="#10B981"
-          shapeColor="#34D399"
-        />
-        <div className="relative z-10 space-y-5 sm:space-y-6">
+      <div className="relative overflow-hidden bg-[#0c102b]/75 backdrop-blur-2xl border border-emerald-500/25 rounded-[24px] p-4 sm:p-8 shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)] space-y-5 sm:space-y-6 transition-all duration-300">
         {/* Subtle top edge lighting */}
-        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent pointer-events-none" />
 
         {/* Mode Selector Tabs */}
         <div className="flex items-center p-1 bg-[#070a1e]/90 border border-purple-500/25 rounded-2xl max-w-md mx-auto shadow-inner">
@@ -531,6 +515,5 @@ export function LectureInput({
         </div>
       </div>
     </div>
-  </div>
   );
 }

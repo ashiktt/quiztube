@@ -36,7 +36,6 @@ import { MermaidRenderer } from '@/components/MermaidRenderer';
 import { SafeMarkdown } from '@/components/tutor/SafeMarkdown';
 import { getAuthHeaders } from '@/lib/auth';
 import { saveSolvedExam } from '@/lib/storage';
-import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 const SAMPLE_EXAMS = [
   {
@@ -404,15 +403,8 @@ export function UniversityQuestionSolver({
         /* Input Form View */
         <div className="space-y-8">
           {/* Header Banner */}
-          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/70 backdrop-blur-xl shadow-xl">
-            <GlyphBackground
-              className="absolute inset-0 z-0 pointer-events-none opacity-45"
-              fontSize={10}
-              interactive={true}
-              glowColor="#10B981"
-              shapeColor="#34D399"
-            />
-            <div className="relative z-10 text-center space-y-3">
+          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/40 backdrop-blur-xl shadow-xl">
+            <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 text-xs font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-full shadow-sm">
                 <GraduationCap className="w-4 h-4 text-emerald-400" />
                 <span>Multimodal AI Academic Examiner (Text, PDF & Images)</span>
@@ -504,18 +496,10 @@ export function UniversityQuestionSolver({
           </div>
 
           {/* Main Solver Form */}
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/25 bg-[#0c102b]/85 backdrop-blur-2xl shadow-xl">
-            <GlyphBackground
-              className="absolute inset-0 z-0 pointer-events-none opacity-30"
-              fontSize={10}
-              interactive={true}
-              glowColor="#10B981"
-              shapeColor="#34D399"
-            />
-            <form
-              onSubmit={handleSolve}
-              className="relative z-10 p-3.5 sm:p-8 space-y-4 sm:space-y-6"
-            >
+          <form
+            onSubmit={handleSolve}
+            className="p-3.5 sm:p-8 bg-[#0c102b]/75 backdrop-blur-2xl border border-emerald-500/25 rounded-2xl sm:rounded-3xl shadow-xl space-y-4 sm:space-y-6"
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Subject */}
               <div className="space-y-1.5">
@@ -704,7 +688,6 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
               )}
             </button>
           </form>
-          </div>
         </div>
       ) : (
         /* Solved Exam Model Solutions View */
