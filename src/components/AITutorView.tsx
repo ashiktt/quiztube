@@ -44,6 +44,7 @@ import { saveTutorConversation, getStoredApiKey } from '@/lib/storage';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { TutorAnswerCard } from './tutor/TutorAnswerCard';
 import { getAuthHeaders } from '@/lib/auth';
+import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 interface AITutorViewProps {
   initialContext?: TutorContext | null;
@@ -507,12 +508,21 @@ export function AITutorView({
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-[100] h-screen w-screen bg-white dark:bg-slate-950 flex flex-col overflow-hidden transition-all duration-300'
-          : 'flex flex-col h-[calc(100vh-130px)] sm:h-[calc(100vh-145px)] max-w-5xl mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300'
+          ? 'fixed inset-0 z-[100] h-screen w-screen bg-[#080D0B] text-slate-100 flex flex-col overflow-hidden transition-all duration-300 relative'
+          : 'relative flex flex-col h-[calc(100vh-130px)] sm:h-[calc(100vh-145px)] max-w-5xl mx-auto bg-[#080D0B]/95 text-slate-100 backdrop-blur-2xl rounded-3xl border border-emerald-500/25 shadow-2xl shadow-emerald-950/40 overflow-hidden transition-all duration-300'
       }
     >
+      {/* Official Animate UI Glyph Background */}
+      <GlyphBackground
+        className="absolute inset-0 z-0 pointer-events-none opacity-40"
+        fontSize={10}
+        interactive={true}
+        glowColor="#10B981"
+        shapeColor="#34D399"
+      />
+
       {/* 1. Header Toolbar */}
-      <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 shrink-0">
+      <div className="relative z-10 p-3 sm:p-4 border-b border-emerald-500/20 bg-[#0c102b]/75 backdrop-blur-md shrink-0">
         <div className={`flex flex-wrap items-center justify-between gap-3 ${isFullscreen ? 'max-w-5xl mx-auto w-full' : ''}`}>
           <div className="flex items-center gap-2.5">
             <div className="p-2 sm:p-2.5 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 rounded-2xl text-white shadow-md shadow-indigo-500/20">
@@ -622,7 +632,7 @@ export function AITutorView({
 
       {/* Pro Locked Banner (if subscriptions enabled and not Pro) */}
       {SUBSCRIPTION_ENABLED && !isPro && (
-        <div className="px-4 py-3 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0 animate-fade-in">
+        <div className="relative z-10 px-4 py-3 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0 animate-fade-in">
           <div className="flex items-center gap-2.5 min-w-0">
             <Crown className="w-4 h-4 text-amber-400 shrink-0 fill-current" />
             <span className="text-slate-200 truncate">
@@ -642,25 +652,25 @@ export function AITutorView({
 
       {/* 2. Active Context Banner (if present) */}
       {context && (
-        <div className="px-4 py-2 bg-gradient-to-r from-indigo-50 via-purple-50 to-slate-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-slate-900 border-b border-indigo-100 dark:border-indigo-900/50 shrink-0">
+        <div className="relative z-10 px-4 py-2 bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-[#080D0B] border-b border-emerald-500/20 shrink-0">
           <div className={`flex items-center justify-between gap-3 text-xs ${isFullscreen ? 'max-w-5xl mx-auto w-full' : ''}`}>
             <div className="flex items-center gap-2 min-w-0">
-              <div className="p-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md shrink-0">
+              <div className="p-1 bg-emerald-950 text-emerald-300 rounded-md shrink-0 border border-emerald-500/30">
                 {context.type === 'mistake' || context.type === 'quiz_question' ? (
-                  <HelpCircle className="w-3.5 h-3.5 text-red-500" />
+                  <HelpCircle className="w-3.5 h-3.5 text-red-400" />
                 ) : context.type === 'lecture' || context.type === 'notes' ? (
-                  <Play className="w-3.5 h-3.5 text-indigo-600" />
+                  <Play className="w-3.5 h-3.5 text-emerald-400" />
                 ) : (
-                  <FileQuestion className="w-3.5 h-3.5 text-purple-600" />
+                  <FileQuestion className="w-3.5 h-3.5 text-teal-400" />
                 )}
               </div>
-              <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">
+              <span className="font-bold text-emerald-300 shrink-0">
                 Active Context:
               </span>
-              <span className="font-medium text-slate-900 dark:text-white truncate">
+              <span className="font-medium text-white truncate">
                 {context.lectureTitle || context.questionText || 'Study Material'}
                 {context.timestampFormatted && (
-                  <span className="ml-1 text-indigo-600 dark:text-indigo-400 font-mono">
+                  <span className="ml-1 text-emerald-400 font-mono">
                     [{context.timestampFormatted}]
                   </span>
                 )}
@@ -673,7 +683,7 @@ export function AITutorView({
                 setContext(null);
                 if (onClearContext) onClearContext();
               }}
-              className="text-[11px] font-semibold text-slate-500 hover:text-red-600 dark:hover:text-red-400 shrink-0 flex items-center gap-1"
+              className="text-[11px] font-semibold text-slate-400 hover:text-red-400 shrink-0 flex items-center gap-1"
               title="Detach context to ask general study questions"
             >
               <X className="w-3 h-3" />
@@ -684,7 +694,7 @@ export function AITutorView({
       )}
 
       {/* 3. Explanation Mode Pills Selector */}
-      <div className="px-3 sm:px-4 py-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      <div className="relative z-10 px-3 sm:px-4 py-2 border-b border-emerald-500/15 bg-[#080D0B]/80 backdrop-blur-md shrink-0">
         <div className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar ${isFullscreen ? 'max-w-5xl mx-auto w-full' : ''}`}>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
             Mode:
@@ -696,8 +706,8 @@ export function AITutorView({
             onClick={() => setExplanationMode(m.id)}
             className={`px-2.5 py-1 text-xs font-semibold rounded-xl transition flex items-center gap-1 shrink-0 ${
               explanationMode === m.id
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm shadow-indigo-500/20'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-500/20'
+                : 'bg-[#0c102b] text-slate-300 hover:bg-slate-800 border border-emerald-500/15'
             }`}
             title={m.description}
           >
@@ -709,7 +719,7 @@ export function AITutorView({
       </div>
 
       {/* 4. Chat Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div className="relative z-10 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className={isFullscreen ? 'max-w-5xl mx-auto w-full space-y-6' : 'space-y-6'}>
           {messages.length === 0 ? (
             /* Empty State: Welcome & Starter Suggestions */
@@ -806,7 +816,7 @@ export function AITutorView({
       </div>
 
       {/* 5. Bottom Input Form Bar */}
-      <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      <div className="relative z-10 p-3 sm:p-4 border-t border-emerald-500/20 bg-[#0c102b]/85 backdrop-blur-md shrink-0">
         <div className={isFullscreen ? 'max-w-5xl mx-auto w-full space-y-2' : 'space-y-2'}>
           {/* Attached image preview banner */}
           {attachedImage && (

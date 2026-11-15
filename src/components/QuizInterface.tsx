@@ -22,6 +22,7 @@ import {
   Award,
 } from 'lucide-react';
 import { QuizQuestion, UserQuizAttempt } from '@/types';
+import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 interface QuizInterfaceProps {
   questions: QuizQuestion[];
@@ -328,7 +329,15 @@ export function QuizInterface({
         </div>
       ) : (
         /* Main Question Card */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl space-y-5 sm:space-y-6">
+        <div className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl space-y-5 sm:space-y-6">
+          <GlyphBackground
+            className="absolute inset-0 z-0 pointer-events-none opacity-25"
+            fontSize={10}
+            interactive={true}
+            glowColor="#10B981"
+            shapeColor="#34D399"
+          />
+          <div className="relative z-10 space-y-5 sm:space-y-6">
           {/* Question Navigator Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
             {displayQuestions.map((q, idx) => {
@@ -581,6 +590,7 @@ export function QuizInterface({
             )}
           </div>
         </div>
+      </div>
       )}
     </div>
   );

@@ -36,6 +36,7 @@ import { MermaidRenderer } from '@/components/MermaidRenderer';
 import { SafeMarkdown } from '@/components/tutor/SafeMarkdown';
 import { getAuthHeaders } from '@/lib/auth';
 import { saveSolvedExam } from '@/lib/storage';
+import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 const SAMPLE_EXAMS = [
   {
@@ -403,41 +404,50 @@ export function UniversityQuestionSolver({
         /* Input Form View */
         <div className="space-y-8">
           {/* Header Banner */}
-          <div className="text-center space-y-3 pt-2">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 rounded-full shadow-sm">
-              <GraduationCap className="w-4 h-4 text-indigo-500" />
-              <span>Multimodal AI Academic Examiner (Text, PDF & Images)</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              University{' '}
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
-                Question Solver
-              </span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Upload your question paper as a <strong>PDF or Image</strong>, or paste question text with marks (2, 5, 10, 15 M) to generate accurate, mark-scaled model answers and download as PDF booklets.
-            </p>
-
-            {/* Daily Quota Indicator (Only when subscriptions are enabled) */}
-            {SUBSCRIPTION_ENABLED && (
-              <div className="flex items-center justify-center gap-2 pt-1 text-xs">
-                {isPro ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-full font-medium">
-                    <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
-                    <span>QuizTube Pro &middot; Advanced Question Solver (High AI limits)</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
-                    <Clock className="w-3.5 h-3.5 text-purple-500" />
-                    <span>
-                      Free Daily Quota: <strong className="text-purple-600 dark:text-purple-400">{solverRemaining}/2</strong> generations remaining today (Asia/Kolkata)
-                    </span>
-                  </div>
-                )}
+          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/70 backdrop-blur-xl shadow-xl">
+            <GlyphBackground
+              className="absolute inset-0 z-0 pointer-events-none opacity-45"
+              fontSize={10}
+              interactive={true}
+              glowColor="#10B981"
+              shapeColor="#34D399"
+            />
+            <div className="relative z-10 text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 text-xs font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-full shadow-sm">
+                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                <span>Multimodal AI Academic Examiner (Text, PDF & Images)</span>
               </div>
-            )}
+
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+                University{' '}
+                <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+                  Question Solver
+                </span>
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Upload your question paper as a <strong>PDF or Image</strong>, or paste question text with marks (2, 5, 10, 15 M) to generate accurate, mark-scaled model answers and download as PDF booklets.
+              </p>
+
+              {/* Daily Quota Indicator (Only when subscriptions are enabled) */}
+              {SUBSCRIPTION_ENABLED && (
+                <div className="flex items-center justify-center gap-2 pt-1 text-xs">
+                  {isPro ? (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-full font-medium">
+                      <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
+                      <span>QuizTube Pro &middot; Advanced Question Solver (High AI limits)</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900/80 border border-emerald-500/30 text-slate-300 rounded-full">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>
+                        Free Daily Quota: <strong className="text-emerald-400">{solverRemaining}/2</strong> generations remaining today (Asia/Kolkata)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Quota Exhausted Banner (Only when subscriptions are enabled) */}
@@ -494,10 +504,18 @@ export function UniversityQuestionSolver({
           </div>
 
           {/* Main Solver Form */}
-          <form
-            onSubmit={handleSolve}
-            className="p-3.5 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-xl space-y-4 sm:space-y-6"
-          >
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/25 bg-[#0c102b]/85 backdrop-blur-2xl shadow-xl">
+            <GlyphBackground
+              className="absolute inset-0 z-0 pointer-events-none opacity-30"
+              fontSize={10}
+              interactive={true}
+              glowColor="#10B981"
+              shapeColor="#34D399"
+            />
+            <form
+              onSubmit={handleSolve}
+              className="relative z-10 p-3.5 sm:p-8 space-y-4 sm:space-y-6"
+            >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Subject */}
               <div className="space-y-1.5">
@@ -686,6 +704,7 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
               )}
             </button>
           </form>
+          </div>
         </div>
       ) : (
         /* Solved Exam Model Solutions View */

@@ -340,26 +340,29 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#07091B] text-slate-100 selection:bg-purple-500 selection:text-white relative overflow-x-clip transition-colors">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#080D0B] text-[#F8FAFC] selection:bg-emerald-500 selection:text-white relative overflow-x-clip transition-colors">
       {/* ========================================================= */}
-      {/* MIDNIGHT AURORA AMBIENT BACKGROUND GLOWS & CURTAINS      */}
+      {/* FUTURISTIC AI WORKSPACE & AMBIENT EMERALD GLOWS          */}
       {/* ========================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        {/* Upper-Left Purple Ambient Glow */}
-        <div className="absolute top-[-10%] left-[-10%] w-[550px] sm:w-[850px] h-[550px] sm:h-[850px] rounded-full bg-gradient-to-br from-purple-700/25 via-indigo-600/15 to-transparent blur-[120px] animate-aurora-1" />
+        {/* Emerald Ambient Glow */}
+        <div className="absolute top-[-8%] left-[20%] w-[500px] sm:w-[750px] h-[500px] sm:h-[750px] rounded-full bg-gradient-to-br from-emerald-600/18 via-teal-600/10 to-transparent blur-[140px]" />
+
+        {/* Upper-Left Purple/Emerald Ambient Glow */}
+        <div className="absolute top-[-10%] left-[-10%] w-[550px] sm:w-[850px] h-[550px] sm:h-[850px] rounded-full bg-gradient-to-br from-emerald-700/15 via-indigo-600/15 to-transparent blur-[120px] animate-aurora-1" />
 
         {/* Lower-Left Blue Ambient Glow */}
-        <div className="absolute top-[42%] left-[-12%] w-[480px] sm:w-[750px] h-[480px] sm:h-[750px] rounded-full bg-gradient-to-tr from-blue-700/20 via-sky-600/10 to-transparent blur-[130px] animate-aurora-2" />
+        <div className="absolute top-[42%] left-[-12%] w-[480px] sm:w-[750px] h-[480px] sm:h-[750px] rounded-full bg-gradient-to-tr from-teal-700/15 via-sky-600/10 to-transparent blur-[130px] animate-aurora-2" />
 
-        {/* Right Side Magenta/Purple Ambient Glow */}
-        <div className="absolute top-[8%] right-[-10%] w-[520px] sm:w-[800px] h-[520px] sm:h-[800px] rounded-full bg-gradient-to-bl from-pink-600/20 via-fuchsia-600/15 to-transparent blur-[130px] animate-aurora-3" />
+        {/* Right Side Mint/Purple Ambient Glow */}
+        <div className="absolute top-[8%] right-[-10%] w-[520px] sm:w-[800px] h-[520px] sm:h-[800px] rounded-full bg-gradient-to-bl from-emerald-600/15 via-fuchsia-600/10 to-transparent blur-[130px] animate-aurora-3" />
 
-        {/* Subtle Blue Center Ambient Lighting */}
-        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] rounded-full bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-purple-500/10 blur-[140px]" />
+        {/* Subtle Mint Center Ambient Lighting */}
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 blur-[140px]" />
 
         {/* Subtle Animated Aurora Waves along Left and Right Edges */}
-        <div className="absolute inset-y-0 left-0 w-28 sm:w-44 bg-gradient-to-r from-purple-600/15 via-indigo-900/5 to-transparent animate-aurora-wave" />
-        <div className="absolute inset-y-0 right-0 w-28 sm:w-44 bg-gradient-to-l from-pink-600/15 via-purple-900/5 to-transparent animate-aurora-wave" />
+        <div className="absolute inset-y-0 left-0 w-28 sm:w-44 bg-gradient-to-r from-emerald-600/10 via-teal-900/5 to-transparent animate-aurora-wave" />
+        <div className="absolute inset-y-0 right-0 w-28 sm:w-44 bg-gradient-to-l from-emerald-600/10 via-indigo-900/5 to-transparent animate-aurora-wave" />
       </div>
 
       {/* Navbar */}

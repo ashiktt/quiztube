@@ -20,6 +20,7 @@ import { YoutubeIcon } from '@/components/Icons';
 import { DifficultyLevel, QuestionType, QuizGenerationRequest, UserUsageSummary } from '@/types';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import { extractVideoId } from '@/lib/youtube';
+import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 
 interface LectureInputProps {
   onGenerate: (request: QuizGenerationRequest) => Promise<void>;
@@ -130,74 +131,91 @@ export function LectureInput({
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Hero Banner */}
-      <div className="text-center space-y-4 pt-4 pb-2 animate-hero-fade">
-        {/* Glow Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-purple-200 bg-purple-950/50 backdrop-blur-md border border-purple-500/40 rounded-full shadow-[0_0_16px_rgba(168,85,247,0.3)] hover:border-purple-400 hover:shadow-[0_0_24px_rgba(168,85,247,0.5)] transition-all duration-300 group cursor-default">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse group-hover:scale-110 transition-transform" />
-          <span>AI-Powered Active Recall for Students</span>
-        </div>
-
-        {/* Hero Headline with Midnight Aurora Typography */}
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-          Convert YouTube Lectures into{' '}
-          <span className="bg-gradient-to-r from-violet-400 via-indigo-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(139,92,246,0.35)]">
-            Smart
-          </span>{' '}
-          <span className="relative inline-block whitespace-nowrap">
-            <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(168,85,247,0.4)]">
-              Quizzes
-            </span>
-            {/* Small curved animated gradient underline beneath "Quizzes" */}
-            <svg
-              className="absolute -bottom-2 sm:-bottom-2.5 left-0 w-full h-2.5 sm:h-3 overflow-visible pointer-events-none"
-              viewBox="0 0 100 12"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2 9C25 3 75 3 98 9"
-                stroke="url(#aurora-underline-grad)"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                className="animated-underline-curve"
-              />
-              <defs>
-                <linearGradient id="aurora-underline-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="50%" stopColor="#d946ef" />
-                  <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </span>
-        </h1>
-
-        <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Paste any educational video or lecture notes to instantly generate interactive multiple-choice questions, visual cheatsheets, timestamped video links, and summary sheets.
-        </p>
-
-        {/* Daily Quota Indicator Badge (Only when subscriptions are enabled) */}
-        {SUBSCRIPTION_ENABLED && (
-          <div className="flex items-center justify-center gap-2 pt-1 text-xs">
-            {isPro ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 rounded-full font-medium shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-                <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
-                <span>QuizTube Pro &middot; High AI usage limits</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0c102b]/80 border border-purple-500/30 text-slate-300 rounded-full shadow-sm">
-                <Clock className="w-3.5 h-3.5 text-purple-400" />
-                <span>
-                  Free Daily Quota: <strong className="text-purple-300 font-bold">{quizRemaining}/2</strong> generations remaining today (Asia/Kolkata)
-                </span>
-              </div>
-            )}
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-emerald-500/20 bg-[#080D0B]/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <GlyphBackground
+          className="absolute inset-0 z-0 pointer-events-none opacity-45"
+          fontSize={10}
+          interactive={true}
+          glowColor="#10B981"
+          shapeColor="#34D399"
+        />
+        <div className="relative z-10 text-center space-y-4 animate-hero-fade">
+          {/* Glow Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 bg-emerald-950/50 backdrop-blur-md border border-emerald-500/40 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:border-emerald-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.5)] transition-all duration-300 group cursor-default">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform" />
+            <span>AI-Powered Active Recall for Students</span>
           </div>
-        )}
+
+          {/* Hero Headline with Midnight Aurora Typography */}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            Convert YouTube Lectures into{' '}
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(16,185,129,0.35)]">
+              Smart
+            </span>{' '}
+            <span className="relative inline-block whitespace-nowrap">
+              <span className="bg-gradient-to-r from-teal-300 via-emerald-400 to-mint-400 bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(52,211,153,0.4)]">
+                Quizzes
+              </span>
+              {/* Small curved animated gradient underline beneath "Quizzes" */}
+              <svg
+                className="absolute -bottom-2 sm:-bottom-2.5 left-0 w-full h-2.5 sm:h-3 overflow-visible pointer-events-none"
+                viewBox="0 0 100 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 9C25 3 75 3 98 9"
+                  stroke="url(#aurora-underline-grad)"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  className="animated-underline-curve"
+                />
+                <defs>
+                  <linearGradient id="aurora-underline-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#10B981" />
+                    <stop offset="50%" stopColor="#34D399" />
+                    <stop offset="100%" stopColor="#6EE7B7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </span>
+          </h1>
+
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Paste any educational video or lecture notes to instantly generate interactive multiple-choice questions, visual cheatsheets, timestamped video links, and summary sheets.
+          </p>
+
+          {/* Daily Quota Indicator Badge (Only when subscriptions are enabled) */}
+          {SUBSCRIPTION_ENABLED && (
+            <div className="flex items-center justify-center gap-2 pt-1 text-xs">
+              {isPro ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 rounded-full font-medium shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                  <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
+                  <span>QuizTube Pro &middot; High AI usage limits</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0c102b]/80 border border-emerald-500/30 text-slate-300 rounded-full shadow-sm">
+                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>
+                    Free Daily Quota: <strong className="text-emerald-300 font-bold">{quizRemaining}/2</strong> generations remaining today (Asia/Kolkata)
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main Input Card - Midnight Aurora Glassmorphic Container */}
-      <div className="bg-[#0c102b]/75 backdrop-blur-2xl border border-purple-500/30 rounded-[24px] p-4 sm:p-8 shadow-[0_0_60px_-15px_rgba(147,51,234,0.25)] space-y-5 sm:space-y-6 relative overflow-hidden transition-all duration-300">
+      {/* Main Input Card - Futuristic AI Workspace Container */}
+      <div className="relative overflow-hidden bg-[#0c102b]/85 backdrop-blur-2xl border border-emerald-500/25 rounded-[24px] p-4 sm:p-8 shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)] space-y-5 sm:space-y-6 transition-all duration-300">
+        <GlyphBackground
+          className="absolute inset-0 z-0 pointer-events-none opacity-30"
+          fontSize={10}
+          interactive={true}
+          glowColor="#10B981"
+          shapeColor="#34D399"
+        />
+        <div className="relative z-10 space-y-5 sm:space-y-6">
         {/* Subtle top edge lighting */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent pointer-events-none" />
 
@@ -513,5 +531,6 @@ export function LectureInput({
         </div>
       </div>
     </div>
+  </div>
   );
 }
