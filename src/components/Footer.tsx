@@ -43,7 +43,7 @@ export function Footer({
   };
 
   return (
-    <footer className="w-full bg-slate-900 border-t border-slate-800 text-slate-400 text-xs transition-colors mt-auto">
+    <footer className="w-full bg-[#07091B] border-t border-indigo-500/20 text-slate-400 text-xs transition-colors mt-auto relative z-10">
       {/* Top 4-Column Grid Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">

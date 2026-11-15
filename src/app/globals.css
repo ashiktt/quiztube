@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #07091B;
+  --foreground: #f8fafc;
+  --midnight-base: #07091B;
 }
 
 @theme inline {
@@ -14,7 +15,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #020617;
+    --background: #07091B;
     --foreground: #f8fafc;
   }
 }
@@ -33,6 +34,144 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
   touch-action: manipulation;
+}
+
+/* ========================================================= */
+/* MIDNIGHT AURORA ANIMATION SYSTEM & AMBIENT LIGHTING      */
+/* ========================================================= */
+
+@keyframes aurora-float-1 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(30px, -25px) scale(1.12);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate(-20px, 20px) scale(0.95);
+    opacity: 0.45;
+  }
+}
+
+@keyframes aurora-float-2 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(-35px, 30px) scale(1.15);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(25px, -20px) scale(0.92);
+    opacity: 0.4;
+  }
+}
+
+@keyframes aurora-float-3 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(25px, 35px) scale(1.1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-30px, -15px) scale(0.98);
+    opacity: 0.35;
+  }
+}
+
+@keyframes aurora-wave-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scaleY(1.08);
+  }
+}
+
+@keyframes underline-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes hero-stagger-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-aurora-1 {
+  animation: aurora-float-1 20s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.animate-aurora-2 {
+  animation: aurora-float-2 24s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.animate-aurora-3 {
+  animation: aurora-float-3 22s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.animate-aurora-wave {
+  animation: aurora-wave-pulse 16s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.animate-hero-fade {
+  animation: hero-stagger-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animated-underline-curve {
+  background-size: 200% 200%;
+  animation: underline-gradient 4s ease infinite;
+}
+
+/* Glassmorphism Surface Utilities */
+.glass-surface-midnight {
+  background: rgba(12, 16, 43, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-surface-subtle {
+  background: rgba(8, 12, 38, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora-1,
+  .animate-aurora-2,
+  .animate-aurora-3,
+  .animate-aurora-wave,
+  .animate-hero-fade,
+  .animated-underline-curve {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* Ensure mobile form inputs don't auto-zoom */

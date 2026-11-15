@@ -115,7 +115,7 @@ export function Navbar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 w-full border-b border-indigo-500/20 bg-[#07091B]/85 backdrop-blur-[18px] relative transition-all duration-300 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-purple-500/40 after:to-transparent after:pointer-events-none">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* ========================================================= */}
@@ -125,7 +125,7 @@ export function Navbar({
             onClick={() => handleNavClick('youtube')}
             className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none shrink min-w-0"
           >
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-[0_0_18px_rgba(139,92,246,0.35)] ring-1 ring-purple-500/40 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-purple-500/30 bg-purple-950/40">
               <img
                 src="/icon.png"
                 alt="Saberio AI"
@@ -133,7 +133,7 @@ export function Navbar({
               />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 font-extrabold text-base sm:text-xl text-slate-900 dark:text-white tracking-tight truncate">
+              <div className="flex items-center gap-1.5 font-extrabold text-base sm:text-xl text-white tracking-tight truncate drop-shadow-[0_2px_8px_rgba(139,92,246,0.3)]">
                 <span>Saberio AI</span>
                 {SUBSCRIPTION_ENABLED && isPro && (
                   <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase bg-amber-400 text-amber-950 rounded flex items-center gap-1 shadow-sm shrink-0">
@@ -142,7 +142,7 @@ export function Navbar({
                   </span>
                 )}
               </div>
-              <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight truncate hidden xs:block">
+              <p className="text-[10px] sm:text-[11px] font-medium text-slate-400 leading-tight truncate hidden xs:block">
                 AI-powered learning
               </p>
             </div>
@@ -156,10 +156,10 @@ export function Navbar({
             <button
               type="button"
               onClick={() => handleNavClick('youtube')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                 appMode === 'youtube'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+                  ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 border border-purple-500/50 text-white shadow-[0_0_15px_rgba(139,92,246,0.25)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10'
               }`}
             >
               <YoutubeIcon className="w-4 h-4 text-red-500 shrink-0" />
@@ -170,13 +170,13 @@ export function Navbar({
             <button
               type="button"
               onClick={() => handleNavClick('examSolver')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                 appMode === 'examSolver'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+                  ? 'bg-gradient-to-r from-purple-600/25 to-indigo-600/25 border border-purple-500/50 text-white shadow-[0_0_15px_rgba(139,92,246,0.25)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10'
               }`}
             >
-              <GraduationCap className="w-4 h-4 text-purple-500 shrink-0" />
+              <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
               <span>University Solver</span>
             </button>
 
@@ -184,13 +184,13 @@ export function Navbar({
             <button
               type="button"
               onClick={() => handleNavClick('tutor')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                 appMode === 'tutor'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+                  ? 'bg-gradient-to-r from-pink-600/25 to-purple-600/25 border border-pink-500/50 text-white shadow-[0_0_15px_rgba(236,72,153,0.25)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
+              <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
               <span>AI Tutor</span>
             </button>
 
@@ -198,29 +198,29 @@ export function Navbar({
             <button
               type="button"
               onClick={() => handleNavClick('copilot')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                 appMode === 'copilot'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80'
+                  ? 'bg-gradient-to-r from-teal-600/25 to-cyan-600/25 border border-teal-500/50 text-white shadow-[0_0_15px_rgba(20,184,166,0.25)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10'
               }`}
             >
-              <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+              <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Student Copilot</span>
-              <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+              <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
                 AI
               </span>
             </button>
 
-            {/* 4. Study Library */}
+            {/* 5. Study Library */}
             <button
               type="button"
               onClick={handleLibraryClick}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 transition"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all duration-200"
             >
-              <FolderOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+              <FolderOpen className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>Study Library</span>
               {savedCount > 0 && (
-                <span className="px-1.5 py-0.2 text-[11px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full">
+                <span className="px-1.5 py-0.2 text-[11px] font-bold bg-purple-950/80 border border-purple-500/40 text-purple-300 rounded-full">
                   {savedCount}
                 </span>
               )}
@@ -242,21 +242,20 @@ export function Navbar({
               </button>
             )}
 
-
             {/* Profile Avatar & Dropdown Menu */}
             {currentUser ? (
               <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold transition"
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 backdrop-blur-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 rounded-xl text-xs font-semibold text-white transition-all shadow-sm shadow-black/20"
                   title="Account Menu"
                 >
                   {currentUser.avatarUrl ? (
                     <img
                       src={currentUser.avatarUrl}
                       alt={displayName}
-                      className="w-7 h-7 rounded-lg object-cover shrink-0 shadow-sm border border-indigo-500/30"
+                      className="w-7 h-7 rounded-lg object-cover shrink-0 shadow-sm border border-indigo-500/40"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
@@ -266,7 +265,7 @@ export function Navbar({
                       {userInitial}
                     </div>
                   )}
-                  <span className="hidden sm:inline font-medium text-slate-800 dark:text-slate-200 max-w-[100px] truncate">
+                  <span className="hidden sm:inline font-medium text-slate-200 max-w-[100px] truncate">
                     {displayName}
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
@@ -274,12 +273,12 @@ export function Navbar({
 
                 {/* Dropdown Box */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl shadow-slate-950/10 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800">
-                      <p className="font-bold text-slate-900 dark:text-white truncate">
+                  <div className="absolute right-0 mt-2 w-56 bg-[#0c102b]/95 backdrop-blur-2xl border border-indigo-500/30 rounded-2xl shadow-2xl shadow-black/60 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3.5 py-2.5 border-b border-indigo-500/20">
+                      <p className="font-bold text-white truncate">
                         {currentUser.fullName || 'Student Account'}
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      <p className="text-[11px] text-slate-400 truncate">
                         {currentUser.email}
                       </p>
                       {SUBSCRIPTION_ENABLED && isPro && (
@@ -298,7 +297,7 @@ export function Navbar({
                           if (onOpenAccountModal) onOpenAccountModal();
                           else onOpenAuthModal();
                         }}
-                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
+                        className="w-full text-left px-3.5 py-2 hover:bg-white/[0.08] flex items-center gap-2.5 text-slate-300 hover:text-white font-medium transition"
                       >
                         <User className="w-4 h-4 text-slate-400" />
                         <span>Profile & Account</span>
@@ -312,22 +311,22 @@ export function Navbar({
                             setProfileDropdownOpen(false);
                             onOpenApiKeyModal();
                           }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-medium"
+                          className="w-full text-left px-3.5 py-2 hover:bg-white/[0.08] flex items-center gap-2.5 text-slate-300 hover:text-white font-medium transition"
                         >
-                          <Key className="w-4 h-4 text-amber-500" />
+                          <Key className="w-4 h-4 text-amber-400" />
                           <span>Gemini API Key</span>
                         </button>
                       )}
                     </div>
 
-                    <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-1 border-t border-indigo-500/20">
                       <button
                         type="button"
                         onClick={() => {
                           setProfileDropdownOpen(false);
                           onSignOut();
                         }}
-                        className="w-full text-left px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2.5 text-red-600 dark:text-red-400 font-medium transition"
+                        className="w-full text-left px-3.5 py-2 hover:bg-red-950/40 flex items-center gap-2.5 text-red-400 font-medium transition"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Sign Out</span>
@@ -340,7 +339,7 @@ export function Navbar({
               <button
                 type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-sm transition active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-md shadow-indigo-600/30 transition active:scale-95"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Login</span>
@@ -351,7 +350,7 @@ export function Navbar({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 focus:outline-none transition"
+              className="md:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.08] focus:outline-none transition"
               aria-label="Open Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -367,17 +366,17 @@ export function Navbar({
         <div className="fixed inset-0 z-50 md:hidden animate-in fade-in duration-200">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-[#07091B]/80 backdrop-blur-md transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-4 sm:p-5 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-250 pt-safe pb-safe overflow-y-auto">
+          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-[#07091B]/95 backdrop-blur-2xl border-l border-indigo-500/25 shadow-2xl p-4 sm:p-5 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-250 pt-safe pb-safe overflow-y-auto">
             <div>
               {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-indigo-500/20">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-purple-500/30 shadow-[0_0_12px_rgba(139,92,246,0.3)]">
                     <img
                       src="/icon.png"
                       alt="Saberio AI"
@@ -385,14 +384,14 @@ export function Navbar({
                     />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Saberio AI</h3>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered learning</p>
+                    <h3 className="font-extrabold text-sm text-white">Saberio AI</h3>
+                    <p className="text-[10px] text-slate-400">AI-powered learning</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl"
                   aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
@@ -406,8 +405,8 @@ export function Navbar({
                   onClick={() => handleNavClick('youtube')}
                   className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'youtube'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 border border-purple-500/50 text-white shadow-[0_0_15px_rgba(139,92,246,0.25)]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   <YoutubeIcon className="w-4 h-4 text-red-500 shrink-0" />
@@ -419,11 +418,11 @@ export function Navbar({
                   onClick={() => handleNavClick('examSolver')}
                   className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'examSolver'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      ? 'bg-gradient-to-r from-purple-600/25 to-indigo-600/25 border border-purple-500/50 text-white shadow-[0_0_15px_rgba(139,92,246,0.25)]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
-                  <GraduationCap className="w-4 h-4 text-purple-500 shrink-0" />
+                  <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
                   <span>University Solver</span>
                 </button>
 
@@ -432,11 +431,11 @@ export function Navbar({
                   onClick={() => handleNavClick('tutor')}
                   className={`w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'tutor'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      ? 'bg-gradient-to-r from-pink-600/25 to-purple-600/25 border border-pink-500/50 text-white shadow-[0_0_15px_rgba(236,72,153,0.25)]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
+                  <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
                   <span>AI Tutor</span>
                 </button>
 
@@ -445,15 +444,15 @@ export function Navbar({
                   onClick={() => handleNavClick('copilot')}
                   className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition active:scale-[0.98] ${
                     appMode === 'copilot'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      ? 'bg-gradient-to-r from-teal-600/25 to-cyan-600/25 border border-teal-500/50 text-white shadow-[0_0_15px_rgba(20,184,166,0.25)]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Student Copilot</span>
                   </div>
-                  <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                  <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
                     AI
                   </span>
                 </button>
@@ -461,14 +460,14 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={handleLibraryClick}
-                  className="w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition active:scale-[0.98]"
+                  className="w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-300 hover:text-white hover:bg-white/[0.06] transition active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-3">
-                    <FolderOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <FolderOpen className="w-4 h-4 text-indigo-400 shrink-0" />
                     <span>Study Library</span>
                   </div>
                   {savedCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded-full">
+                    <span className="px-2 py-0.5 text-xs font-bold bg-purple-950/80 border border-purple-500/40 text-purple-300 rounded-full">
                       {savedCount}
                     </span>
                   )}
@@ -481,9 +480,9 @@ export function Navbar({
                       setMobileMenuOpen(false);
                       onOpenApkModal();
                     }}
-                    className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition active:scale-[0.98]"
+                    className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-emerald-400 hover:bg-white/[0.06] transition active:scale-[0.98]"
                   >
-                    <Download className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Download className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Download Android App</span>
                   </button>
                 )}
@@ -491,14 +490,14 @@ export function Navbar({
             </div>
 
             {/* Drawer Footer / Profile section */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <div className="pt-4 border-t border-indigo-500/20 space-y-2">
               {currentUser ? (
                 <>
-                  <div className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 rounded-xl">
-                    <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                  <div className="px-3.5 py-2.5 bg-white/[0.05] border border-white/10 rounded-xl">
+                    <p className="font-bold text-xs sm:text-sm text-white truncate">
                       {currentUser.fullName || 'Student'}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-slate-400 truncate">
                       {currentUser.email}
                     </p>
                   </div>
@@ -510,7 +509,7 @@ export function Navbar({
                       if (onOpenAccountModal) onOpenAccountModal();
                       else onOpenAuthModal();
                     }}
-                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98] transition"
+                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] active:scale-[0.98] transition"
                   >
                     <User className="w-4 h-4 text-slate-400" />
                     <span>Profile & Account</span>
@@ -524,9 +523,9 @@ export function Navbar({
                         setMobileMenuOpen(false);
                         onOpenApiKeyModal();
                       }}
-                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98] transition"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] active:scale-[0.98] transition"
                     >
-                      <Key className="w-4 h-4 text-amber-500" />
+                      <Key className="w-4 h-4 text-amber-400" />
                       <span>Gemini API Key</span>
                     </button>
                   )}
@@ -537,7 +536,7 @@ export function Navbar({
                       setMobileMenuOpen(false);
                       onSignOut();
                     }}
-                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition active:scale-[0.98]"
+                    className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-red-400 hover:bg-red-950/40 transition active:scale-[0.98]"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -550,7 +549,7 @@ export function Navbar({
                     setMobileMenuOpen(false);
                     onOpenAuthModal();
                   }}
-                  className="w-full min-h-[44px] py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="w-full min-h-[44px] py-3 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login / Register</span>

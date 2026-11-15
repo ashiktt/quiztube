@@ -340,7 +340,28 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-indigo-500 selection:text-white transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#07091B] text-slate-100 selection:bg-purple-500 selection:text-white relative overflow-hidden transition-colors">
+      {/* ========================================================= */}
+      {/* MIDNIGHT AURORA AMBIENT BACKGROUND GLOWS & CURTAINS      */}
+      {/* ========================================================= */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        {/* Upper-Left Purple Ambient Glow */}
+        <div className="absolute top-[-10%] left-[-10%] w-[550px] sm:w-[850px] h-[550px] sm:h-[850px] rounded-full bg-gradient-to-br from-purple-700/25 via-indigo-600/15 to-transparent blur-[120px] animate-aurora-1" />
+
+        {/* Lower-Left Blue Ambient Glow */}
+        <div className="absolute top-[42%] left-[-12%] w-[480px] sm:w-[750px] h-[480px] sm:h-[750px] rounded-full bg-gradient-to-tr from-blue-700/20 via-sky-600/10 to-transparent blur-[130px] animate-aurora-2" />
+
+        {/* Right Side Magenta/Purple Ambient Glow */}
+        <div className="absolute top-[8%] right-[-10%] w-[520px] sm:w-[800px] h-[520px] sm:h-[800px] rounded-full bg-gradient-to-bl from-pink-600/20 via-fuchsia-600/15 to-transparent blur-[130px] animate-aurora-3" />
+
+        {/* Subtle Blue Center Ambient Lighting */}
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] rounded-full bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-purple-500/10 blur-[140px]" />
+
+        {/* Subtle Animated Aurora Waves along Left and Right Edges */}
+        <div className="absolute inset-y-0 left-0 w-28 sm:w-44 bg-gradient-to-r from-purple-600/15 via-indigo-900/5 to-transparent animate-aurora-wave" />
+        <div className="absolute inset-y-0 right-0 w-28 sm:w-44 bg-gradient-to-l from-pink-600/15 via-purple-900/5 to-transparent animate-aurora-wave" />
+      </div>
+
       {/* Navbar */}
       <Navbar
         onOpenApiKeyModal={() => setApiKeyModalOpen(true)}
@@ -370,7 +391,7 @@ export default function Home() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8 relative z-10">
         {appMode === 'copilot' ? (
           /* Student Copilot - AI Automation Assistant Mode */
           <StudentCopilotView
@@ -429,22 +450,28 @@ export default function Home() {
           />
         ) : !studySet ? (
           /* Landing / Input Screen */
-          <div className="space-y-8">
+          <div className="space-y-8 animate-hero-fade">
             {/* Top Feature Switcher Banners Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* 1. University Solver Banner Card */}
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-indigo-500/30">
-                <div className="flex items-start gap-3 text-left">
-                  <div className="p-2.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl text-white shadow-md shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {/* 1. University Solver Banner Card: Purple & Electric Blue Theme */}
+              <div
+                onClick={() => setAppMode('examSolver')}
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-indigo-500/30 hover:border-indigo-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(99,102,241,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+              >
+                {/* Subtle internal gradient lighting */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-purple-600/5 to-transparent pointer-events-none" />
+
+                <div className="flex items-start gap-3.5 text-left relative z-10">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.45)] group-hover:scale-105 transition-transform duration-300 shrink-0">
                     <GraduationCap className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-xs sm:text-sm">
+                      <h4 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
                         Advanced Question Solver
                       </h4>
                     </div>
-                    <p className="text-[11px] text-indigo-200 mt-1 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-indigo-200/80 mt-1 leading-relaxed">
                       Generate structured model answers (2, 5, 10, 15 M) with Mermaid diagrams and export PDF booklets.
                     </p>
                   </div>
@@ -452,32 +479,45 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => setAppMode('examSolver')}
-                  className="w-full py-2 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setAppMode('examSolver');
+                  }}
+                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Launch Question Solver</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
                 </button>
               </div>
 
-              {/* 2. AI Tutor Banner Card */}
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-purple-900 via-pink-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-purple-500/30">
-                <div className="flex items-start gap-3 text-left">
-                  <div className="p-2.5 bg-gradient-to-tr from-pink-500 to-purple-500 rounded-2xl text-white shadow-md shrink-0">
+              {/* 2. AI Tutor Banner Card: Magenta & Violet Theme */}
+              <div
+                onClick={() => {
+                  setTutorContext(null);
+                  setActiveTutorConversation(null);
+                  setAppMode('tutor');
+                }}
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-pink-500/30 hover:border-pink-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(236,72,153,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+              >
+                {/* Subtle internal gradient lighting */}
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-600/10 via-fuchsia-600/5 to-transparent pointer-events-none" />
+
+                <div className="flex items-start gap-3.5 text-left relative z-10">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-pink-500 via-fuchsia-600 to-purple-600 text-white shadow-[0_0_20px_rgba(236,72,153,0.45)] group-hover:scale-105 transition-transform duration-300 shrink-0">
                     <Sparkles className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-xs sm:text-sm">
+                      <h4 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
                         Saberio AI Tutor
                       </h4>
                       {SUBSCRIPTION_ENABLED && isPro && (
-                        <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full">
+                        <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-pink-400 text-pink-950 rounded-full shadow-xs">
                           PRO
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-pink-200 mt-1 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-pink-200/80 mt-1 leading-relaxed">
                       Socratic learning mode, mistake diagnosis, step-by-step logic derivations, and voice chat.
                     </p>
                   </div>
@@ -485,34 +525,41 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={e => {
+                    e.stopPropagation();
                     setTutorContext(null);
                     setActiveTutorConversation(null);
                     setAppMode('tutor');
                   }}
-                  className="w-full py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Chat with AI Tutor</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
                 </button>
               </div>
 
-              {/* 3. Student Copilot Banner Card */}
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col justify-between gap-4 border border-emerald-500/30 sm:col-span-2 lg:col-span-1">
-                <div className="flex items-start gap-3 text-left">
-                  <div className="p-2.5 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-2xl text-white shadow-md shrink-0">
+              {/* 3. Student Copilot Banner Card: Teal & Cyan Theme */}
+              <div
+                onClick={() => setAppMode('copilot')}
+                className="group relative p-4 sm:p-5 rounded-[22px] bg-[#0c102b]/70 backdrop-blur-xl border border-teal-500/30 hover:border-cyan-400/70 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:shadow-[0_12px_40px_rgba(20,184,166,0.28)] flex flex-col justify-between gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden sm:col-span-2 lg:col-span-1"
+              >
+                {/* Subtle internal gradient lighting */}
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 via-cyan-600/5 to-transparent pointer-events-none" />
+
+                <div className="flex items-start gap-3.5 text-left relative z-10">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-[0_0_20px_rgba(20,184,166,0.45)] group-hover:scale-105 transition-transform duration-300 shrink-0">
                     <Bot className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-xs sm:text-sm">
+                      <h4 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
                         Student Copilot
                       </h4>
-                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full">
+                      <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase bg-emerald-400 text-emerald-950 rounded-full shadow-xs">
                         AUTOMATION
                       </span>
                     </div>
-                    <p className="text-[11px] text-emerald-200 mt-1 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-teal-200/80 mt-1 leading-relaxed">
                       Transform college notices, exam schedules, and PDFs into verified events, study checkpoints, and n8n reminders.
                     </p>
                   </div>
@@ -520,11 +567,14 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => setAppMode('copilot')}
-                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setAppMode('copilot');
+                  }}
+                  className="relative z-10 w-full min-h-[40px] py-2.5 px-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group/btn"
                 >
                   <span>Launch Student Copilot</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
                 </button>
               </div>
             </div>
@@ -538,40 +588,40 @@ export default function Home() {
               onOpenUpgradeModal={() => setProModalOpen(true)}
             />
 
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6">
-              <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition">
-                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 rounded-2xl w-fit">
-                  <Play className="w-6 h-6 text-red-500 fill-red-500" />
+            {/* Feature Highlights Grid in Midnight Glass */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 pt-4">
+              <div className="p-5 sm:p-6 bg-[#0c102b]/60 backdrop-blur-xl border border-indigo-500/20 hover:border-indigo-400/50 rounded-[22px] space-y-3 shadow-lg shadow-black/35 hover:-translate-y-1 transition-all duration-300">
+                <div className="p-3 bg-indigo-950/70 border border-indigo-500/30 text-indigo-400 rounded-2xl w-fit shadow-[0_0_15px_rgba(99,102,241,0.25)]">
+                  <Play className="w-5 h-5 text-red-500 fill-red-500" />
                 </div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                <h3 className="font-bold text-base text-white tracking-tight">
                   Timestamp-Synced Review
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-300/80 leading-relaxed">
                   Every question and explanation maps to the exact video timestamp. If you miss a question, 1-click jumps the lecture player to where the concept is taught.
                 </p>
               </div>
 
-              <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition">
-                <div className="p-3 bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 rounded-2xl w-fit">
-                  <Sparkles className="w-6 h-6 text-purple-600" />
+              <div className="p-5 sm:p-6 bg-[#0c102b]/60 backdrop-blur-xl border border-purple-500/20 hover:border-purple-400/50 rounded-[22px] space-y-3 shadow-lg shadow-black/35 hover:-translate-y-1 transition-all duration-300">
+                <div className="p-3 bg-purple-950/70 border border-purple-500/30 text-purple-400 rounded-2xl w-fit shadow-[0_0_15px_rgba(168,85,247,0.25)]">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
                 </div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                <h3 className="font-bold text-base text-white tracking-tight">
                   Visual Study Cheatsheet & Diagrams
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-300/80 leading-relaxed">
                   Generates interactive visual flowcharts (Mermaid), core formula cards, comparison tables, and exam pitfall analysis.
                 </p>
               </div>
 
-              <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition">
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 rounded-2xl w-fit">
-                  <FileDown className="w-6 h-6 text-emerald-600" />
+              <div className="p-5 sm:p-6 bg-[#0c102b]/60 backdrop-blur-xl border border-teal-500/20 hover:border-teal-400/50 rounded-[22px] space-y-3 shadow-lg shadow-black/35 hover:-translate-y-1 transition-all duration-300">
+                <div className="p-3 bg-teal-950/70 border border-teal-500/30 text-teal-400 rounded-2xl w-fit shadow-[0_0_15px_rgba(20,184,166,0.25)]">
+                  <FileDown className="w-5 h-5 text-teal-400" />
                 </div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                <h3 className="font-bold text-base text-white tracking-tight">
                   Printable Assessment & PDF Export
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-300/80 leading-relaxed">
                   Export quizzes and cheatsheets as student-ready printable PDFs with separate answer keys, detailed explanations, and Markdown notes.
                 </p>
               </div>
