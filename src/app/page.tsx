@@ -56,6 +56,7 @@ import { ApkDownloadSection } from '@/components/ApkDownloadSection';
 import { AccountSubscriptionView } from '@/components/AccountSubscriptionView';
 import { LegalModals, LegalModalType } from '@/components/LegalModals';
 import { Footer } from '@/components/Footer';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { GlyphBackground } from '@/components/animate-ui/backgrounds/glyph';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
 import {
@@ -341,7 +342,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#080D0B] text-[#F8FAFC] selection:bg-emerald-500 selection:text-white relative overflow-x-clip transition-colors">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#080D0B] text-[#F8FAFC] selection:bg-emerald-500 selection:text-white relative overflow-x-hidden w-full max-w-full transition-colors">
       {/* ========================================================= */}
       {/* MAIN WEBSITE BACKGROUND - ANIMATE UI GLYPH BACKGROUND     */}
       {/* ========================================================= */}
@@ -944,6 +945,20 @@ export default function Home() {
         onOpenHistory={() => setHistoryDrawerOpen(true)}
         onOpenApkModal={() => setApkModalOpen(true)}
         onOpenLegalModal={(type) => setLegalModalType(type)}
+      />
+
+      {/* Mobile Bottom Navigation Bar (Persistent 1-Thumb Nav on Mobile) */}
+      <MobileBottomNav
+        appMode={appMode}
+        onSwitchMode={(mode) => {
+          if (mode === 'youtube') {
+            setActiveSolvedExam(null);
+          }
+          setAppMode(mode);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenHistory={() => setHistoryDrawerOpen(true)}
+        savedCount={savedSets.length + savedExams.length + savedTutorConversations.length}
       />
     </div>
   );

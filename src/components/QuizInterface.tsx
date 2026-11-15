@@ -241,7 +241,7 @@ export function QuizInterface({
                 : 'Good attempt! We recommend reviewing the lecture video at the highlighted timestamps.'}
             </p>
 
-            <div className="flex justify-center items-center gap-6 pt-2">
+            <div className="flex flex-wrap sm:flex-nowrap justify-center items-center gap-3 sm:gap-6 pt-2">
               <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-center min-w-[120px]">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Score</span>
                 <p className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
