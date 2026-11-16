@@ -62,7 +62,7 @@ export async function extractAcademicEventWithGemini(
     }
   }
 
-  const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+  const apiKey = (customApiKey || process.env.GEMINI_API_KEY)?.trim();
   if (!apiKey) {
     throw new Error('Gemini API key is not configured on the server. Please check environment configuration.');
   }

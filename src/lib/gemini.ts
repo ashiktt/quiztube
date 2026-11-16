@@ -192,11 +192,15 @@ const FALLBACK_MODELS = [
 ];
 
 /**
- * Validates the cryptographic format of a Google Gemini API Key
+ * Validates the cryptographic format of a Google Gemini API Key.
+ * Supports:
+ * - Legacy format: AIzaSy... (39 chars)
+ * - Modern Google AI Studio Authorization keys: AQ.Ab... (starts with AQ., 35-120 chars)
  */
 export function isValidGeminiApiKey(key: unknown): boolean {
   if (typeof key !== 'string') return false;
-  return /^AIzaSy[A-Za-z0-9_-]{33}$/.test(key.trim());
+  const trimmed = key.trim();
+  return /^(?:AIzaSy[A-Za-z0-9_-]{33}|AQ\.[A-Za-z0-9_.-]{35,120})$/.test(trimmed);
 }
 
 /**
@@ -223,6 +227,7 @@ export function formatGeminiErrorMessage(error: any): string {
   // Sanitize internal details: mask keys and strip external URLs
   const sanitized = msg
     .replace(/AIzaSy[A-Za-z0-9_-]{33}/g, 'AIzaSy***')
+    .replace(/AQ\.[A-Za-z0-9_.-]{35,120}/g, 'AQ.***')
     .replace(/https?:\/\/[^\s]+/g, '[service endpoint]')
     .slice(0, 250);
 
@@ -247,7 +252,7 @@ export async function generateStudySetWithGemini(params: {
   customApiKey?: string;
   preferredModel?: string;
 }): Promise<GeneratedStudySetData> {
-  const apiKey = params.customApiKey || process.env.GEMINI_API_KEY;
+  const apiKey = (params.customApiKey || process.env.GEMINI_API_KEY)?.trim();
 
   if (!apiKey) {
     throw new Error(

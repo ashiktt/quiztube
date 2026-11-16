@@ -241,7 +241,7 @@ REMEMBER: Return ONLY the JSON object. Do NOT add commentary outside the JSON.`;
  * Main function to interact with Gemini for AI Tutor
  */
 export async function generateTutorResponse(request: TutorChatRequest): Promise<TutorMessage> {
-  const apiKey = request.apiKey || process.env.GEMINI_API_KEY;
+  const apiKey = (request.apiKey || process.env.GEMINI_API_KEY)?.trim();
 
   if (!apiKey) {
     throw new Error(

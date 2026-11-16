@@ -309,12 +309,14 @@ export async function runSecurityTests(): Promise<{ passed: number; failed: numb
     assert.strictEqual(formattedStandalone.includes('AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q'), false);
   });
 
-  // Test 20: Malformed Gemini API key is rejected with clean error
+  // Test 20: Malformed Gemini API key is rejected by cryptographic format validator
   await test('20. Malformed Gemini API key is rejected by cryptographic format validator', () => {
     assert.strictEqual(isValidGeminiApiKey('invalid_key'), false);
     assert.strictEqual(isValidGeminiApiKey('AIzaSyShort'), false);
     assert.strictEqual(isValidGeminiApiKey('AIzaSy' + 'A'.repeat(32)), false); // 38 chars instead of 39
     assert.strictEqual(isValidGeminiApiKey('AIzaSy' + 'A'.repeat(33)), true); // 39 chars valid format
+    assert.strictEqual(isValidGeminiApiKey('AQ.Short'), false); // AQ. with too few chars
+    assert.strictEqual(isValidGeminiApiKey('AQ.MockAuthKey_' + 'B'.repeat(40) + '  '), true); // New Google AI Studio auth key format
   });
 
   console.log('\n--------------------------------------------------');

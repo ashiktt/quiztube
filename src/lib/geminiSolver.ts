@@ -110,7 +110,7 @@ export async function solveUniversityQuestionsWithGemini(params: {
     fileName,
   } = params;
 
-  const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+  const apiKey = (customApiKey || process.env.GEMINI_API_KEY)?.trim();
   if (!apiKey) {
     throw new Error('Gemini API key is required. Please add it to your environment variables or enter it in the app.');
   }
