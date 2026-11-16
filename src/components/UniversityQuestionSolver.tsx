@@ -28,6 +28,9 @@ import {
   X,
   FileUp,
   Crown,
+  MessageSquare,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import { SolvedQuestionItem, UniversityExamRequest, UniversitySolvedExam, UserUsageSummary } from '@/types';
 import { SUBSCRIPTION_ENABLED } from '@/config/subscription';
@@ -121,6 +124,94 @@ export function UniversityQuestionSolver({
   const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
+
+  // Contextual Follow-up State per question index
+  interface FollowUpChatTurn {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    suggestedFollowUps?: string[];
+    diagramMermaid?: string;
+    timestamp: string;
+  }
+  const [followUpsByQuestion, setFollowUpsByQuestion] = useState<Record<number, FollowUpChatTurn[]>>({});
+  const [followUpInputByQuestion, setFollowUpInputByQuestion] = useState<Record<number, string>>({});
+  const [followUpLoadingByQuestion, setFollowUpLoadingByQuestion] = useState<Record<number, boolean>>({});
+
+  const handleSendFollowUp = async (qIdx: number, promptText?: string) => {
+    const currentSol = solvedExam?.solutions?.[qIdx];
+    if (!currentSol) return;
+
+    const textToSend = promptText || followUpInputByQuestion[qIdx]?.trim();
+    if (!textToSend) return;
+
+    const currentHistory = followUpsByQuestion[qIdx] || [];
+    const userTurn: FollowUpChatTurn = {
+      id: `fu-user-${Date.now()}`,
+      role: 'user',
+      content: textToSend,
+      timestamp: new Date().toISOString(),
+    };
+
+    setFollowUpsByQuestion(prev => ({
+      ...prev,
+      [qIdx]: [...(prev[qIdx] || []), userTurn],
+    }));
+    setFollowUpInputByQuestion(prev => ({ ...prev, [qIdx]: '' }));
+    setFollowUpLoadingByQuestion(prev => ({ ...prev, [qIdx]: true }));
+
+    try {
+      const res = await fetch('/api/solve-exam/follow-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionNumber: currentSol.questionNumber,
+          originalQuestion: currentSol.questionText,
+          originalAnswer: currentSol.detailedAnswer,
+          followUpPrompt: textToSend,
+          subject,
+          academicLevel,
+          apiKey,
+          preferredModel,
+          history: currentHistory.map(h => ({ role: h.role, text: h.content })),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to process follow-up.');
+      }
+
+      const assistantTurn: FollowUpChatTurn = {
+        id: `fu-asst-${Date.now()}`,
+        role: 'assistant',
+        content: data.answer,
+        suggestedFollowUps: data.suggestedFollowUps,
+        diagramMermaid: data.diagramMermaid,
+        timestamp: new Date().toISOString(),
+      };
+
+      setFollowUpsByQuestion(prev => ({
+        ...prev,
+        [qIdx]: [...(prev[qIdx] || []), assistantTurn],
+      }));
+
+      if (onQuotaUsed) onQuotaUsed();
+    } catch (err: any) {
+      const errorTurn: FollowUpChatTurn = {
+        id: `fu-err-${Date.now()}`,
+        role: 'assistant',
+        content: `⚠️ ${err?.message || 'Failed to generate follow-up response. Please check your connection or API key.'}`,
+        timestamp: new Date().toISOString(),
+      };
+      setFollowUpsByQuestion(prev => ({
+        ...prev,
+        [qIdx]: [...(prev[qIdx] || []), errorTurn],
+      }));
+    } finally {
+      setFollowUpLoadingByQuestion(prev => ({ ...prev, [qIdx]: false }));
+    }
+  };
 
   // Daily quota
   const solverRemaining = usageSummary?.questionSolverRemaining ?? (isPro ? 100 : 2);
@@ -898,6 +989,101 @@ Q3. Compare Monolithic vs Microkernel architectures with diagrams, advantages, a
                           </div>
                         </div>
                       )}
+
+                      {/* Contextual Conversational Follow-Up Section */}
+                      <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                            <span>Ask Follow-up or Request Clarification</span>
+                          </span>
+                        </div>
+
+                        {/* Quick Suggested Prompt Pills */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            'Explain point 2 in simpler language',
+                            'Give another practical example',
+                            'Convert this into a 5-mark answer',
+                            'Explain the key trade-offs',
+                          ].map((pill, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              disabled={followUpLoadingByQuestion[idx]}
+                              onClick={() => handleSendFollowUp(idx, pill)}
+                              className="px-2.5 py-1 text-[11px] font-medium bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-full border border-indigo-200/60 dark:border-indigo-800/60 transition disabled:opacity-50"
+                            >
+                              + {pill}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Existing Conversation History for this Question */}
+                        {(followUpsByQuestion[idx] || []).length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            {followUpsByQuestion[idx].map((msg) => (
+                              <div
+                                key={msg.id}
+                                className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                                  msg.role === 'user'
+                                    ? 'bg-indigo-600 text-white ml-auto max-w-[85%]'
+                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 max-w-full'
+                                }`}
+                              >
+                                {msg.role === 'user' ? (
+                                  <p className="font-medium">{msg.content}</p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <SafeMarkdown content={msg.content} />
+                                    {msg.diagramMermaid && (
+                                      <div className="pt-2">
+                                        <MermaidRenderer code={msg.diagramMermaid} title="Follow-up Visual Diagram" />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Input Box */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <input
+                            type="text"
+                            placeholder={`Ask follow-up on ${sol.questionNumber} (e.g., "Explain with real code", "Simplify")...`}
+                            value={followUpInputByQuestion[idx] || ''}
+                            onChange={(e) =>
+                              setFollowUpInputByQuestion(prev => ({ ...prev, [idx]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendFollowUp(idx);
+                              }
+                            }}
+                            disabled={followUpLoadingByQuestion[idx]}
+                            className="flex-1 px-3.5 py-2 text-xs sm:text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder-slate-400 min-h-[40px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSendFollowUp(idx)}
+                            disabled={
+                              followUpLoadingByQuestion[idx] ||
+                              !(followUpInputByQuestion[idx] && followUpInputByQuestion[idx].trim().length > 0)
+                            }
+                            className="px-3.5 py-2 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 shrink-0"
+                          >
+                            {followUpLoadingByQuestion[idx] ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">Ask</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

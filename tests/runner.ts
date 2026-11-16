@@ -488,6 +488,82 @@ async function runAllTests() {
     assert.strictEqual(mobileNavExists, true, 'MobileBottomNav component must exist');
   });
 
+  // Test 27: Autonomous question classifier correctly categorizes academic questions
+  runTest('27. Autonomous question classifier categorizes academic question types with tailored reasoning', async () => {
+    const { classifyQuestion } = await import('../src/lib/ai/reasoningEngine');
+
+    const comp = classifyQuestion('Compare and contrast TCP and UDP protocols.', 5);
+    assert.strictEqual(comp.category, 'comparison');
+    assert.strictEqual(comp.requiresExample, true);
+
+    const arch = classifyQuestion('Draw and explain the architecture of Distributed Databases.', 10);
+    assert.strictEqual(arch.category, 'architecture');
+    assert.strictEqual(arch.requiresDiagram, true);
+
+    const num = classifyQuestion('Calculate the channel capacity given B = 4kHz and SNR = 31.', 5);
+    assert.strictEqual(num.category, 'numerical');
+    assert.strictEqual(num.requiresFormulaOrCode, true);
+
+    const algo = classifyQuestion('Explain Dijkstra shortest path algorithm with time complexity.', 8);
+    assert.strictEqual(algo.category, 'algorithm');
+    assert.strictEqual(algo.requiresFormulaOrCode, true);
+
+    const def = classifyQuestion('Define the term alphabet in formal languages.', 2);
+    assert.strictEqual(def.category, 'definition');
+    assert.strictEqual(def.requiresDiagram, false);
+  });
+
+  // Test 28: Smart Mermaid diagram sanitizer auto-quotes labels and fixes missing headers
+  runTest('28. Smart Mermaid diagram sanitizer auto-quotes labels and fixes missing headers', async () => {
+    const { validateAndCleanMermaid, shouldIncludeDiagram } = await import('../src/lib/ai/diagramEngine');
+
+    // Missing header but with node connections -> auto-prepends flowchart TD
+    const headless = 'Client[Web Browser (HTTP/2)] --> Server[API Gateway (Node.js)]';
+    const res1 = validateAndCleanMermaid(headless);
+    assert.strictEqual(res1.isValid, true);
+    assert.ok(res1.cleanedCode?.includes('flowchart TD'));
+    assert.ok(res1.cleanedCode?.includes('["Web Browser (HTTP/2)"]'));
+
+    // Should include diagram check
+    assert.strictEqual(shouldIncludeDiagram('definition', 2, 'Define alphabet'), false);
+    assert.strictEqual(shouldIncludeDiagram('architecture', 10, 'Explain system architecture'), true);
+    assert.strictEqual(shouldIncludeDiagram('numerical', 5, 'Calculate throughput'), false);
+  });
+
+  // Test 29: Response quality validation & auto-repair engine enforces academic depth
+  runTest('29. Response quality validation & auto-repair engine enforces academic depth and symbol integrity', async () => {
+    const { validateAndRepairSolution } = await import('../src/lib/ai/responseValidator');
+
+    const sampleItem = {
+      questionNumber: 'Q1',
+      questionText: 'Define formal alphabet and grammar.',
+      marksAllocated: 2,
+      answerSummary: 'Alphabet definition',
+      detailedAnswer: 'Alphabet $\\Sigma$ is a finite non-empty set of symbols. Example: Let $\\Sigma = \\{0, 1\\}$.',
+      keyPoints: ['Finite set', 'Symbols'],
+    };
+
+    const report = validateAndRepairSolution(sampleItem as any, 'Theory of Computation');
+    assert.strictEqual(report.isValid, true);
+    assert.ok(report.repairedItem.detailedAnswer.includes('Σ'));
+    assert.ok(!report.repairedItem.detailedAnswer.includes('\\Sigma'));
+    assert.ok(!report.repairedItem.detailedAnswer.includes('$'));
+  });
+
+  // Test 30: AI Evaluation Benchmark Dataset Verification
+  runTest('30. Fixed AI Evaluation Benchmark Dataset passes quality & mark-calibration checks', async () => {
+    const { EVALUATION_BENCHMARK_DATASET, evaluateBenchmarkItem } = await import('../src/lib/ai/evaluationDataset');
+
+    assert.ok(EVALUATION_BENCHMARK_DATASET.length >= 5, 'Must have at least 5 benchmark questions');
+
+    for (const item of EVALUATION_BENCHMARK_DATASET) {
+      const evalRes = evaluateBenchmarkItem(item, item.sampleModelAnswer);
+      assert.strictEqual(evalRes.categoryMatch, true, `Category must match for ${item.id}`);
+      assert.strictEqual(evalRes.isValid, true, `Sample solution must be valid for ${item.id}`);
+      assert.strictEqual(evalRes.wordCountCompliant, true, `Word count must be within calibration for ${item.id}`);
+    }
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;
