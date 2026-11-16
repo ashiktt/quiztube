@@ -37,59 +37,183 @@ export function resetPdfTypographyState(doc: jsPDF): void {
 }
 
 /**
- * Converts raw LaTeX expressions and mathematical symbols into clean, 100% readable text
- * suitable for PDF generation with standard fonts (no unreadable symbols, no raw LaTeX codes).
+ * PDF Symbol font character code mappings for Greek letters and mathematical symbols.
+ * Maps standard Unicode symbols directly to PostScript Type 1 Symbol font single-byte character codes.
+ * This guarantees 100% authentic vector rendering in all PDF viewers without UTF-16 byte corruption.
+ */
+export const SYMBOL_MAP: Record<string, string> = {
+  'Σ': 'S',
+  'σ': 's',
+  'ε': 'e',
+  'ϵ': 'e',
+  'λ': 'l',
+  'Λ': 'L',
+  'δ': 'd',
+  'Δ': 'D',
+  'θ': 'q',
+  'Θ': 'Q',
+  'π': 'p',
+  'Π': 'P',
+  'α': 'a',
+  'β': 'b',
+  'γ': 'g',
+  'Γ': 'G',
+  'ω': 'w',
+  'Ω': 'W',
+  'μ': 'm',
+  'τ': 't',
+  'φ': 'f',
+  'Φ': 'F',
+  'ψ': 'y',
+  'Ψ': 'Y',
+  '∈': String.fromCharCode(206),
+  '∉': String.fromCharCode(207),
+  '⊆': String.fromCharCode(205),
+  '⊂': String.fromCharCode(204),
+  '∪': String.fromCharCode(200),
+  '∩': String.fromCharCode(199),
+  '∅': String.fromCharCode(198),
+  '→': String.fromCharCode(174),
+  '⇒': String.fromCharCode(222),
+  '≤': String.fromCharCode(163),
+  '≥': String.fromCharCode(179),
+  '≠': String.fromCharCode(185),
+  '±': String.fromCharCode(177),
+  '×': String.fromCharCode(180),
+  '∞': String.fromCharCode(165),
+};
+
+export const SYMBOL_REGEX = /([ΣσεϵλΛδΔθΘπΠαβγΓωΩμτφΦψΨ∈∉⊆⊂∪∩∅→⇒≤≥≠±×∞])/g;
+
+export interface TextSegment {
+  text: string;
+  isSymbol: boolean;
+  symbolCode: string;
+}
+
+/**
+ * Splits text into standard font segments and Symbol font segments.
+ */
+export function splitIntoSegments(text: string): TextSegment[] {
+  if (!text) return [];
+  const parts = text.split(SYMBOL_REGEX);
+  return parts
+    .filter(p => p.length > 0)
+    .map(p => ({
+      text: p,
+      isSymbol: Boolean(SYMBOL_MAP[p]),
+      symbolCode: SYMBOL_MAP[p] || p,
+    }));
+}
+
+/**
+ * Measures the exact width of a text string accounting for Symbol font glyph metrics.
+ */
+export function measureTextWithSymbols(doc: jsPDF, text: string, isBold = false): number {
+  if (!text) return 0;
+  const segments = splitIntoSegments(text);
+  let total = 0;
+
+  for (const seg of segments) {
+    if (seg.isSymbol) {
+      doc.setFont('Symbol', 'normal');
+      total += doc.getTextWidth(seg.symbolCode);
+    } else {
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      total += doc.getTextWidth(seg.text);
+    }
+  }
+
+  return total;
+}
+
+/**
+ * Splits text into wrapped lines taking into account exact Symbol font dimensions.
+ */
+export function splitTextWithSymbolsToSize(
+  doc: jsPDF,
+  text: string,
+  maxWidth: number,
+  isBold = false
+): string[] {
+  if (!text) return [];
+  const words = text.trim().split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    if (!word) continue;
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (measureTextWithSymbols(doc, testLine, isBold) <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [''];
+}
+
+/**
+ * Converts raw LaTeX expressions and mathematical symbols into authentic mathematical symbols
+ * (e.g. \Sigma -> Σ, \epsilon -> ε, \in -> ∈, \emptyset -> ∅) ready for exact vector rendering.
  */
 export function sanitizeLatexAndSymbols(text: string): string {
   if (!text) return '';
 
   return text
-    // 1. Common Greek Letters (Convert to clean, readable standard names)
-    .replace(/\\Sigma\b/g, 'Sigma')
-    .replace(/\\sigma\b/g, 'sigma')
-    .replace(/\\Lambda\b/g, 'Lambda')
-    .replace(/\\lambda\b/g, 'lambda')
-    .replace(/\\Delta\b/g, 'Delta')
-    .replace(/\\delta\b/g, 'delta')
-    .replace(/\\Theta\b/g, 'Theta')
-    .replace(/\\theta\b/g, 'theta')
-    .replace(/\\Alpha\b/g, 'Alpha')
-    .replace(/\\alpha\b/g, 'alpha')
-    .replace(/\\Beta\b/g, 'Beta')
-    .replace(/\\beta\b/g, 'beta')
-    .replace(/\\Gamma\b/g, 'Gamma')
-    .replace(/\\gamma\b/g, 'gamma')
-    .replace(/\\Omega\b/g, 'Omega')
-    .replace(/\\omega\b/g, 'omega')
-    .replace(/\\pi\b/g, 'pi')
-    .replace(/\\epsilon\b/g, 'epsilon')
-    .replace(/\\phi\b/g, 'phi')
-    .replace(/\\Phi\b/g, 'Phi')
-    .replace(/\\mu\b/g, 'mu')
+    // 1. Greek Letters (Convert LaTeX to authentic Greek Unicode symbols)
+    .replace(/\\Sigma\b/g, 'Σ')
+    .replace(/\\sigma\b/g, 'σ')
+    .replace(/\\Lambda\b/g, 'Λ')
+    .replace(/\\lambda\b/g, 'λ')
+    .replace(/\\Delta\b/g, 'Δ')
+    .replace(/\\delta\b/g, 'δ')
+    .replace(/\\Theta\b/g, 'Θ')
+    .replace(/\\theta\b/g, 'θ')
+    .replace(/\\Alpha\b/g, 'α')
+    .replace(/\\alpha\b/g, 'α')
+    .replace(/\\Beta\b/g, 'β')
+    .replace(/\\beta\b/g, 'β')
+    .replace(/\\Gamma\b/g, 'Γ')
+    .replace(/\\gamma\b/g, 'γ')
+    .replace(/\\Omega\b/g, 'Ω')
+    .replace(/\\omega\b/g, 'ω')
+    .replace(/\\pi\b/g, 'π')
+    .replace(/\\(?:epsilon|varepsilon)\b/g, 'ε')
+    .replace(/\\phi\b/g, 'φ')
+    .replace(/\\Phi\b/g, 'Φ')
+    .replace(/\\mu\b/g, 'μ')
 
     // 2. Set Theory & Logic Symbols
-    .replace(/\\in\b/g, ' in ')
-    .replace(/\\notin\b/g, ' not in ')
-    .replace(/\\subset(eq)?\b/g, ' subset of ')
-    .replace(/\\supset(eq)?\b/g, ' superset of ')
-    .replace(/\\cup\b/g, ' union ')
-    .replace(/\\cap\b/g, ' intersection ')
-    .replace(/\\emptyset\b/g, '{}')
+    .replace(/\\in\b/g, ' ∈ ')
+    .replace(/\\notin\b/g, ' ∉ ')
+    .replace(/\\subseteq\b/g, ' ⊆ ')
+    .replace(/\\subset\b/g, ' ⊂ ')
+    .replace(/\\supset(eq)?\b/g, ' ⊇ ')
+    .replace(/\\cup\b/g, ' ∪ ')
+    .replace(/\\cap\b/g, ' ∩ ')
+    .replace(/\\emptyset\b/g, '∅')
     .replace(/\\forall\b/g, 'for all ')
     .replace(/\\exists\b/g, 'there exists ')
 
     // 3. Mathematical Operations & Relations
-    .replace(/\\rightarrow\b|\\to\b/g, ' -> ')
-    .replace(/\\leftarrow\b/g, ' <- ')
-    .replace(/\\Rightarrow\b|\\implies\b/g, ' => ')
-    .replace(/\\le\b|\\leq\b/g, ' <= ')
-    .replace(/\\ge\b|\\geq\b/g, ' >= ')
-    .replace(/\\ne\b|\\neq\b/g, ' != ')
-    .replace(/\\approx\b/g, ' ~= ')
-    .replace(/\\times\b/g, ' * ')
-    .replace(/\\cdot\b/g, ' . ')
-    .replace(/\\pm\b/g, ' +/- ')
-    .replace(/\\infty\b/g, 'infinity')
+    .replace(/\\rightarrow\b|\\to\b/g, ' → ')
+    .replace(/\\leftarrow\b/g, ' ← ')
+    .replace(/\\Rightarrow\b|\\implies\b/g, ' ⇒ ')
+    .replace(/\\le\b|\\leq\b/g, ' ≤ ')
+    .replace(/\\ge\b|\\geq\b/g, ' ≥ ')
+    .replace(/\\ne\b|\\neq\b/g, ' ≠ ')
+    .replace(/\\approx\b/g, ' ≈ ')
+    .replace(/\\times\b/g, ' × ')
+    .replace(/\\cdot\b/g, ' · ')
+    .replace(/\\pm\b/g, ' ± ')
+    .replace(/\\infty\b/g, '∞')
 
     // 4. Escaped Brackets & Delimiters
     .replace(/\\\{/g, '{')

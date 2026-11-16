@@ -6,6 +6,9 @@ import {
   finalizePdfLayout,
   resetPdfTypographyState,
   cleanMarkdownText,
+  splitIntoSegments,
+  measureTextWithSymbols,
+  splitTextWithSymbolsToSize,
 } from './pdfBranding';
 
 export { cleanMarkdownText };
@@ -176,6 +179,44 @@ function drawVectorBullet(doc: jsPDF, x: number, y: number, color = [71, 85, 105
 }
 
 /**
+ * Renders a single line of text supporting inline mathematical and Greek symbols
+ * rendered with standard PostScript Symbol font (/F14) without any UTF-16 character corruption.
+ */
+export function renderSegmentedLine(
+  doc: jsPDF,
+  lineText: string,
+  x: number,
+  y: number,
+  isBold = false,
+  color: [number, number, number] = [30, 41, 59],
+  fontSize = 10.5
+): number {
+  if (!lineText) return 0;
+  const segments = splitIntoSegments(lineText);
+  let curX = x;
+
+  for (const seg of segments) {
+    if (seg.isSymbol) {
+      doc.setFont('Symbol', 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(seg.symbolCode, curX, y);
+      curX += doc.getTextWidth(seg.symbolCode);
+    } else {
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(seg.text, curX, y);
+      curX += doc.getTextWidth(seg.text);
+    }
+  }
+
+  // Restore font
+  doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+  return curX - x;
+}
+
+/**
  * Renders an academic list item (numbered or bulleted) with a bold title and natural body text.
  * Renders lines as complete continuous strings to guarantee 100% natural character-spacing
  * and eliminate disjoint word-spacing and character collision artifacts.
@@ -216,23 +257,17 @@ function renderAcademicListItem(params: {
   if (isBullet) {
     drawVectorBullet(doc, startX + 2.0, curY, [71, 85, 105]);
   } else {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(fontSize);
-    doc.setTextColor(15, 23, 42); // Dark Navy
-    doc.text(prefix, startX, curY);
+    renderSegmentedLine(doc, prefix, startX, curY, true, [15, 23, 42], fontSize);
   }
 
   const prefixTextX = hangingIndentX;
   const availWidth = contentWidth - (hangingIndentX - startX);
 
   if (boldTitle) {
-    // Measure bold title width
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(fontSize);
-    const titleWidth = doc.getTextWidth(boldTitle + ' ');
+    // Measure bold title width taking mathematical symbols into account
+    const titleWidth = measureTextWithSymbols(doc, boldTitle + ' ', true);
 
     // Check if remaining body text fits on the first line
-    doc.setFont('helvetica', 'normal');
     const firstLineAvailWidth = availWidth - titleWidth;
 
     if (firstLineAvailWidth > 25 && bodyText.trim().length > 0) {
@@ -243,7 +278,7 @@ function renderAcademicListItem(params: {
       let curW = 0;
 
       for (let i = 0; i < words.length; i++) {
-        const wWidth = doc.getTextWidth(words[i] + ' ');
+        const wWidth = measureTextWithSymbols(doc, words[i] + ' ', false);
         if (curW + wWidth <= firstLineAvailWidth) {
           line1Words.push(words[i]);
           curW += wWidth;
@@ -254,63 +289,47 @@ function renderAcademicListItem(params: {
       }
 
       // Render bold title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(fontSize);
-      doc.setTextColor(15, 23, 42);
-      doc.text(boldTitle, prefixTextX, curY);
+      renderSegmentedLine(doc, boldTitle, prefixTextX, curY, true, [15, 23, 42], fontSize);
 
-      // Render first line body text as a SINGLE continuous string
+      // Render first line body text as a segmented line with authentic symbols
       if (line1Words.length > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(fontSize);
-        doc.setTextColor(30, 41, 59); // Slate 800
-        doc.text(line1Words.join(' '), prefixTextX + titleWidth, curY);
+        renderSegmentedLine(doc, line1Words.join(' '), prefixTextX + titleWidth, curY, false, [30, 41, 59], fontSize);
       }
 
       // Render subsequent lines with full hanging indent as complete continuous strings
       if (restWords.length > 0) {
         const remainingStr = restWords.join(' ');
-        const wrappedLines = doc.splitTextToSize(remainingStr, availWidth);
+        const wrappedLines = splitTextWithSymbolsToSize(doc, remainingStr, availWidth, false);
         for (let j = 0; j < wrappedLines.length; j++) {
           curY += lineHeight;
-          doc.text(wrappedLines[j], prefixTextX, curY);
+          renderSegmentedLine(doc, wrappedLines[j], prefixTextX, curY, false, [30, 41, 59], fontSize);
           linesDrawn++;
         }
       }
     } else {
       // Bold title occupies entire first line
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(fontSize);
-      doc.setTextColor(15, 23, 42);
-      doc.text(boldTitle, prefixTextX, curY);
+      renderSegmentedLine(doc, boldTitle, prefixTextX, curY, true, [15, 23, 42], fontSize);
 
       if (bodyText.trim().length > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(fontSize);
-        doc.setTextColor(30, 41, 59);
-        const wrappedLines = doc.splitTextToSize(bodyText.trim(), availWidth);
+        const wrappedLines = splitTextWithSymbolsToSize(doc, bodyText.trim(), availWidth, false);
         for (let j = 0; j < wrappedLines.length; j++) {
           curY += lineHeight;
-          doc.text(wrappedLines[j], prefixTextX, curY);
+          renderSegmentedLine(doc, wrappedLines[j], prefixTextX, curY, false, [30, 41, 59], fontSize);
           linesDrawn++;
         }
       }
     }
   } else {
     // Pure text item (no bold sub-heading)
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(fontSize);
-    doc.setTextColor(30, 41, 59);
-    const wrappedLines = doc.splitTextToSize(bodyText.trim(), availWidth);
+    const wrappedLines = splitTextWithSymbolsToSize(doc, bodyText.trim(), availWidth, false);
     wrappedLines.forEach((wLine: string, idx: number) => {
-      doc.text(wLine, prefixTextX, initialY + idx * lineHeight);
+      renderSegmentedLine(doc, wLine, prefixTextX, initialY + idx * lineHeight, false, [30, 41, 59], fontSize);
     });
     linesDrawn = Math.max(1, wrappedLines.length);
     curY = initialY + (linesDrawn - 1) * lineHeight;
   }
 
   // nextY is the starting baseline for the NEXT item or element:
-  // last line baseline + lineHeight + itemSpacing
   const nextY = curY + lineHeight + itemSpacing;
 
   resetPdfTypographyState(doc);
@@ -319,7 +338,8 @@ function renderAcademicListItem(params: {
 
 /**
  * Renders a full academic paragraph with 100% natural character spacing,
- * native PDF font kerning, and comfortable line-height.
+ * native PDF font kerning, comfortable line-height, and authentic symbol rendering.
+ * Supports bold lead-ins (e.g. **Alphabet (Σ):** or **Example:**).
  */
 function renderParagraph(
   doc: jsPDF,
@@ -331,19 +351,83 @@ function renderParagraph(
   lineHeight = 5.4,
   paragraphSpacing = 3.2
 ): { newY: number; linesCount: number } {
+  const trimmed = text.trim();
+  if (!trimmed) return { newY: yPos, linesCount: 0 };
+
+  // Check for bold lead-in e.g. **Alphabet (Σ):** or **Example:** or **Concept**:
+  const boldLeadMatch = trimmed.match(/^\*\*([^*]+)\*\*[:\s-]*([\s\S]*)/);
+
+  if (boldLeadMatch) {
+    const rawT = boldLeadMatch[1].trim();
+    const cleanT = cleanMarkdownText(rawT);
+    const boldTitle = cleanT.endsWith(':') ? cleanT : `${cleanT}:`;
+    const restText = cleanMarkdownText(boldLeadMatch[2].trim().replace(/^:+/, '').trim());
+
+    if (!restText) {
+      // Bold title standalone on its line (e.g. **Example:**)
+      renderSegmentedLine(doc, boldTitle, startX, yPos, true, [15, 23, 42], fontSize);
+      const nextY = yPos + lineHeight + 1.8;
+      resetPdfTypographyState(doc);
+      return { newY: nextY, linesCount: 1 };
+    }
+
+    // Bold title followed by body text on the same line
+    const titleWidth = measureTextWithSymbols(doc, boldTitle + ' ', true);
+    const firstLineAvail = availWidth - titleWidth;
+
+    if (firstLineAvail > 20) {
+      const words = restText.split(/\s+/);
+      let line1Words: string[] = [];
+      let restWords: string[] = [];
+      let curW = 0;
+
+      for (let i = 0; i < words.length; i++) {
+        const wW = measureTextWithSymbols(doc, words[i] + ' ', false);
+        if (curW + wW <= firstLineAvail) {
+          line1Words.push(words[i]);
+          curW += wW;
+        } else {
+          restWords = words.slice(i);
+          break;
+        }
+      }
+
+      renderSegmentedLine(doc, boldTitle, startX, yPos, true, [15, 23, 42], fontSize);
+      if (line1Words.length > 0) {
+        renderSegmentedLine(doc, line1Words.join(' '), startX + titleWidth, yPos, false, [30, 41, 59], fontSize);
+      }
+
+      let curY = yPos;
+      let linesCount = 1;
+
+      if (restWords.length > 0) {
+        const wrapped = splitTextWithSymbolsToSize(doc, restWords.join(' '), availWidth, false);
+        for (let j = 0; j < wrapped.length; j++) {
+          curY += lineHeight;
+          renderSegmentedLine(doc, wrapped[j], startX, curY, false, [30, 41, 59], fontSize);
+          linesCount++;
+        }
+      }
+
+      const nextY = curY + lineHeight + paragraphSpacing;
+      resetPdfTypographyState(doc);
+      return { newY: nextY, linesCount };
+    }
+  }
+
+  // Standard paragraph without bold lead-in
   const clean = cleanMarkdownText(text);
   if (!clean) return { newY: yPos, linesCount: 0 };
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(fontSize);
-  doc.setTextColor(30, 41, 59); // Slate 800
+  const lines = splitTextWithSymbolsToSize(doc, clean, availWidth, false);
+  let curY = yPos;
+  lines.forEach((line, idx) => {
+    const lineY = yPos + idx * lineHeight;
+    renderSegmentedLine(doc, line, startX, lineY, false, [30, 41, 59], fontSize);
+    curY = lineY;
+  });
 
-  const lines = doc.splitTextToSize(clean, availWidth);
-  doc.text(lines, startX, yPos);
-
-  const lastBaseline = yPos + (lines.length - 1) * lineHeight;
-  const nextY = lastBaseline + lineHeight + paragraphSpacing;
-
+  const nextY = curY + lineHeight + paragraphSpacing;
   resetPdfTypographyState(doc);
   return { newY: nextY, linesCount: lines.length };
 }
@@ -464,8 +548,10 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
     doc.setTextColor(15, 23, 42); // Dark Navy
 
     const fullQuestionHeading = `${qNum}. ${cleanQText}${marksSuffix}`;
-    const qHeadingLines = doc.splitTextToSize(fullQuestionHeading, contentWidth);
-    doc.text(qHeadingLines, margin, yPos);
+    const qHeadingLines = splitTextWithSymbolsToSize(doc, fullQuestionHeading, contentWidth, true);
+    qHeadingLines.forEach((qLine, qIdx) => {
+      renderSegmentedLine(doc, qLine, margin, yPos + qIdx * 7.0, true, [15, 23, 42], 17.5);
+    });
     yPos += qHeadingLines.length * 7.0 + 5.0;
 
     // Structured Detailed Answer Rendering
@@ -637,10 +723,7 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         // Widow/orphan protection: ensure heading is kept with following content
         checkPageBreak(25);
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12.5);
-        doc.setTextColor(15, 23, 42); // Dark Navy / Slate 900
-        doc.text(cleanHeading, margin, yPos);
+        renderSegmentedLine(doc, cleanHeading, margin, yPos, true, [15, 23, 42], 12.5);
         yPos += 7.0;
 
         resetPdfTypographyState(doc);

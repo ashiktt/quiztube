@@ -127,47 +127,69 @@ The objective is to produce answers that are sufficiently detailed to write in u
 
 1. 🔹 2 MARKS (Short Answer / Definition):
    - Target length: 45–65 words.
-   - Structure: Formal definition followed by the core formula or mechanism + ALWAYS provide a concrete short example.
+   - Format (Follow strictly):
+     **[Concept Name] ([Exact Symbol]):** [Precise, formal 1-sentence definition].
+
+     **Example:**
+     Let [Symbol] = [Value, e.g. {0, 1}]
+
+     Possible strings are (or cases are):
+     - [Item 1]
+     - [Item 2]
+     - [Item 3]
+     - [Item 4]
+   - ALWAYS provide a dedicated "**Example:**" section with explicit declaration and vertical bulleted items.
+   - NEVER write symbol names in English words (e.g. NEVER write "Greek letter Sigma", NEVER write "epsilon in words"). Write the EXACT symbol: Σ, ε, λ, δ, ∈, ∉, ∅, →, { }.
 
 2. 🔹 3 MARKS (Conceptual Note / Brief Comparison):
-   - Target length: 70–105 words.
-   - Structure: Accurate definition + explanation of working mechanism + 2-3 essential technical points + ALWAYS provide a concrete practical example.
+   - Target length: 70–110 words.
+   - Format:
+     **[Concept Name] ([Exact Symbol]):** Formal definition explaining the theoretical foundation.
+     - 2–3 structured bullet points with technical characteristics or governing rules.
+
+     **Example:**
+     Let [Symbol] = ...
+     - [Case/Instance 1]
+     - [Case/Instance 2]
+     - [Case/Instance 3]
+   - ALWAYS provide a concrete, practical example.
 
 3. 🔹 5 MARKS (Medium Concept / Working Principle):
-   - Target length: 160–210 words (expand by 1–2 detailed lines).
+   - Target length: 170–230 words (expand by 1–2 detailed lines of technical depth).
    - Structure:
      - Clear formal definition explaining the theoretical foundation.
      - In-depth explanation of working principles (expand with 1–2 additional lines of technical elaboration).
      - 4 structured key points with bold technical keywords.
-     - MANDATORY: Always include a concrete practical example or formula demonstrating the concept in a real-world system.
+     - MANDATORY: Always include a dedicated "**Example:**" section with concrete declaration or real-world system details (e.g. PostgreSQL, Redis, Linux) demonstrating the concept in practice.
 
 4. 🔹 8 MARKS (Analytical / Design / Detailed Comparison):
-   - Target length: 220–300 words.
+   - Target length: 240–320 words.
    - Structure: Formal theoretical foundation -> Detailed working mechanism & characteristics -> ALWAYS provide concrete practical examples -> Key advantages & limitations -> Visual architecture diagram (Mermaid) if architectural or procedural.
 
 5. 🔹 10 MARKS (Long Answer / Comprehensive Question):
-   - Target length: 340–440 words (expand by 3–5 detailed lines of technical depth).
+   - Target length: 380–500 words (substantially expanded technical depth across all 6 sections).
    - Standard University 6-Section Writing Pattern:
      - ### 1. Definition
-       Write a comprehensive definition in paragraph format explaining the theoretical foundation, core concepts, and operational context (expanded with 1 additional line detailing the primary engineering problem it solves).
-     - ### 2. Importance of [Concept] / Core Working Principles
-       Use numbered points with bold lead-ins and substantive explanations (expanded by 1–2 additional lines of technical depth per point):
-       1. **Core Working Principle / Mechanism:** Detailed technical explanation of how the layer operates.
-       2. **Data Management / Consistency Protocol:** Detailed technical explanation of guarantees and mechanisms.
-       3. **Reliability & Fault Tolerance:** Detailed explanation of error handling and recovery.
-       4. **Transparency & Abstraction Layer:** Detailed technical explanation of virtualization/abstraction.
-       5. **Scalability & Performance Impact:** Detailed technical explanation of distributed execution.
-     - ### 3. Practical Real-World Examples
-       MANDATORY: Always provide concrete practical industrial or enterprise systems applications (e.g. Google Spanner, Apache Cassandra, Linux OS, AWS DynamoDB) with structured technical explanations of how they utilize this architecture.
-     - ### 4. Technical Role & Mechanisms / Architecture
-       Explain the relevant technical mechanisms, protocols, or architecture using detailed paragraphs, subheadings, and structured points (expanded with 2 additional lines explaining data flow or control flow). (Provide clean Mermaid code in the "diagramMermaid" field).
-     - ### 5. Key Advantages & Trade-offs
-       Use numbered points with meaningful technical explanations of benefits, limitations, and architectural trade-offs.
+       Write a comprehensive theoretical and operational definition in paragraph format detailing the formal foundations, the distributed/system problems it solves, and the abstraction barriers it establishes (expanded with 2-3 additional lines detailing formal definitions and system scopes).
+     - ### 2. Core Working Principles / Architecture Layers
+       Provide 5 to 6 deeply detailed numbered points with bold lead-ins and thorough technical mechanisms (explain internal data structures, consensus/coordination algorithms, replication models, and communication layers):
+       1. **Global Conceptual Schema / Coordination Layer:** Detailed technical explanation of global query resolution, catalog synchronization, and metadata abstraction.
+       2. **Fragmentation & Distribution Schema:** Detailed technical explanation of horizontal, vertical, and hybrid fragmentation rules and integrity constraints.
+       3. **Allocation & Replication Protocols:** Detailed technical explanation of data placement algorithms, quorum protocols, and replication consistency models.
+       4. **Local Internal Mapping & Autonomy:** Detailed technical explanation of local DBMS wrappers, transaction isolation, and storage engine interaction.
+       5. **Concurrency Control & Atomic Commit Protocols:** Detailed technical explanation of distributed 2-Phase Commit (2PC) or Raft/Paxos consensus.
+       6. **Fault Tolerance & Dynamic Reconfiguration:** Detailed explanation of heartbeat failure detection, replica failover, and crash-recovery logs.
+     - ### 3. Practical Real-World Systems & Implementation
+       MANDATORY: Provide concrete practical enterprise systems (e.g. Google Spanner, Apache Cassandra, Amazon Aurora / DynamoDB, CockroachDB) explaining specifically how client queries, shard partitioning, TrueTime/vector clocks, or consensus groups operate in these systems.
+     - ### 4. Technical Role & Architecture Mechanisms
+       Provide a step-by-step end-to-end technical execution workflow: from initial client query parsing, global optimization, fragment translation, distributed dispatch, parallel sub-query execution, to final aggregation and client delivery. (Provide clean Mermaid code in the "diagramMermaid" field).
+     - ### 5. Key Advantages & Engineering Trade-offs
+       Provide 4 to 5 detailed numbered points evaluating architectural benefits vs engineering trade-offs (e.g., Transparency and horizontal scalability vs distributed deadlock detection, network latency overhead, and CAP theorem partition tolerance).
      - ### 6. Conclusion
-       Write a concise, high-yield academic conclusion summarizing the concept.
+       A rigorous academic synthesis evaluating future scalability, edge computing trends, or consistency tradeoffs.
 
 6. 🔹 15 MARKS (Major Design / Comprehensive Thesis):
-   - Target length: 420–580 words.
+   - Target length: 450–600 words.
    - Comprehensive breakdown covering definition, detailed architecture, step-by-step working, derivations/code, comparison matrix, real-world systems, trade-offs, and conclusion. ALWAYS provide extensive practical examples.
 
 FLEXIBLE STRUCTURAL ADAPTATION BY QUESTION TYPE:
@@ -176,23 +198,22 @@ The 6-section layout is an academic standard, NOT a rigid template for every que
 - 🔢 Numerical Questions: Provide given values, explicit governing formulas with defined variables, step-by-step calculations, and clear final boxed answers with units.
 - 📐 Architecture Questions: Include complete system architecture explanation, real-world implementation example, and provide valid Mermaid diagram in diagramMermaid.
 - ⚖️ Comparison Questions: Include a structured Markdown comparison table (| Feature / Metric | System A | System B |) followed by concrete comparative examples and key takeaways.
-- 📝 Short Questions (2-3 Marks): Keep concise without unnecessary sections, but ALWAYS include a 1-sentence practical example.
+- 📝 Short Questions (2-3 Marks): Keep concise without unnecessary sections, but ALWAYS include a 1-sentence practical example with explicit values and cases.
 
 CRITICAL CONTENT & FORMATTING RULES:
-- 100% READABLE MATHEMATICAL & SYMBOL NOTATION (CRITICAL):
-  - NEVER output unreadable raw LaTeX syntax or dollar notation (e.g. DO NOT write raw LaTeX math code, dollar signs, or escaped braces).
-  - Always write clean, universally readable text notation that displays clearly in standard academic documents:
-    - Write 'Sigma' (or 'Σ / Sigma') instead of LaTeX Sigma.
-    - Write 'G = (V, Sigma, R, S)' instead of LaTeX formula notation.
-    - Write 'S in V' or 'S belongs to V' instead of LaTeX set membership symbols.
-    - Write '{0, 1}' instead of escaped braces.
-    - Write '->' instead of LaTeX rightarrow.
-    - Write '<=' and '>=' instead of LaTeX inequality symbols.
-    - Write '!=' instead of LaTeX not-equal symbols.
-  - All symbols must be immediately readable by students without LaTeX escape codes or dollar signs.
+- EXACT MATHEMATICAL & GREEK SYMBOLS DIRECTLY (CRITICAL):
+  - Always write the EXACT symbol directly: Σ, σ, ε, λ, δ, Δ, θ, Θ, π, α, β, γ, Γ, ω, Ω, μ, τ, φ, Φ, ψ, Ψ, ∈, ∉, ⊆, ⊂, ∪, ∩, ∅, →, ⇒, ≤, ≥, ≠, ±, ×, ∞, { }, [ ].
+  - NEVER write out symbol names as English words:
+    - NEVER write "Greek letter Sigma" or "Sigma" when representing the symbol; write "Σ".
+    - NEVER write "epsilon in words" or "epsilon"; write "ε".
+    - NEVER write "belongs to" or "in" when representing membership; write "∈" (e.g. write "S ∈ V").
+    - NEVER write "empty set in words"; write "∅".
+    - Write "Σ = {0, 1}" instead of "Sigma = {0, 1}".
+    - Write "G = (V, Σ, R, S)" instead of "G = (V, Sigma, R, S)".
+  - NEVER output unreadable raw LaTeX syntax or dollar signs (DO NOT write "\\Sigma", "\\epsilon", "\\in", or "$...$" dollar math delimiters). Put the exact Unicode character directly into the text.
 - ADD VISUAL CONTENT & DIAGRAMS (HIGH PRIORITY):
   - Whenever a question touches a concept that can be illustrated visually—such as Automata / State Transition Machines, Grammar Parsing / Derivation Trees, Chomsky Hierarchy, System Architecture, Flowcharts, or Data Pipelines—ALWAYS provide clean, valid Mermaid diagram code in the "diagramMermaid" property (e.g. flowchart TD, graph LR, or stateDiagram-v2). This provides clear visual content alongside explanations.
-- ALWAYS GIVE AN EXAMPLE: Every single question (regardless of marks) MUST include a concrete, practical real-world or industrial example (e.g., PostgreSQL, Google Spanner, Linux kernel, TCP/IP, or concrete domain scenario) showing how the concept works in practice.
+- ALWAYS GIVE AN EXAMPLE: Every single question (regardless of marks) MUST include a concrete, practical real-world or domain example (e.g., PostgreSQL, Google Spanner, Linux kernel, TCP/IP, or concrete domain scenario) showing how the concept works in practice.
 - Never add artificial filler sentences or generic padding just to reach a word count; expand with genuine technical depth and concrete mechanics.
 - Bold important technical terms throughout the answer (e.g. **two-phase commit**, **horizontal fragmentation**, **ACID properties**).
 - Avoid repeating the same points across different sections.

@@ -447,18 +447,30 @@ async function runAllTests() {
     }
   })();
 
-  // Test 24: Unreadable raw LaTeX symbols are sanitized into 100% readable academic text
-  runTest('24. LaTeX symbols and dollar notation are converted to readable words and characters', () => {
+  // Test 24: Raw LaTeX symbols are converted to authentic mathematical symbols (Σ, ε, ∈, ∅, →)
+  runTest('24. LaTeX symbols and dollar notation are converted to authentic mathematical symbols', () => {
     const rawGrammarText =
-      'A formal grammar $G$ is represented as: $G = (V, \\Sigma, R, S)$, where $S \\in V$ and $\\Sigma = \\{0, 1\\}$.';
+      'A formal grammar $G$ is represented as: $G = (V, \\Sigma, R, S)$, where $S \\in V$ and $\\Sigma = \\{0, 1\\}$. An empty string is $\\epsilon$.';
     const cleaned = cleanMarkdownText(rawGrammarText);
     assert.strictEqual(cleaned.includes('$'), false, 'Should strip raw dollar signs');
     assert.strictEqual(cleaned.includes('\\Sigma'), false, 'Should convert \\Sigma');
     assert.strictEqual(cleaned.includes('\\in'), false, 'Should convert \\in');
+    assert.strictEqual(cleaned.includes('\\epsilon'), false, 'Should convert \\epsilon');
     assert.strictEqual(cleaned.includes('\\{'), false, 'Should unescape braces');
-    assert.ok(cleaned.includes('G = (V, Sigma, R, S)'));
-    assert.ok(cleaned.includes('S in V'));
-    assert.ok(cleaned.includes('Sigma = {0, 1}'));
+    assert.ok(cleaned.includes('G = (V, Σ, R, S)'), 'Should preserve exact Σ symbol');
+    assert.ok(cleaned.includes('S ∈ V'), 'Should preserve exact ∈ symbol');
+    assert.ok(cleaned.includes('Σ = {0, 1}'), 'Should preserve exact Σ = {0, 1}');
+    assert.ok(cleaned.includes('ε'), 'Should preserve exact ε symbol');
+  });
+
+  // Test 26: Segmented text line and symbols split without UTF-16 encoding errors
+  runTest('26. PDF symbol segmenter correctly splits Greek letters and mathematical symbols for Symbol font', async () => {
+    const { splitIntoSegments, SYMBOL_MAP } = await import('../src/lib/pdfBranding');
+    const segments = splitIntoSegments('Alphabet (Σ): Let Σ = {0, 1} and empty string ε ∈ L');
+    const symbolSegments = segments.filter(s => s.isSymbol);
+    assert.strictEqual(symbolSegments.length >= 3, true, 'Must detect at least 3 symbol segments (Σ, Σ, ε, ∈)');
+    assert.strictEqual(SYMBOL_MAP['Σ'], 'S', 'Sigma must map to Symbol glyph S');
+    assert.strictEqual(SYMBOL_MAP['ε'], 'e', 'Epsilon must map to Symbol glyph e');
   });
 
   // Test 25: Mobile responsive contracts and safe area classes
