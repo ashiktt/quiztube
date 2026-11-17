@@ -205,6 +205,216 @@ Maximum Theoretical Channel Capacity C = 20,000 bps = 20 kbps`,
       keyPoints: ['Shannon-Hartley theorem', 'Formula C = B * log2(1 + SNR)', 'Linear SNR substitution', 'Final capacity 20 kbps'],
     },
   },
+
+  // 6. Regression Question 1 (2 Marks): Homogeneous Databases
+  {
+    id: 'eval-2m-homogeneous-db',
+    questionNumber: 'Q1',
+    marks: 2,
+    expectedCategory: 'definition',
+    subject: 'Distributed Database Systems',
+    questionText: 'What are homogeneous databases?',
+    expectedMinWords: 30,
+    expectedMaxWords: 80,
+    mustContainExample: true,
+    mustContainDiagram: false,
+    mustContainFormulaOrCode: false,
+    sampleModelAnswer: {
+      questionNumber: 'Q1',
+      questionText: 'What are homogeneous databases?',
+      marksAllocated: 2,
+      answerSummary: 'A homogeneous distributed database is one where all participating sites use identical DBMS software and data structures.',
+      detailedAnswer: `**Homogeneous Databases:** A homogeneous database is a distributed database system where all participating sites use the same database software, identical data structures, and the same underlying operating system.
+
+**Example:**
+A national retail bank runs Oracle Database on Linux across all its regional branch offices. Each branch has an identical table schema and executes standard SQL commands without needing software translation.`,
+      keyPoints: ['Identical DBMS software across all nodes', 'Same operating system and schema', 'Easy data exchange without gateway translation'],
+    },
+  },
+
+  // 7. Regression Question 2 (5 Marks): Data Replication in DDBMS
+  {
+    id: 'eval-5m-data-replication',
+    questionNumber: 'Q2',
+    marks: 5,
+    expectedCategory: 'theoretical',
+    subject: 'Distributed Database Systems',
+    questionText: 'Explain data replication in DDBMS.',
+    expectedMinWords: 95,
+    expectedMaxWords: 190,
+    mustContainExample: true,
+    mustContainDiagram: false,
+    mustContainFormulaOrCode: false,
+    sampleModelAnswer: {
+      questionNumber: 'Q2',
+      questionText: 'Explain data replication in DDBMS.',
+      marksAllocated: 5,
+      answerSummary: 'Data replication stores multiple copies of identical data across several database servers to improve availability and read performance.',
+      detailedAnswer: `**Data Replication in DDBMS:** Data replication is the process of storing multiple copies of the same database records across different physical server nodes in a network.
+
+**Main Features of Data Replication:**
+1. **High Availability:** If one database server crashes, users can immediately access data from another replica without downtime.
+2. **Faster Read Performance:** Client applications read data from the closest local server, avoiding slow network communication.
+3. **Fault Tolerance:** Critical applications remain functional even during hardware or network link failures.
+
+**Working Steps:**
+1. A client initiates an update transaction on a primary database node.
+2. The primary node commits the update and logs the transaction.
+3. The update is broadcast across the network to all replica nodes.
+4. Replica nodes apply the change to keep their local copies synchronized.
+
+**Practical Example:**
+An international airline replicates seat availability tables across servers in New York, London, and Tokyo so local travel agents can check flights in milliseconds.
+
+**Advantages:**
+• Zero downtime during single server failures.
+• Reduced network load for read-heavy workloads.`,
+      keyPoints: ['Multiple copies of data at different sites', 'High availability and fault tolerance', 'Fast local reads', 'Replication synchronization overhead'],
+    },
+  },
+
+  // 8. Regression Question 3 (8 Marks): Architecture of DDBMS
+  {
+    id: 'eval-8m-ddbms-architecture',
+    questionNumber: 'Q3',
+    marks: 8,
+    expectedCategory: 'architecture',
+    subject: 'Distributed Database Systems',
+    questionText: 'Explain the architecture of a Distributed Database Management System.',
+    expectedMinWords: 150,
+    expectedMaxWords: 270,
+    mustContainExample: true,
+    mustContainDiagram: true,
+    mustContainFormulaOrCode: false,
+    sampleModelAnswer: {
+      questionNumber: 'Q3',
+      questionText: 'Explain the architecture of a Distributed Database Management System.',
+      marksAllocated: 8,
+      answerSummary: 'DDBMS architecture coordinates multiple independent database sites over a network while providing a single logical view to users.',
+      detailedAnswer: `**DDBMS Architecture:** The architecture of a Distributed Database Management System (DDBMS) organizes autonomous local databases across multiple locations while presenting a single unified database to users.
+
+**Core Architectural Components:**
+1. **Global Conceptual Schema (GCS):** Defines the complete enterprise data model, completely hiding physical storage locations from users.
+2. **Fragmentation Schema:** Defines rules for dividing global relations into horizontal (row-based) or vertical (column-based) fragments.
+3. **Allocation Schema:** Specifies which physical database server stores each fragment and its replicas.
+4. **Local Conceptual & Internal Schema:** Manages physical data storage, B-tree indexes, and local transactions on individual site machines.
+
+**Working Steps:**
+1. A user submits a query to the global query processor.
+2. The system analyzes the query using the GCS and fragmentation rules.
+3. The query is decomposed into separate sub-queries for each target site.
+4. Local DBMS engines execute the sub-queries on their local storage.
+5. The DDBMS combines the partial results and returns the final answer to the user.
+
+**Practical Example:**
+A university database splits student records by department (Engineering and Business). While each department manages its own server, the registrar views all students through one unified portal.
+
+**Key Advantages:**
+• Local autonomy for regional branch offices.
+• High availability and modular system expansion.`,
+      diagramMermaid: `flowchart TD
+Client["User Application"] --> GCS["Global Conceptual Schema"]
+GCS --> FS["Fragmentation Schema"]
+FS --> AS["Allocation Schema"]
+AS --> SiteA["Site A (Local DBMS)"]
+AS --> SiteB["Site B (Local DBMS)"]`,
+      keyPoints: ['Global Conceptual Schema (GCS)', 'Fragmentation Schema (Horizontal/Vertical)', 'Allocation Schema for site placement', 'Local DBMS autonomy'],
+    },
+  },
+
+  // 9. Regression Question 4 (10 Marks): Distributed Object Management in DDBMS
+  {
+    id: 'eval-10m-dist-object-mgmt',
+    questionNumber: 'Q4',
+    marks: 10,
+    expectedCategory: 'theoretical',
+    subject: 'Distributed Database Systems',
+    questionText: 'Explain Distributed Object Management in DDBMS.',
+    expectedMinWords: 210,
+    expectedMaxWords: 360,
+    mustContainExample: true,
+    mustContainDiagram: true,
+    mustContainFormulaOrCode: false,
+    sampleModelAnswer: {
+      questionNumber: 'Q4',
+      questionText: 'Explain Distributed Object Management in DDBMS.',
+      marksAllocated: 10,
+      answerSummary: 'Distributed Object Management enables applications to access, manipulate, and execute methods on objects distributed across multiple computers transparently.',
+      detailedAnswer: `**Distributed Object Management in DDBMS:** Distributed Object Management is a software architecture that enables applications to create, locate, and manipulate object-oriented data across multiple computers over a network transparently.
+
+**Main Components:**
+1. **Object Request Broker (ORB):** The central communication middleware that routes client method calls to the correct remote object across the network.
+2. **Interface Definition Language (IDL):** Specifies object interfaces, methods, and data types independently of any specific programming language.
+3. **Object Identifiers (OID):** Unique system-generated keys that permanently identify every object across all network servers.
+4. **Object Services:** Provides essential system capabilities such as transaction management, concurrency control, security, and persistence.
+
+**Working of Distributed Object Management:**
+1. A client application calls a method on a local proxy object (stub).
+2. The stub packages the method name and parameters into a network message (marshaling).
+3. The ORB transmits the request across the network to the server hosting the target object.
+4. The server skeleton unpackages the message (unmarshaling) and invokes the actual method on the object.
+5. The target object executes the business logic and queries local storage if needed.
+6. The ORB routes the return result back to the calling client.
+
+**Practical Example:**
+In a hospital management system, a Doctor workstation invokes the getMedicalHistory() method on a remote Patient object stored on a central hospital database server. The doctor retrieves patient data without needing to know the server's network address.
+
+**Advantages:**
+• High reusability through object-oriented inheritance and encapsulation.
+• Complete location transparency across different hardware platforms.
+
+**Conclusion:**
+Distributed Object Management connects distributed computing with object-oriented programming, allowing enterprise applications to access remote database objects seamlessly.`,
+      diagramMermaid: `flowchart LR
+Client["Client Application"] --> Stub["Client Stub"]
+Stub --> ORB["Object Request Broker (ORB)"]
+ORB --> Skeleton["Server Skeleton"]
+Skeleton --> Obj["Remote Database Object"]`,
+      keyPoints: ['Object Request Broker (ORB) middleware', 'Interface Definition Language (IDL)', 'Unique Object Identifiers (OID)', 'Marshaling and unmarshaling workflow', 'Complete location transparency'],
+    },
+  },
+
+  // 10. Regression Question 5 (10 Marks): Advantages and Disadvantages of DDBS
+  {
+    id: 'eval-10m-ddbs-advantages-disadvantages',
+    questionNumber: 'Q5',
+    marks: 10,
+    expectedCategory: 'advantages_disadvantages',
+    subject: 'Distributed Database Systems',
+    questionText: 'Discuss the advantages and disadvantages of Distributed Database Systems.',
+    expectedMinWords: 210,
+    expectedMaxWords: 360,
+    mustContainExample: true,
+    mustContainDiagram: false,
+    mustContainFormulaOrCode: false,
+    sampleModelAnswer: {
+      questionNumber: 'Q5',
+      questionText: 'Discuss the advantages and disadvantages of Distributed Database Systems.',
+      marksAllocated: 10,
+      answerSummary: 'Distributed Database Systems offer superior availability, local autonomy, and modular scalability, balanced against higher software cost and distributed coordination complexity.',
+      detailedAnswer: `**Distributed Database Systems (DDBS):** A Distributed Database System is an integrated collection of multiple logical databases distributed over different physical locations and connected by a computer network.
+
+**Key Advantages:**
+1. **Local Autonomy:** Individual branches or departments have direct control over their local data while still participating in enterprise-wide operations.
+2. **High Availability and Reliability:** If one database server crashes, other independent sites continue to operate, eliminating a single point of failure.
+3. **Improved Performance:** Frequently accessed data is stored close to local users, which significantly reduces network transmission delays.
+4. **Modular Scalability:** Organizations can easily add new branch servers and storage without shutting down the existing database system.
+5. **Cost Effectiveness:** Connecting multiple smaller, economical computers is often far less expensive than purchasing one giant mainframe.
+
+**Key Disadvantages:**
+1. **System Complexity:** Managing distributed transactions, deadlocks, and data replication across sites requires sophisticated software.
+2. **High Software Cost:** Purchasing, installing, and licensing DDBMS middleware and networking software involves significant financial investment.
+3. **Data Integrity Overhead:** Keeping replicated data synchronized across multiple servers requires expensive protocols like two-phase commit (2PC).
+4. **Security Vulnerabilities:** Distributing data over communication networks increases potential security risks and requires strict encryption.
+
+**Practical Example:**
+An international e-commerce company like Amazon maintains local databases in North America, Europe, and Asia for quick customer checkout, but must use distributed transaction coordination to keep global inventory levels accurate.
+
+**Conclusion:**
+Distributed database systems provide unmatched scalability and uptime for modern enterprises, provided the organization is prepared to handle the operational complexity of distributed consistency.`,
+      keyPoints: ['Local autonomy and modular scalability', 'High availability without single point of failure', 'Complexity of distributed transactions', 'Data consistency overhead (Two-phase commit)'],
+    },
+  },
 ];
 
 /**

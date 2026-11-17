@@ -580,6 +580,32 @@ async function runAllTests() {
     assert.strictEqual(isBulletLine('**Example:**'), false);
   });
 
+  // Test 32: Regression verification of the 5 Real Examination Questions
+  runTest('32. Regression verification for 5 Real Exam Questions (Simple Language, Correct Depth, Easy Memorization)', async () => {
+    const { EVALUATION_BENCHMARK_DATASET, evaluateBenchmarkItem } = await import('../src/lib/ai/evaluationDataset');
+    const targetIds = [
+      'eval-2m-homogeneous-db',
+      'eval-5m-data-replication',
+      'eval-8m-ddbms-architecture',
+      'eval-10m-dist-object-mgmt',
+      'eval-10m-ddbs-advantages-disadvantages',
+    ];
+
+    for (const id of targetIds) {
+      const item = EVALUATION_BENCHMARK_DATASET.find(b => b.id === id);
+      assert.ok(item, `Benchmark item ${id} must exist`);
+      const evalRes = evaluateBenchmarkItem(item!, item!.sampleModelAnswer);
+
+      assert.strictEqual(evalRes.isValid, true, `${id} must be valid`);
+      assert.strictEqual(evalRes.categoryMatch, true, `${id} category must match`);
+      assert.strictEqual(evalRes.wordCountCompliant, true, `${id} word count must be within calibration`);
+      assert.strictEqual(evalRes.examplePresent, true, `${id} must include practical example`);
+      if (item!.mustContainDiagram) {
+        assert.strictEqual(evalRes.diagramPresent, true, `${id} must provide Mermaid diagram`);
+      }
+    }
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

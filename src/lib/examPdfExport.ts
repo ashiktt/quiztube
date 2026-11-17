@@ -88,9 +88,10 @@ function isMermaidOrTechnicalCode(line: string): boolean {
 /**
  * Checks whether a line represents a formal academic section heading.
  * Matches:
- * - "### 1. Definition" or "## 1. Definition" or "# 1. Definition"
- * - "1. Definition" or "2. Importance of ..."
- * - "**1. Definition**" or "**1. Definition:**"
+ * - "### 1. Definition" or "## Main Features" or "# Working"
+ * - "**1. Definition**", "**Main features of Bitcoin P2P Network:**", "**Working:**", "**Advantages:**"
+ * - "1. Definition" or "2. Importance of Distributed Object Management"
+ * - "Main features of Bitcoin P2P Network:", "Working of Bitcoin P2P Network:", "Advantages:", "Disadvantages:", "Applications:"
  */
 function parseSectionHeading(line: string): { isHeading: boolean; headingText: string } {
   const trimmed = line.trim();
@@ -105,16 +106,37 @@ function parseSectionHeading(line: string): { isHeading: boolean; headingText: s
     return { isHeading: true, headingText: cleanMarkdownText(rawHeading) };
   }
 
-  // 2. Bold section title e.g. "**1. Definition**" or "**1. Definition:**"
-  const boldMatch = trimmed.match(/^\*\*(\d+\.\s+[^:]+):?\*\*$/);
+  // 2. Bold section title e.g. "**1. Definition**", "**Main features of Bitcoin P2P Network:**", "**Working:**", "**Advantages:**"
+  const boldMatch = trimmed.match(/^\*\*([^*:\n]{2,75}):?\*\*$/);
   if (boldMatch) {
-    return { isHeading: true, headingText: boldMatch[1].trim() };
+    const rawHeading = boldMatch[1].trim();
+    if (!isMermaidOrTechnicalCode(rawHeading)) {
+      return { isHeading: true, headingText: cleanMarkdownText(rawHeading) };
+    }
   }
 
   // 3. Numbered section title e.g. "1. Definition" or "2. Importance of Distributed Object Management"
   const numSecMatch = trimmed.match(/^(\d+\.\s+[A-Za-z][^.\n]{2,75})$/);
   if (numSecMatch && !trimmed.includes(':') && !trimmed.endsWith('.')) {
     return { isHeading: true, headingText: numSecMatch[1].trim() };
+  }
+
+  // 4. Standalone section titles ending with a colon or specific academic keywords
+  // e.g. "Main features of Bitcoin P2P Network:", "Working of Bitcoin P2P Network:", "Advantages:", "Disadvantages:", "Applications:"
+  const plainHeaderMatch = trimmed.match(/^([A-Za-z0-9\s/&-]{3,65}):$/);
+  if (plainHeaderMatch) {
+    const rawTitle = plainHeaderMatch[1].trim();
+    const lower = rawTitle.toLowerCase();
+    const commonSectionKeywords = [
+      'definition', 'feature', 'features', 'working', 'working principle',
+      'characteristic', 'characteristics', 'component', 'components', 'advantage',
+      'advantages', 'disadvantage', 'disadvantages', 'application', 'applications',
+      'example', 'examples', 'practical example', 'conclusion', 'summary',
+      'overview', 'comparison', 'architecture', 'steps', 'properties', 'limitations'
+    ];
+    if (commonSectionKeywords.some(k => lower.includes(k))) {
+      return { isHeading: true, headingText: cleanMarkdownText(trimmed) };
+    }
   }
 
   return { isHeading: false, headingText: '' };
