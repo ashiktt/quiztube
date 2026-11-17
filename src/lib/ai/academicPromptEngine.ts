@@ -38,6 +38,9 @@ PRIMARY WRITING STYLE: SIMPLE & EASY TO MEMORIZE
   1. **Decentralization:** There is no central authority controlling the network.
   2. **Node Communication:** Nodes communicate with each other to share transactions and blocks.
 - LOGICAL SEQUENCE: Arrange points in a natural chronological or conceptual flow so students can memorize them effortlessly.
+- VERTICAL LISTING (NEVER CRAM INLINE): Every single numbered point (1., 2., 3., etc.) or bullet item (- Item) MUST start on its own new line. NEVER concatenate numbered items into a single paragraph (NEVER write "The phases are: 1. Requirement ... 2. Design ... 3. Coding ...").
+- FOR "LIST", "NAME", OR "ENUMERATE" QUESTIONS:
+  Provide a concise introductory heading (e.g. "Main Phases of the Software Development Life Cycle (SDLC):") followed by a VERTICALLY NUMBERED LIST with bold keywords and short, crisp 1-sentence explanations. Do NOT add artificial or robotic placeholder examples when not requested.
 - NO UNNECESSARY FILLER: Avoid lengthy historical background, generic introductions, or repeating the definition in the conclusion.
 
 ==================================================

@@ -606,6 +606,35 @@ async function runAllTests() {
     }
   });
 
+  // Test 33: Inline lists are automatically split into vertical lines and robotic placeholders are stripped
+  runTest('33. Inline numbered lists are auto-split into vertical lines and robotic placeholders are stripped', async () => {
+    const { validateAndRepairSolution } = await import('../src/lib/ai/responseValidator');
+    const { classifyQuestion } = await import('../src/lib/ai/reasoningEngine');
+
+    // Classification of list questions
+    const classRes = classifyQuestion('List the main phases of the Software Development Life Cycle.', 2);
+    assert.strictEqual(classRes.requiresExample, false, 'List questions should not require artificial examples');
+
+    // Auto-split inline list & strip robotic placeholder
+    const rawInline = {
+      questionNumber: 'Q1(a)',
+      questionText: 'List the main phases of the Software Development Life Cycle.',
+      marksAllocated: 2,
+      answerSummary: 'SDLC phases list',
+      detailedAnswer: 'The main phases are: 1. Planning: Setting goals. 2. Design: Preparing architecture. 3. Coding: Writing software.\n\n**Example:**\nLet the system instance be defined with representative inputs to demonstrate validity under operating conditions.',
+      keyPoints: ['Planning', 'Design', 'Coding'],
+    };
+
+    const repaired = validateAndRepairSolution(rawInline as any, 'Software Engineering');
+    assert.strictEqual(repaired.isValid, true);
+    // Must not contain the robotic placeholder
+    assert.ok(!repaired.repairedItem.detailedAnswer.includes('system instance'));
+    // Must have split inline items onto separate lines
+    assert.ok(repaired.repairedItem.detailedAnswer.includes('\n1. Planning: Setting goals.'));
+    assert.ok(repaired.repairedItem.detailedAnswer.includes('\n2. Design: Preparing architecture.'));
+    assert.ok(repaired.repairedItem.detailedAnswer.includes('\n3. Coding: Writing software.'));
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

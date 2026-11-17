@@ -58,6 +58,26 @@ export function classifyQuestion(questionText: string, marksAllocated = 5): Ques
     };
   }
 
+  // 1b. Direct Listing & Enumeration Questions (e.g. "List the main phases...", "Name the components...")
+  if (
+    /\b(list|name|enumerate|mention|state the main|state the phases|list down)\b/i.test(lower)
+  ) {
+    return {
+      category: 'short_notes',
+      confidence: 0.93,
+      expectedMarks: marks,
+      reasoningStrategy: 'Vertical Enumeration & Clean Numbered Definitions',
+      recommendedStructure: [
+        'Introductory topic heading',
+        'Vertically numbered list (1 to N) with bold keyword lead-ins',
+        'Short, crisp 1-sentence explanation per item',
+      ],
+      requiresDiagram: false,
+      requiresExample: false,
+      requiresFormulaOrCode: false,
+    };
+  }
+
   // 2. Architecture Questions
   if (
     /\b(architecture|structural organization|layers of|component diagram|system architecture|ansi\/sparc)\b/i.test(lower)

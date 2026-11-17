@@ -48,16 +48,26 @@ export function validateAndRepairSolution(
     .replace(/(^|\n)\*+([^*:\n]+):?\*+/g, '$1**$2:**')
     .replace(/\*{3,}/g, '**');
 
+  // Auto-split inline numbered lists (e.g. "are: 1. ... 2. ... 3. ...") into clean vertical lines
+  cleanAnswer = cleanAnswer
+    .replace(/([.:])\s+(\d+\.\s+)/g, '$1\n$2')
+    .replace(/([.:])\s+([-•]\s+)/g, '$1\n$2');
+
+  // Strip any legacy robotic placeholder example
+  cleanAnswer = cleanAnswer
+    .replace(/\n*\*\*Example:\*\*\n*Let the system instance be defined with representative inputs to demonstrate validity under operating conditions\./gi, '')
+    .trim();
+
   // 2. Mark-wise Length & Depth Check
   const wordCount = cleanAnswer.trim().split(/\s+/).filter(Boolean).length;
   let expectedMinWords = 35;
   let expectedMaxWords = 600;
 
   if (marks <= 2) {
-    expectedMinWords = 30;
+    expectedMinWords = 25; // Adjusted for direct listing/enumeration questions
     expectedMaxWords = 80;
   } else if (marks <= 3) {
-    expectedMinWords = 50;
+    expectedMinWords = 45;
     expectedMaxWords = 110;
   } else if (marks <= 5) {
     expectedMinWords = 95;
@@ -85,11 +95,6 @@ export function validateAndRepairSolution(
   if (!hasExample && classification.requiresExample) {
     issues.push('Missing concrete practical example or instance declaration.');
     score -= 20;
-
-    // Lightweight deterministic example injection based on subject/question to ensure 100% compliance
-    if (marks <= 3) {
-      cleanAnswer += `\n\n**Example:**\nLet the system instance be defined with representative inputs to demonstrate validity under operating conditions.`;
-    }
   }
 
   // 4. Diagram Validation & Sanitation
