@@ -790,10 +790,11 @@ export async function exportUniversityExamPdf(exam: UniversitySolvedExam): Promi
         continue;
       }
 
-      // 6. Bullet Point (- or * or •)
-      if (line.startsWith('-') || line.startsWith('*') || line.startsWith('•')) {
-        const rawBullet = line.replace(/^[-*•]\s*/, '').trim();
-        const boldMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*(.*)/);
+      // 6. Bullet Point (- or * or • followed by whitespace, NOT bold text starting with **)
+      const isBulletLine = /^([-•]|\*(?!\*))\s+/.test(line);
+      if (isBulletLine) {
+        const rawBullet = line.replace(/^([-•]|\*(?!\*))\s*/, '').trim();
+        const boldMatch = rawBullet.match(/^\*\*([^*]+)\*\*[:\s-]*([\s\S]*)/);
         const colonMatch = !boldMatch ? rawBullet.match(/^([A-Za-z0-9\s/&-]{3,45}):\s+(.*)/) : null;
 
         let boldTitle = '';

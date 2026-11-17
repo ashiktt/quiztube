@@ -244,12 +244,15 @@ export function cleanMarkdownText(text: string): string {
   return sanitized
     .replace(/^#{1,6}\s+/gm, '') // remove heading hashes
     .replace(/\s+#+$/gm, '')
+    .replace(/\s*\(\s*\*+\s*\)\s*/g, ' ') // remove unnecessary characters like (***)
+    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1') // remove bold-italic asterisks
     .replace(/\*\*([^*]+)\*\*/g, '$1') // remove bold asterisks
     .replace(/__([^_]+)__/g, '$1')
     .replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1$2$3') // remove italic asterisks
     .replace(/(^|[^_])_([^_]+)_([^_]|$)/g, '$1$2$3')
     .replace(/`([^`]+)`/g, '$1') // remove code backticks
     .replace(/^>\s*/gm, '') // remove blockquotes
+    .replace(/\*{1,3}/g, '') // remove any stray unparsed asterisks (*, **, ***)
     .replace(/::+/g, ':') // normalize duplicate colons
     .replace(/\.{4,}/g, '...') // normalize runaway dots
     .trim();

@@ -41,6 +41,13 @@ export function validateAndRepairSolution(
     score -= 5;
   }
 
+  // Normalize malformed asterisks (e.g. "*Consensus:**" or "***Consensus:***") into clean "**Consensus:**"
+  // and strip unnecessary character artifacts like "(***)"
+  cleanAnswer = cleanAnswer
+    .replace(/\s*\(\s*\*+\s*\)\s*/g, ' ')
+    .replace(/(^|\n)\*+([^*:\n]+):?\*+/g, '$1**$2:**')
+    .replace(/\*{3,}/g, '**');
+
   // 2. Mark-wise Length & Depth Check
   const wordCount = cleanAnswer.trim().split(/\s+/).filter(Boolean).length;
   let expectedMinWords = 35;

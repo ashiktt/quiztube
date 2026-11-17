@@ -564,6 +564,22 @@ async function runAllTests() {
     }
   });
 
+  // Test 31: Stray asterisks (*** or *Word:**) and (***) are cleanly stripped and bold paragraphs are not treated as bullets
+  runTest('31. Stray asterisks (*Consensus:**) and (***) are cleanly stripped and bold headers are preserved', async () => {
+    const { cleanMarkdownText } = await import('../src/lib/pdfBranding');
+    assert.strictEqual(cleanMarkdownText('*Consensus:**'), 'Consensus:');
+    assert.strictEqual(cleanMarkdownText('***Example:***'), 'Example:');
+    assert.strictEqual(cleanMarkdownText('**Consensus:** Definition'), 'Consensus: Definition');
+    assert.strictEqual(cleanMarkdownText('Notice (***) character artifact'), 'Notice character artifact');
+
+    const isBulletLine = (line: string) => /^([-•]|\*(?!\*))\s+/.test(line);
+    assert.strictEqual(isBulletLine('- Bullet item'), true);
+    assert.strictEqual(isBulletLine('* Bullet item'), true);
+    assert.strictEqual(isBulletLine('• Bullet item'), true);
+    assert.strictEqual(isBulletLine('**Consensus:** Definition'), false);
+    assert.strictEqual(isBulletLine('**Example:**'), false);
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

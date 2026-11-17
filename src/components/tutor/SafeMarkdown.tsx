@@ -10,8 +10,14 @@ interface SafeMarkdownProps {
 export function SafeMarkdown({ content, className = '' }: SafeMarkdownProps) {
   if (!content) return null;
 
+  // Sanitize malformed asterisks (e.g. "*Consensus:**" or "***Consensus:***") and artifacts like (***)
+  const sanitized = content
+    .replace(/\(\*{2,}\)/g, '')
+    .replace(/(^|\n)\*+([^*:\n]+):?\*+/g, '$1**$2:**')
+    .replace(/\*{3,}/g, '**');
+
   // Split into paragraphs / blocks
-  const blocks = content.split(/\n{2,}/);
+  const blocks = sanitized.split(/\n{2,}/);
 
   return (
     <div className={`space-y-4 leading-relaxed text-slate-800 dark:text-slate-200 ${className}`}>
