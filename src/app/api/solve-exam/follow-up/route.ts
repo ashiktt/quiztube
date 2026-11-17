@@ -4,6 +4,7 @@ import { formatGeminiErrorMessage, isValidGeminiApiKey } from '@/lib/gemini';
 import { checkAndReserveDailyQuota, rollbackDailyQuota, getAuthenticatedUser } from '@/lib/serverSubscription';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   let reservedQuota = false;

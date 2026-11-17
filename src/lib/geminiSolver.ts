@@ -138,13 +138,20 @@ export async function solveUniversityQuestionsWithGemini(params: {
     textPrompt += `ATTACHED FILE NAME: ${fileName}\n`;
   }
 
-  if (questionsText && questionsText.trim().length > 0) {
-    textPrompt += `EXAM QUESTIONS / INSTRUCTIONS:\n"""\n${questionsText}\n"""\n\n`;
-  } else {
-    textPrompt += `Please transcribe and solve ALL questions present in the attached exam paper document/image.\n\n`;
+  if (fileBase64 && fileMimeType) {
+    textPrompt += `ATTACHED EXAM DOCUMENT / IMAGE: A university question paper file (${fileName || 'document'}) is attached.\n`;
+    textPrompt += `MANDATORY INSTRUCTION: Inspect the attached file carefully, transcribe EVERY question and sub-question (e.g., Q1(a), Q1(b), Q2(a)...), and solve ALL OF THEM in full detail without omitting any question.\n\n`;
   }
 
-  textPrompt += `Please parse every question, detect or assign reasonable marks if unspecified, and generate comprehensive, mark-scaled model answers.`;
+  if (questionsText && questionsText.trim().length > 0) {
+    textPrompt += `EXAM QUESTIONS / USER PROMPTS:\n"""\n${questionsText}\n"""\n\n`;
+    textPrompt += `MANDATORY INSTRUCTION: Solve ALL questions listed above. If questions contain multiple sub-parts (e.g., Q1(a), Q1(b)), solve every sub-part completely.\n\n`;
+  }
+
+  textPrompt += `CRITICAL COMPLETENESS RULES:
+1. COMPLETE QUESTION COVERAGE: Include a complete solution object in the "solutions" array for EVERY question and sub-part found in the input (text or attached document/image). Do NOT skip, merge, or abbreviate any question.
+2. FULL UNABBREVIATED ANSWERS: In each solution's "detailedAnswer", provide the FULL, comprehensive academic model answer. Address every single concept, phase, step, formula, diagram, and sub-part asked in the question.
+3. NEVER TRUNCATE: Never cut off mid-sentence, never write "etc." or "so on", and never provide partial outlines. Give university students the complete, full-scoring model solution.`;
 
   contentParts.push({ text: textPrompt });
 
@@ -158,7 +165,8 @@ export async function solveUniversityQuestionsWithGemini(params: {
       responseMimeType: 'application/json',
       responseSchema: solvedExamSchema,
       temperature: 0.2, // Low temperature for high academic precision
-      timeoutMs: 50000,
+      timeoutMs: 90000, // 90 seconds timeout for full multi-question solutions
+      maxOutputTokens: 16384,
     }
   );
 

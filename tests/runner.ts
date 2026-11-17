@@ -635,6 +635,19 @@ async function runAllTests() {
     assert.ok(repaired.repairedItem.detailedAnswer.includes('\n3. Coding: Writing software.'));
   });
 
+  // Test 34: Full question completeness rules, maxOutputTokens, and route timeout configuration
+  runTest('34. Full question completeness rules and serverless execution configurations are enforced', async () => {
+    const { buildAcademicSystemInstruction } = await import('../src/lib/ai/academicPromptEngine');
+    const systemPrompt = buildAcademicSystemInstruction();
+    assert.ok(systemPrompt.includes('ABSOLUTE QUESTION & ANSWER COMPLETENESS'), 'Must have completeness section');
+    assert.ok(systemPrompt.includes('SOLVE ALL QUESTIONS & SUB-PARTS'), 'Must instruct to solve all questions');
+    assert.ok(systemPrompt.includes('FULL-LENGTH DETAILED ANSWERS'), 'Must instruct not to abbreviate');
+
+    // Verify route maxDuration is exported as 60
+    const routeModule = await import('../src/app/api/solve-exam/route');
+    assert.strictEqual(routeModule.maxDuration, 60, 'solve-exam route must have maxDuration = 60');
+  });
+
   // Run Phase 13 Automated Security Regression Suite
   const secResults = await runSecurityTests();
   testsPassed += secResults.passed;

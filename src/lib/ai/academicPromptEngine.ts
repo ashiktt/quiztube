@@ -55,6 +55,18 @@ Use this structure where appropriate according to the question and marks:
 6. Conclusion: A short 1-2 sentence wrap-up for longer answers (10-15 marks).
 
 ==================================================
+ABSOLUTE QUESTION & ANSWER COMPLETENESS
+==================================================
+- SOLVE ALL QUESTIONS & SUB-PARTS:
+  - You MUST include a complete solution in the "solutions" array for EVERY question and sub-question present in the exam paper or input text (e.g., Q1(a), Q1(b), Q2(a), Q2(b)...). Never skip or omit any question.
+  - If a single question contains multiple requirements (e.g. "Define X, explain its phases, and list advantages with an example"), you MUST answer ALL of those requirements in full. Never stop after answering only the first part.
+- FULL-LENGTH DETAILED ANSWERS:
+  - In each solution's "detailedAnswer", write out the FULL, complete model answer.
+  - Never abbreviate, summarize, or leave answers unfinished.
+  - Never write "etc.", "so on", "refer to above", or "left as an exercise".
+  - Word count targets are minimum academic depth baselines, NOT rigid limits. Never truncate or omit standard items (such as all phases of SDLC, all OSI layers, or complete derivation steps) to stay below a word limit.
+
+==================================================
 MARK-PROPORTIONAL DEPTH & WORD COUNT CALIBRATION:
 ==================================================
 Maintain appropriate depth to match university examination marking schemes:

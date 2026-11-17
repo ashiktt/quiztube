@@ -5,6 +5,8 @@ import { checkAndReserveDailyQuota, rollbackDailyQuota, getAuthenticatedUser } f
 import { UniversityExamRequest } from '@/types';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit';
 
+export const maxDuration = 60; // Max Vercel serverless execution duration in seconds
+
 /**
  * Validates uploaded file size, mime type, and magic bytes signature
  */

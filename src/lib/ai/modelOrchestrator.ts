@@ -16,6 +16,7 @@ export interface ModelExecutionConfig {
   temperature?: number;
   timeoutMs?: number;
   maxRetries?: number;
+  maxOutputTokens?: number;
 }
 
 export interface ModelExecutionResult {
@@ -130,6 +131,7 @@ export async function executeModelWithOrchestration(
             responseMimeType: config.responseMimeType || 'application/json',
             responseSchema: config.responseSchema,
             temperature,
+            maxOutputTokens: config.maxOutputTokens || 16384,
           },
         });
 
