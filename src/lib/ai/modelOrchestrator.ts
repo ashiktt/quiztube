@@ -33,8 +33,20 @@ export interface ModelExecutionResult {
 
 // Ordered models prioritized for Google AI Studio Free-Tier stability & quota
 export const ORCHESTRATOR_MODELS = {
-  flashFast: ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite'],
-  proReasoning: ['gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-3.8-flash'],
+  flashFast: [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-lite-latest',
+    'gemini-3.8-flash',
+  ],
+  proReasoning: [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.8-flash',
+  ],
 };
 
 // In-memory LRU cache to prevent duplicate API hits
@@ -82,8 +94,9 @@ export async function executeModelWithOrchestration(
 
   // Build candidate models list
   const defaultList = ORCHESTRATOR_MODELS.flashFast;
-  const candidateModels = config.preferredModel
-    ? [config.preferredModel, ...defaultList.filter(m => m !== config.preferredModel)]
+  const pref = config.preferredModel ? config.preferredModel.trim() : '';
+  const candidateModels = pref
+    ? [pref, ...defaultList.filter(m => m !== pref)]
     : defaultList;
 
   // 1. Cache Lookup
