@@ -362,9 +362,21 @@ export function UniversityQuestionSolver({
         }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = null;
 
-      if (!res.ok || !data.success) {
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => null);
+      } else {
+        const textError = await res.text().catch(() => '');
+        throw new Error(
+          textError.includes('An error occurred') || res.status === 504 || res.status === 500
+            ? 'The server took too long to process this question paper. Please try again or use a smaller image.'
+            : textError || `Server communication error (${res.status}). Please try again.`
+        );
+      }
+
+      if (!res.ok || !data?.success) {
         if (data?.isQuotaExceeded && onOpenUpgradeModal) {
           onOpenUpgradeModal();
         }

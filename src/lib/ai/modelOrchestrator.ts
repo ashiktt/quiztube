@@ -32,21 +32,22 @@ export interface ModelExecutionResult {
   estimatedCostUsd: number; // 0.00 for free tier
 }
 
-// Ordered models prioritized for Google AI Studio Free-Tier stability & quota
+// Ordered models prioritized for Google AI Studio Free-Tier stability, speed & quota
 export const ORCHESTRATOR_MODELS = {
   flashFast: [
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
     'gemini-3.5-flash-lite',
     'gemini-3.1-flash-lite',
-    'gemini-flash-lite-latest',
     'gemini-3.8-flash',
-  ],
-  proReasoning: [
     'gemini-3.6-flash',
     'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
+  ],
+  proReasoning: [
     'gemini-3.5-flash-lite',
     'gemini-3.8-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
   ],
 };
 
